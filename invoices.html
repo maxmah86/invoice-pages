@@ -9,15 +9,22 @@
   <ul id="list"></ul>
 
   <script>
-    fetch("/api/invoices")
-      .then(r => r.json())
-      .then(data => {
-        data.forEach(inv => {
-          const li = document.createElement("li");
-          li.innerText = inv.invoice_no + " - RM " + inv.total;
-          list.appendChild(li);
-        });
-      });
-  </script>
+async function loadInvoices() {
+  const res = await fetch('/api/invoices', {
+    credentials: 'include'
+  });
+
+  if (!res.ok) {
+    location.href = '/login.html';
+    return;
+  }
+
+  const data = await res.json();
+  console.log(data);
+}
+
+loadInvoices();
+</script>
 </body>
 </html>
+
