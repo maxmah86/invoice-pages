@@ -24,7 +24,7 @@ body {
   font-size: 13px;
 }
 
-.company h2 {
+.company h1 {
   margin: 0 0 4px;
 }
 
@@ -71,6 +71,26 @@ th {
   font-weight: bold;
 }
 
+/* ===== 底部标注 ===== */
+.footer {
+  margin-top: 14px;
+  font-size: 13px;
+}
+
+.footer strong {
+  display: block;
+  margin-top: 8px;
+}
+
+.bank {
+  margin-top: 6px;
+}
+
+.thanks {
+  margin-top: 14px;
+}
+
+/* 操作按钮 */
 .actions {
   margin: 12px 0;
   display: flex;
@@ -85,10 +105,6 @@ th {
 
 /* 📱 手机优化（不改结构） */
 @media (max-width: 768px) {
-  body {
-    padding: 8px;
-  }
-
   table {
     font-size: 13px;
   }
@@ -97,7 +113,7 @@ th {
     padding: 6px;
   }
 
-  .company, .meta, .to {
+  .company, .meta, .to, .footer {
     font-size: 12px;
   }
 }
@@ -111,6 +127,14 @@ th {
   @page {
     size: A4;
     margin: 15mm;
+  }
+
+  body::after {
+    content: "Generated on " attr(data-print-time);
+    position: fixed;
+    bottom: 10mm;
+    right: 15mm;
+    font-size: 10px;
   }
 }
 </style>
@@ -159,8 +183,34 @@ th {
   </tfoot>
 </table>
 
+<!-- ===== 底部标注（已补回） ===== -->
+<div class="footer">
+  <strong>RINGGIT MALAYSIA :</strong>
+  TOTAL : RM <span id="total-text"></span>
+
+  <strong>TERMS :</strong>
+  50% deposit upon confirmation and the balance 50% should be clear by project completion.
+
+  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong>
+  MMAC CONSTRUCTION
+
+  <div class="bank">
+    <strong>COMPANY ACCOUNT NUMBER :</strong>
+    MAYBANK : 5142-0863-6636
+  </div>
+
+  <div class="thanks">
+    Thank You.
+  </div>
+</div>
+
 <script>
 const id = new URLSearchParams(location.search).get("id");
+
+document.body.setAttribute(
+  "data-print-time",
+  new Date().toLocaleString()
+);
 
 async function loadInvoice() {
   const res = await fetch(`/api/invoice-view?id=${id}`, {
@@ -204,6 +254,7 @@ async function loadInvoice() {
   });
 
   document.getElementById("total").innerText = total.toFixed(2);
+  document.getElementById("total-text").innerText = total.toFixed(2);
 }
 
 loadInvoice();
