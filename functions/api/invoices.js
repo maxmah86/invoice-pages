@@ -1,25 +1,15 @@
 export async function onRequest({ request }) {
-  try {
-    const token = request.headers.get("Authorization");
+  const cookie = request.headers.get("Cookie") || "";
 
-    const res = await fetch(
-      "https://invoice-api.myfong86.workers.dev/invoices",
-      {
-        headers: { Authorization: token || "" }
-      }
-    );
+  const res = await fetch("https://invoice-api.yourdomain.workers.dev/invoices", {
+    headers: {
+      "Cookie": cookie          // ⭐⭐⭐ 核心
+    }
+  });
 
-    const text = await res.text();
-
-    return new Response(text, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" }
-    });
-
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ error: "invoices proxy error", detail: String(e) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  const text = await res.text();
+  return new Response(text, {
+    status: res.status,
+    headers: { "Content-Type": "application/json" }
+  });
 }
