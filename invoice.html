@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Create Invoice</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 <h2>Create Invoice</h2>
@@ -12,7 +12,7 @@
 
 <table border="1" cellpadding="6">
 <thead>
-<tr><th>Item</th><th>Qty</th><th>Price</th></tr>
+<tr><th>Description</th><th>Qty</th><th>Price</th></tr>
 </thead>
 <tbody id="items"></tbody>
 </table>
@@ -39,16 +39,25 @@ async function submit(){
     price:+r.cells[2].firstChild.value
   }));
 
+  const total = rows.reduce((s,i)=>s+i.qty*i.price,0);
+
   const res = await fetch("/api/invoice",{
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ customer:customer.value, items:rows })
+    body:JSON.stringify({
+      customer:{ name: customer.value },
+      items: rows,
+      total
+    })
   });
 
-  if(res.ok){
+  const text = await res.text();
+  try {
+    const json = JSON.parse(text);
+    alert("Invoice created: " + json.invoice_no);
     location.href="/invoices.html";
-  }else{
-    alert("Submit failed");
+  } catch {
+    alert("Server error:\n" + text);
   }
 }
 </script>
