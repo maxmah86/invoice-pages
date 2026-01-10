@@ -8,33 +8,27 @@
   <h2>Create Invoice</h2>
 
   <input id="customer" placeholder="Customer name"><br><br>
-
-  <input id="desc" placeholder="Item description">
-  <input id="qty" type="number" placeholder="Qty">
-  <input id="price" type="number" placeholder="Price"><br><br>
+  <input id="amount" type="number" placeholder="Amount"><br><br>
 
   <button onclick="submitInvoice()">Submit</button>
 
-  <p id="msg"></p>
+  <pre id="msg"></pre>
 
-<script>
-async function submitInvoice(data) {
-  const res = await fetch('/api/invoice', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(data)
-  });
+  <script>
+    async function submitInvoice() {
+      const res = await fetch("/api/invoice", {
+        method: "POST",
+        credentials: "include",   // ⭐ 必须
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: customer.value,
+          amount: Number(amount.value)
+        })
+      });
 
-  if (!res.ok) {
-    alert('Create invoice failed');
-    return;
-  }
-
-  alert('Invoice created');
-  location.href = '/invoices.html';
-}
-</script>
+      const text = await res.text();
+      msg.textContent = text;
+    }
+  </script>
 </body>
 </html>
-
