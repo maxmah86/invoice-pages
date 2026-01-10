@@ -1,13 +1,11 @@
-export async function onRequestPost({ request }) {
+export async function onRequest({ request }) {
   try {
-    const body = await request.text();
+    const token = request.headers.get("Authorization");
 
     const res = await fetch(
-      "https://invoice-api.myfong86.workers.dev/login",
+      "https://invoice-api.myfong86.workers.dev/invoices",
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body
+        headers: { Authorization: token || "" }
       }
     );
 
@@ -20,7 +18,7 @@ export async function onRequestPost({ request }) {
 
   } catch (e) {
     return new Response(
-      JSON.stringify({ error: "login proxy error", detail: String(e) }),
+      JSON.stringify({ error: "invoices proxy error", detail: String(e) }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
