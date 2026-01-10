@@ -42,6 +42,9 @@
           <td>${inv.amount}</td>
           <td>${inv.status}</td>
           <td>
+          
+  <a href="/invoice-view.html?id=${inv.id}">View</a>
+
             <button onclick="toggleStatus(${inv.id}, '${inv.status}')">
               Mark ${inv.status === "PAID" ? "UNPAID" : "PAID"}
             </button>
@@ -72,3 +75,4 @@
   </script>
 </body>
 </html>
+
