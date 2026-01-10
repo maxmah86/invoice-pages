@@ -17,28 +17,24 @@
 
   <p id="msg"></p>
 
-  <script>
-    async function submitInvoice() {
-      const res = await fetch("/api/invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer: customer.value,
-          items: [{
-            description: desc.value,
-            qty: Number(qty.value),
-            price: Number(price.value)
-          }]
-        })
-      });
+<script>
+async function submitInvoice(data) {
+  const res = await fetch('/api/invoice', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data)
+  });
 
-      if (!res.ok) {
-        msg.innerText = "Server error";
-        return;
-      }
+  if (!res.ok) {
+    alert('Create invoice failed');
+    return;
+  }
 
-      msg.innerText = "Invoice created";
-    }
-  </script>
+  alert('Invoice created');
+  location.href = '/invoices.html';
+}
+</script>
 </body>
 </html>
+
