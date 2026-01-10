@@ -25,36 +25,42 @@ Customer ID:
 <pre id="msg"></pre>
 
 <script>
-function addRow(){
-  const t=document.getElementById("items");
-  const r=t.insertRow();
-  r.insertCell().innerHTML='<input>';
-  r.insertCell().innerHTML='<input type="number" value="1">';
-  r.insertCell().innerHTML='<input type="number" value="0">';
+function addRow() {
+  const t = document.getElementById("items");
+  const r = t.insertRow();
+  r.insertCell().innerHTML = '<input>';
+  r.insertCell().innerHTML = '<input type="number" value="1">';
+  r.insertCell().innerHTML = '<input type="number" value="0">';
 }
 
 addRow();
 
-async function submitInvoice(){
-  const rows=[...document.querySelectorAll("#items tr")].slice(1);
-  const items=rows.map(r=>{
-    const c=r.querySelectorAll("input");
-    return { description:c[0].value, qty:+c[1].value, price:+c[2].value };
+async function submitInvoice() {
+  const rows = [...document.querySelectorAll("#items tr")].slice(1);
+  const items = rows.map(r => {
+    const c = r.querySelectorAll("input");
+    return {
+      description: c[0].value,
+      qty: +c[1].value,
+      price: +c[2].value
+    };
   });
 
-  const total=items.reduce((s,i)=>s+i.qty*i.price,0);
+  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
 
-  const res=await fetch("/api/invoice",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      customer_id:document.getElementById("customer_id").value,
-      items, total
+  const res = await fetch("/api/invoice", {
+    method: "POST",
+    credentials: "include",       // ⭐⭐⭐ 关键
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      customer_id: customer_id.value,
+      items,
+      total
     })
   });
 
-  const j=await res.json();
-  document.getElementById("msg").textContent=JSON.stringify(j,null,2);
+  const j = await res.json();
+  msg.textContent = JSON.stringify(j, null, 2);
 }
 </script>
 </body>
