@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Invoices</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 <h2>Invoices</h2>
@@ -11,7 +11,10 @@
 <table border="1" cellpadding="6">
 <thead>
 <tr>
-  <th>ID</th><th>No</th><th>Total</th><th>Status</th><th>View</th>
+  <th>ID</th>
+  <th>No</th>
+  <th>Total</th>
+  <th>Status</th>
 </tr>
 </thead>
 <tbody id="list"></tbody>
@@ -19,8 +22,9 @@
 
 <script>
 fetch("/api/invoices")
-.then(r=>r.json())
-.then(data=>{
+.then(r=>r.text())
+.then(t=>{
+  const data = JSON.parse(t);
   data.forEach(i=>{
     list.insertAdjacentHTML("beforeend",`
       <tr>
@@ -28,10 +32,12 @@ fetch("/api/invoices")
         <td>${i.invoice_no}</td>
         <td>${i.total}</td>
         <td>${i.status}</td>
-        <td><a href="/invoice.html?id=${i.id}">Open</a></td>
       </tr>
     `);
   });
+})
+.catch(()=>{
+  alert("Failed to load invoices");
 });
 </script>
 </body>
