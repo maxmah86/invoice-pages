@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Invoice System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
   body {
@@ -135,6 +136,23 @@
 </div>
 
 <script>
+/* ===== 登录态检查（关键） ===== */
+(async function checkAuth() {
+  try {
+    const res = await fetch("/api/auth-check", {
+      credentials: "include"
+    });
+
+    if (!res.ok) {
+      location.href = "/login.html";
+    }
+  } catch (e) {
+    // 网络异常时也直接踢回 login，避免空白页
+    location.href = "/login.html";
+  }
+})();
+
+/* ===== Logout ===== */
 async function logout() {
   await fetch("/api/logout", {
     method: "POST",
