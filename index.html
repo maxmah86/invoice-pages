@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Invoice Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <title>Dashboard</title>
 </head>
 <body>
-<h2>Invoice System</h2>
+  <h1>Invoice System</h1>
 
-<ul>
-  <li><a href="/invoice.html">➕ Create Invoice</a></li>
-  <li><a href="/invoices.html">📄 Invoice List</a></li>
-  <li><a href="#" onclick="logout()">🚪 Logout</a></li>
-</ul>
+  <ul>
+    <li><a href="/invoice">Create Invoice</a></li>
+    <li><a href="/invoices">View Invoices</a></li>
+    <li><a href="#" onclick="logout()">Logout</a></li>
+  </ul>
 
-<script>
-function logout(){
-  location.href = "/api/logout"; // ✅ 走后端 redirect
-}
-</script>
+  <script>
+    async function logout() {
+      await fetch("/api/logout");
+      location.href = "/login";
+    }
+  </script>
 </body>
 </html>
