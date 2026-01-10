@@ -13,26 +13,26 @@
 
   <p id="msg" style="color:red;"></p>
 
-  <script>
-    async function login() {
-      document.getElementById("msg").innerText = "Logging in...";
+<script>
+async function login() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
 
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: username.value,
-          password: password.value
-        })
-      });
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include', // ⭐ 必须
+    body: JSON.stringify({ username, password })
+  });
 
-      if (!res.ok) {
-        document.getElementById("msg").innerText = "Login failed";
-        return;
-      }
+  if (!res.ok) {
+    alert('Login failed');
+    return;
+  }
 
-      location.href = "/";
-    }
-  </script>
+  location.href = '/index.html'; // ⭐ 只能跳静态页
+}
+</script>
 </body>
 </html>
+
