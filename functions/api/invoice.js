@@ -1,7 +1,6 @@
-export async function onRequestPost({ request }) {
+export async function onRequestPost({ request, env }) {
   const cookie = request.headers.get("Cookie") || "";
 
-  // 只要 session=ok 才允许
   if (!cookie.includes("session=ok")) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
@@ -19,11 +18,23 @@ export async function onRequestPost({ request }) {
     );
   }
 
-  // 原样返回，证明链路 OK
+  const { customer, amount } = data;
+
+  if (!customer || typeof amount !== "number") {
+    return new Response(
+      JSON.stringify({ error: "Invalid data" }),
+      { status: 400 }
+    );
+  }
+
+  const result = await env.DB.prepare(
+    "INSERT INTO invoices (customer, amount, created_at) VALUES (?, ?, datetime('now'))"
+  ).bind(customer, amount).run();
+
   return new Response(
     JSON.stringify({
       success: true,
-      received: data
+      invoice_id: result.meta.last_row_id
     }),
     {
       headers: { "Content-Type": "application/json" }
