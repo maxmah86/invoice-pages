@@ -14,6 +14,7 @@
   .header {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
   }
 
   .company h2 {
@@ -87,14 +88,21 @@
 
   button {
     margin-bottom: 15px;
+    padding: 6px 12px;
+    font-size: 14px;
   }
 
   @media print {
     button { display: none; }
     body { margin: 0; }
+
     @page {
       size: A4;
       margin: 15mm;
+    }
+
+    table {
+      page-break-inside: avoid;
     }
   }
 </style>
@@ -161,6 +169,10 @@
 const params = new URLSearchParams(location.search);
 const id = params.get("id");
 
+if (!id) {
+  alert("Missing invoice id");
+}
+
 async function loadInvoice() {
   const res = await fetch(`/api/invoice-view?id=${id}`, {
     credentials: "include"
@@ -174,9 +186,11 @@ async function loadInvoice() {
   const data = await res.json();
   const inv = data.invoice;
 
-  // Meta
+  const invoiceNo = inv.invoice_no || ("INV-" + inv.id);
+
+  // Right-top meta
   document.getElementById("meta").innerHTML = `
-    Inv : INV-${inv.id}<br>
+    Inv : ${invoiceNo}<br>
     Date : ${inv.created_at}<br>
     Page : 1 of 1
   `;
