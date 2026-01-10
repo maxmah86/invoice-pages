@@ -1,52 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Invoices</title>
 </head>
 <body>
-
-<script>
-if (!localStorage.getItem("token")) {
-  location.replace("login.html");
-}
-</script>
-
 <h2>Invoices</h2>
 
-<table border="1" width="100%">
-  <thead>
-    <tr>
-      <th>Invoice No</th>
-      <th>Total</th>
-      <th>Status</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody id="rows"></tbody>
+<table border="1" id="t">
+  <tr><th>ID</th><th>No</th><th>Total</th><th>Status</th></tr>
 </table>
 
 <script>
-async function load() {
-  const res = await fetch("/api/invoices", {
-    headers: { Authorization: localStorage.getItem("token") }
+fetch("/api/invoices")
+.then(r=>r.json())
+.then(list=>{
+  const t=document.getElementById("t");
+  list.forEach(i=>{
+    const r=t.insertRow();
+    r.insertCell().textContent=i.id;
+    r.insertCell().textContent=i.invoice_no;
+    r.insertCell().textContent=i.total;
+    r.insertCell().textContent=i.status;
   });
-  const list = await res.json();
-
-  rows.innerHTML = "";
-  list.forEach(i => {
-    rows.innerHTML += `
-      <tr>
-        <td>${i.invoice_no}</td>
-        <td>${i.total}</td>
-        <td>${i.status}</td>
-        <td><a href="invoice.html?id=${i.id}">View</a></td>
-      </tr>
-    `;
-  });
-}
-load();
+});
 </script>
-
 </body>
 </html>
