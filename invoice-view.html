@@ -1,192 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Invoice</title>
+<meta charset="utf-8">
+<title>Invoice</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      color: #000;
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    color: #000;
+    margin: 20px;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .company h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .company p {
+    margin: 2px 0;
+    font-size: 13px;
+  }
+
+  .invoice-title {
+    text-align: right;
+  }
+
+  .invoice-title h1 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  .meta {
+    font-size: 13px;
+    margin-top: 10px;
+  }
+
+  hr {
+    margin: 15px 0;
+  }
+
+  .to {
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  table th, table td {
+    border: 1px solid #000;
+    padding: 6px;
+  }
+
+  table th {
+    background: #f0f0f0;
+    text-align: center;
+  }
+
+  .right { text-align: right; }
+  .center { text-align: center; }
+
+  .total {
+    margin-top: 10px;
+    text-align: right;
+    font-size: 15px;
+    font-weight: bold;
+  }
+
+  .terms {
+    margin-top: 20px;
+    font-size: 13px;
+  }
+
+  .bank {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  button {
+    margin-bottom: 15px;
+  }
+
+  @media print {
+    button { display: none; }
+    body { margin: 0; }
+    @page {
+      size: A4;
+      margin: 15mm;
     }
-
-    h1, h2, h3 {
-      margin: 0;
-    }
-
-    #company {
-      margin-bottom: 20px;
-    }
-
-    #company h2 {
-      font-size: 20px;
-    }
-
-    #company p {
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    hr {
-      margin: 15px 0;
-    }
-
-    .info p {
-      margin: 4px 0;
-      font-size: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    table th, table td {
-      border: 1px solid #000;
-      padding: 6px;
-      font-size: 13px;
-      text-align: left;
-    }
-
-    table th {
-      background: #f0f0f0;
-    }
-
-    .right {
-      text-align: right;
-    }
-
-    #total {
-      margin-top: 10px;
-      text-align: right;
-      font-size: 15px;
-      font-weight: bold;
-    }
-
-    button {
-      margin-bottom: 20px;
-      padding: 8px 14px;
-      font-size: 14px;
-    }
-
-    /* ===== 打印专用样式 ===== */
-    @media print {
-      button {
-        display: none;
-      }
-
-      body {
-        margin: 0;
-      }
-
-      @page {
-        size: A4;
-        margin: 15mm;
-      }
-
-      table {
-        page-break-inside: avoid;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
+
 <body>
 
-  <button onclick="printInvoice()">Print / Save PDF</button>
+<button onclick="window.print()">Print / Save PDF</button>
 
-  <!-- 公司资料 -->
-  <div id="company">
-    <h2>MMAC SDN BHD</h2>
-    <p>
-      52, Jalan Mahogani SD 1/3<br>
-      Sri Damansara<br>
-      52200 Kuala Lumpur<br>
-      Tel: 016-444-2128
-    </p>
+<!-- HEADER -->
+<div class="header">
+  <div class="company">
+    <h2>MMAC CONSTRUCTION</h2>
+    <p>201903139488 (002972725-A)</p>
+    <p>52, Jalan Mahogani SD 1/3</p>
+    <p>Sri Damansara, 52200 Kuala Lumpur</p>
+    <p>Tel : 016-444-2128</p>
   </div>
 
-  <hr>
-
-  <!-- Invoice 基本信息 -->
-  <div class="info" id="info">
-    Loading invoice...
+  <div class="invoice-title">
+    <h1>INVOICE</h1>
+    <div class="meta" id="meta"></div>
   </div>
+</div>
 
-  <!-- Items -->
-  <h3>Items</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th class="right">Qty</th>
-        <th class="right">Price</th>
-        <th class="right">Subtotal</th>
-      </tr>
-    </thead>
-    <tbody id="items"></tbody>
-  </table>
+<hr>
 
-  <div id="total"></div>
+<!-- TO -->
+<div class="to" id="to"></div>
 
-  <script>
-    function printInvoice() {
-      window.print();
-    }
+<!-- ITEMS -->
+<table>
+  <thead>
+    <tr>
+      <th style="width:5%">NO</th>
+      <th>ITEM DESCRIPTION</th>
+      <th style="width:10%">QTY</th>
+      <th style="width:15%">U/PRICE</th>
+      <th style="width:15%">AMOUNT</th>
+    </tr>
+  </thead>
+  <tbody id="items"></tbody>
+</table>
 
-    const params = new URLSearchParams(location.search);
-    const id = params.get("id");
+<div class="total" id="total"></div>
 
-    if (!id) {
-      alert("Missing invoice id");
-    }
+<!-- TERMS -->
+<div class="terms">
+  <strong>TERMS :</strong><br>
+  50% deposit upon confirmations and the balance 50% should be clear by project completions.
+</div>
 
-    async function loadInvoice() {
-      const res = await fetch(`/api/invoice-view?id=${id}`, {
-        credentials: "include"
-      });
+<!-- BANK -->
+<div class="bank">
+  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br>
+  MMAC CONSTRUCTION<br><br>
+  <strong>COMPANY ACCOUNT NUMBER :</strong><br>
+  MAYBANK : 5142-0863-6636
+</div>
 
-      if (!res.ok) {
-        location.href = "/login.html";
-        return;
-      }
+<p style="margin-top:20px;font-size:13px;">Thank You.</p>
 
-      const data = await res.json();
-      const inv = data.invoice;
+<script>
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
 
-      // 基本信息
-      document.getElementById("info").innerHTML = `
-        <p><strong>Invoice ID:</strong> ${inv.id}</p>
-        <p><strong>Customer:</strong> ${inv.customer}</p>
-        <p><strong>Status:</strong> ${inv.status}</p>
-        <p><strong>Date:</strong> ${inv.created_at}</p>
-      `;
+async function loadInvoice() {
+  const res = await fetch(`/api/invoice-view?id=${id}`, {
+    credentials: "include"
+  });
 
-      let total = 0;
-      const tbody = document.getElementById("items");
-      tbody.innerHTML = "";
+  if (!res.ok) {
+    location.href = "/login.html";
+    return;
+  }
 
-      data.items.forEach(it => {
-        const subtotal = it.qty * it.price;
-        total += subtotal;
+  const data = await res.json();
+  const inv = data.invoice;
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${it.description}</td>
-          <td class="right">${it.qty}</td>
-          <td class="right">${it.price.toFixed(2)}</td>
-          <td class="right">${subtotal.toFixed(2)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+  // Meta
+  document.getElementById("meta").innerHTML = `
+    Inv : INV-${inv.id}<br>
+    Date : ${inv.created_at}<br>
+    Page : 1 of 1
+  `;
 
-      document.getElementById("total").innerText =
-        "Total: RM " + total.toFixed(2);
-    }
+  // To
+  document.getElementById("to").innerHTML = `
+    <strong>To :</strong> ${inv.customer}
+  `;
 
-    loadInvoice();
-  </script>
+  let total = 0;
+  const tbody = document.getElementById("items");
+  tbody.innerHTML = "";
+
+  data.items.forEach((it, idx) => {
+    const amount = it.qty * it.price;
+    total += amount;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="center">${idx + 1}</td>
+      <td>${it.description}</td>
+      <td class="center">${it.qty}</td>
+      <td class="right">RM ${it.price.toFixed(2)}</td>
+      <td class="right">RM ${amount.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("total").innerText =
+    "RINGGIT MALAYSIA : TOTAL : RM " + total.toFixed(2);
+}
+
+loadInvoice();
+</script>
 
 </body>
 </html>
