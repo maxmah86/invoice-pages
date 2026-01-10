@@ -1,31 +1,37 @@
 export async function onRequest(context) {
-  const { request } = context;
+  const { request, next } = context;
   const url = new URL(request.url);
-  const path = url.pathname;
 
-  // 1️⃣ 放行 login 页面
-  if (path === "/login.html") return context.next();
+  const pathname = url.pathname;
 
-  // 2️⃣ 放行 API（API 不做 redirect）
-  if (path.startsWith("/api/")) return context.next();
-
-  // 3️⃣ 放行静态资源
+  // ===== 1️⃣ 明确放行的路径（非常重要）=====
   if (
-    path.endsWith(".js") ||
-    path.endsWith(".css") ||
-    path.endsWith(".png") ||
-    path.endsWith(".jpg")
+    pathname === "/login" ||
+    pathname === "/login.html" ||
+    pathname.startsWith("/api/login") ||
+    pathname.startsWith("/api/logout") ||
+    pathname.startsWith("/api/health")
   ) {
-    return context.next();
+    return next();
   }
 
-  // 4️⃣ 页面才检查 cookie
+  // ===== 2️⃣ 只保护 HTML 页面，不保护 API =====
+  if (pathname.startsWith("/api/")) {
+    return next();
+  }
+
+  // ===== 3️⃣ 检查登录 Cookie =====
   const cookie = request.headers.get("Cookie") || "";
   const loggedIn = cookie.includes("session=valid");
 
   if (!loggedIn) {
-    return Response.redirect(new URL("/login.html", request.url), 302);
+    // ⚠️ 只 redirect 非 login 页面
+    return Response.redirect(
+      new URL("/login.html", request.url),
+      302
+    );
   }
 
-  return context.next();
+  // ===== 4️⃣ 已登录，放行 =====
+  return next();
 }
