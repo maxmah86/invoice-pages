@@ -2,30 +2,10 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Dashboard</title>
+  <title>Index</title>
 </head>
 <body>
-  <h1>Invoice System</h1>
-
-  <ul>
-    <li><a href="/invoice">Create Invoice</a></li>
-    <li><a href="/invoices">View Invoices</a></li>
-    <li><a href="#" onclick="logout()">Logout</a></li>
-  </ul>
-
-<script>
-async function checkAuth() {
-  const res = await fetch('/api/auth-check', {
-    credentials: 'include'
-  });
-
-  if (!res.ok) {
-    location.href = '/login.html';
-  }
-}
-
-checkAuth();
-</script>
+  <h1>Index Page</h1>
+  <p>If you see this, login redirect works.</p>
 </body>
 </html>
-
