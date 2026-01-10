@@ -6,226 +6,161 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+body {
+  font-family: Arial, sans-serif;
+  background: #fff;
+  margin: 0;
+  padding: 10px;
+  color: #000;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.company {
+  font-size: 13px;
+}
+
+.company h2 {
+  margin: 0 0 4px;
+}
+
+.invoice-title {
+  text-align: right;
+}
+
+.invoice-title h1 {
+  margin: 0;
+}
+
+.meta {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.to {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 8px;
+}
+
+th {
+  background: #f0f0f0;
+  text-align: center;
+}
+
+.right {
+  text-align: right;
+}
+
+.total-row td {
+  font-weight: bold;
+}
+
+.actions {
+  margin: 12px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+}
+
+/* 📱 手机优化（不改结构） */
+@media (max-width: 768px) {
   body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    margin: 0;
-    padding: 12px;
+    padding: 8px;
   }
 
-  /* ===== 顶部操作 ===== */
-  .top-actions {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .top-actions button {
-    flex: 1;
-    padding: 12px;
-    font-size: 15px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  .print-btn {
-    background: #3498db;
-    color: #fff;
-  }
-
-  .back-btn {
-    background: #7f8c8d;
-    color: #fff;
-  }
-
-  /* ===== 卡片通用 ===== */
-  .card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 12px;
-  }
-
-  /* ===== Invoice Header ===== */
-  .invoice-no {
-    font-size: 18px;
-    font-weight: bold;
-  }
-
-  .status {
-    display: inline-block;
-    margin-top: 6px;
-    padding: 4px 8px;
+  table {
     font-size: 13px;
-    border-radius: 4px;
-    color: #fff;
   }
 
-  .status.PAID { background: #27ae60; }
-  .status.UNPAID { background: #e74c3c; }
-
-  .meta {
-    margin-top: 8px;
-    font-size: 14px;
-    color: #555;
+  th, td {
+    padding: 6px;
   }
 
-  /* ===== Items ===== */
-  .item {
-    border-top: 1px solid #eee;
-    padding-top: 10px;
-    margin-top: 10px;
+  .company, .meta, .to {
+    font-size: 12px;
+  }
+}
+
+/* 🖨️ 打印 */
+@media print {
+  .actions {
+    display: none;
   }
 
-  .item:first-child {
-    border-top: none;
-    padding-top: 0;
-    margin-top: 0;
+  @page {
+    size: A4;
+    margin: 15mm;
   }
-
-  .item-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    margin-bottom: 4px;
-  }
-
-  .item-desc {
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-
-  /* ===== Total ===== */
-  .total {
-    font-size: 20px;
-    font-weight: bold;
-    text-align: right;
-  }
-
-  /* ===== 打印样式（正式发票） ===== */
-  @media print {
-    body {
-      background: #fff;
-      padding: 0;
-      margin: 0;
-    }
-
-    .top-actions {
-      display: none;
-    }
-
-    .card {
-      border-radius: 0;
-      padding: 0;
-      margin-bottom: 0;
-    }
-
-    /* 打印时使用正式发票版式 */
-    .print-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 15px;
-    }
-
-    .company h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .company p {
-      margin: 2px 0;
-      font-size: 13px;
-    }
-
-    .print-title {
-      text-align: right;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      margin-top: 10px;
-    }
-
-    th, td {
-      border: 1px solid #000;
-      padding: 6px;
-    }
-
-    th {
-      background: #f0f0f0;
-      text-align: center;
-    }
-
-    .right { text-align: right; }
-
-    @page {
-      size: A4;
-      margin: 15mm;
-    }
-  }
+}
 </style>
 </head>
 
 <body>
 
-<!-- 顶部操作 -->
-<div class="top-actions">
-  <button class="back-btn" onclick="history.back()">← Back</button>
-  <button class="print-btn" onclick="window.print()">Print / PDF</button>
+<div class="actions">
+  <button onclick="history.back()">← Back</button>
+  <button onclick="window.print()">Print / PDF</button>
 </div>
 
-<!-- Invoice Summary -->
-<div class="card" id="summary">
-  Loading…
-</div>
-
-<!-- Items -->
-<div class="card" id="items"></div>
-
-<!-- Total -->
-<div class="card total" id="total"></div>
-
-<!-- ===== 打印专用结构（隐藏于手机） ===== -->
-<div class="print-only" style="display:none">
-  <div class="print-header">
-    <div class="company">
-      <h2>MMAC CONSTRUCTION</h2>
-      <p>201903139488 (002972725-A)</p>
-      <p>52, Jalan Mahogani SD 1/3</p>
-      <p>Sri Damansara, 52200 Kuala Lumpur</p>
-      <p>Tel : 016-444-2128</p>
-    </div>
-
-    <div class="print-title">
-      <h1>INVOICE</h1>
-      <div id="print-meta"></div>
-    </div>
+<div class="header">
+  <div class="company">
+    <h2>MMAC CONSTRUCTION</h2>
+    201903139488 (002972725-A)<br>
+    52, Jalan Mahogani SD 1/3<br>
+    Sri Damansara, 52200 Kuala Lumpur<br>
+    Tel : 016-444-2128
   </div>
 
-  <div id="print-to"></div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width:5%">NO</th>
-        <th>ITEM DESCRIPTION</th>
-        <th style="width:10%">QTY</th>
-        <th style="width:15%">U/PRICE</th>
-        <th style="width:15%">AMOUNT</th>
-      </tr>
-    </thead>
-    <tbody id="print-items"></tbody>
-  </table>
-
-  <div id="print-total" style="text-align:right;font-weight:bold;margin-top:10px;"></div>
+  <div class="invoice-title">
+    <h1>INVOICE</h1>
+    <div class="meta" id="meta"></div>
+  </div>
 </div>
 
+<div class="to" id="to"></div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:5%">NO</th>
+      <th>ITEM DESCRIPTION</th>
+      <th style="width:10%">QTY</th>
+      <th style="width:15%">U/PRICE</th>
+      <th style="width:15%">AMOUNT</th>
+    </tr>
+  </thead>
+  <tbody id="items"></tbody>
+  <tfoot>
+    <tr class="total-row">
+      <td colspan="4" class="right">TOTAL (RM)</td>
+      <td class="right" id="total"></td>
+    </tr>
+  </tfoot>
+</table>
+
 <script>
-const params = new URLSearchParams(location.search);
-const id = params.get("id");
+const id = new URLSearchParams(location.search).get("id");
 
 async function loadInvoice() {
   const res = await fetch(`/api/invoice-view?id=${id}`, {
@@ -239,68 +174,36 @@ async function loadInvoice() {
 
   const data = await res.json();
   const inv = data.invoice;
-  const invoiceNo = inv.invoice_no || ("INV-" + inv.id);
 
-  // ===== 手机摘要 =====
-  document.getElementById("summary").innerHTML = `
-    <div class="invoice-no">${invoiceNo}</div>
-    <div class="status ${inv.status}">${inv.status}</div>
-    <div class="meta">
-      <div><strong>Customer:</strong> ${inv.customer}</div>
-      <div><strong>Date:</strong> ${inv.created_at}</div>
-    </div>
+  document.getElementById("meta").innerHTML = `
+    Inv : ${inv.invoice_no}<br>
+    Date : ${inv.created_at}<br>
+    Status : ${inv.status}
   `;
+
+  document.getElementById("to").innerHTML =
+    "<strong>To :</strong><br>" + inv.customer;
 
   let total = 0;
-  const itemsDiv = document.getElementById("items");
-  itemsDiv.innerHTML = "<h3>Items</h3>";
+  const tbody = document.getElementById("items");
+  tbody.innerHTML = "";
 
-  data.items.forEach(it => {
-    const sub = it.qty * it.price;
-    total += sub;
+  data.items.forEach((it, i) => {
+    const amt = it.qty * it.price;
+    total += amt;
 
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <div class="item-desc">${it.description}</div>
-      <div class="item-row"><span>Qty</span><span>${it.qty}</span></div>
-      <div class="item-row"><span>Price</span><span>RM ${it.price.toFixed(2)}</span></div>
-      <div class="item-row"><strong>Subtotal</strong><strong>RM ${sub.toFixed(2)}</strong></div>
-    `;
-    itemsDiv.appendChild(div);
-  });
-
-  document.getElementById("total").innerText =
-    "Total: RM " + total.toFixed(2);
-
-  // ===== 打印数据 =====
-  document.getElementById("print-meta").innerHTML = `
-    Inv : ${invoiceNo}<br>
-    Date : ${inv.created_at}<br>
-    Page : 1 of 1
-  `;
-
-  document.getElementById("print-to").innerHTML =
-    "<strong>To :</strong> " + inv.customer;
-
-  const pt = document.getElementById("print-items");
-  pt.innerHTML = "";
-
-  data.items.forEach((it, idx) => {
-    const amount = it.qty * it.price;
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${idx + 1}</td>
+      <td>${i + 1}</td>
       <td>${it.description}</td>
-      <td>${it.qty}</td>
-      <td class="right">RM ${it.price.toFixed(2)}</td>
-      <td class="right">RM ${amount.toFixed(2)}</td>
+      <td class="right">${it.qty}</td>
+      <td class="right">${it.price.toFixed(2)}</td>
+      <td class="right">${amt.toFixed(2)}</td>
     `;
-    pt.appendChild(tr);
+    tbody.appendChild(tr);
   });
 
-  document.getElementById("print-total").innerText =
-    "RINGGIT MALAYSIA : TOTAL : RM " + total.toFixed(2);
+  document.getElementById("total").innerText = total.toFixed(2);
 }
 
 loadInvoice();
