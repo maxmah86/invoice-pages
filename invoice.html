@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice</title>
+</head>
+<body>
+
+<script>
+if (!localStorage.getItem("token")) {
+  location.replace("login.html");
+}
+</script>
+
+<div id="content"></div>
+
+<script>
+(async () => {
+  const id = new URLSearchParams(location.search).get("id");
+
+  const res = await fetch("/api/invoice?id=" + id, {
+    headers: { Authorization: localStorage.getItem("token") }
+  });
+
+  const data = await res.json();
+
+  let html = `<h2>${data.invoice.invoice_no}</h2>`;
+  let sum = 0;
+
+  data.items.forEach(i => {
+    const amt = i.qty * i.price;
+    sum += amt;
+    html += `<div>${i.description} — ${i.qty} × ${i.price} = ${amt}</div>`;
+  });
+
+  html += `<hr><strong>Total: RM ${sum.toFixed(2)}</strong>`;
+  content.innerHTML = html;
+})();
+</script>
+
+</body>
+</html>

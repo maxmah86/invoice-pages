@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Invoice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+
+<script>
+if (!localStorage.getItem("token")) {
+  location.replace("login.html");
+}
+</script>
+
+<h2>Create Invoice</h2>
+
+<input id="cname" placeholder="Customer Name"><br><br>
+
+<table border="1" width="100%">
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>Qty</th>
+      <th>Price</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+  <tbody id="items"></tbody>
+</table>
+
+<button onclick="addItem()">Add Item</button><br><br>
+<strong>Total: RM <span id="total">0.00</span></strong><br><br>
+<button onclick="save()">Create Invoice</button>
+
+<script>
+function addItem() {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input class="d"></td>
+    <td><input class="q" type="number" value="1"></td>
+    <td><input class="p" type="number" value="0"></td>
+    <td class="a">0.00</td>
+  `;
+  items.appendChild(tr);
+  tr.querySelectorAll("input").forEach(i => i.oninput = calc);
+  calc();
+}
+
+function calc() {
+  let sum = 0;
+  document.querySelectorAll("#items tr").forEach(tr => {
+    const q = tr.querySelector(".q").value;
+    const p = tr.querySelector(".p").value;
+    const a = q * p;
+    tr.querySelector(".a").textContent = a.toFixed(2);
+    sum += a;
+  });
+  total.textContent = sum.toFixed(2);
+}
+
+async function save() {
+  const rows = [];
+  document.querySelectorAll("#items tr").forEach(tr => {
+    rows.push({
+      description: tr.querySelector(".d").value,
+      qty: tr.querySelector(".q").value,
+      price: tr.querySelector(".p").value
+    });
+  });
+
+  const res = await fetch("/api/invoice-with-customer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+      customer: { name: cname.value },
+      items: rows,
+      total: total.textContent
+    })
+  });
+
+  const data = await res.json();
+  location.href = "invoice.html?id=" + data.invoice_id;
+}
+
+addItem();
+</script>
+
+</body>
+</html>
