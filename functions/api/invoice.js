@@ -1,46 +1,32 @@
 export async function onRequestPost({ request }) {
-  try {
-    // 1. 原样读取 body
-    const body = await request.text();
+  const cookie = request.headers.get("Cookie") || "";
 
-    // 2. 原样读取 cookie
-    const cookie = request.headers.get("Cookie") || "";
-
-    // 3. 转发到 invoice-api（Worker）
-    const apiRes = await fetch(
-      "https://invoice-api.your-worker-name.workers.dev/invoice",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Cookie": cookie
-        },
-        body
-      }
-    );
-
-    // 4. 不做任何解析，直接拿 text
-    const text = await apiRes.text();
-
-    // 5. 明确返回 JSON
-    return new Response(text, {
-      status: apiRes.status,
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
-
-  } catch (err) {
-    // 6. 兜底错误，也必须返回 JSON
+  // 只要 session=ok 才允许
+  if (!cookie.includes("session=ok")) {
     return new Response(
-      JSON.stringify({
-        error: "Pages Function invoice proxy error",
-        detail: String(err)
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      }
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401 }
     );
   }
+
+  let data;
+  try {
+    data = await request.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON" }),
+      { status: 400 }
+    );
+  }
+
+  // 原样返回，证明链路 OK
+  return new Response(
+    JSON.stringify({
+      success: true,
+      received: data
+    }),
+    {
+      headers: { "Content-Type": "application/json" }
+    }
+  );
 }
