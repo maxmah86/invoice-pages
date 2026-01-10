@@ -18,7 +18,6 @@ export async function onRequestPost({ request, env }) {
   }
 
   const { customer, items } = data;
-
   if (!customer || !Array.isArray(items) || items.length === 0) {
     return new Response(
       JSON.stringify({ error: "Invalid data" }),
@@ -32,14 +31,31 @@ export async function onRequestPost({ request, env }) {
     0
   );
 
-  // 1️⃣ 插入 invoices
+  // ===== 生成 Invoice No =====
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const dateStr = `${y}${m}${d}`;
+
+  // 当天已有多少张
+  const countRow = await env.DB.prepare(
+    "SELECT COUNT(*) as cnt FROM invoices WHERE date(created_at)=date('now')"
+  ).first();
+
+  const seq = String((countRow.cnt || 0) + 1).padStart(4, "0");
+  const invoiceNo = `INV-${dateStr}-${seq}`;
+
+  // 插入 invoices
   const inv = await env.DB.prepare(
-    "INSERT INTO invoices (customer, amount, created_at) VALUES (?, ?, datetime('now'))"
-  ).bind(customer, total).run();
+    `INSERT INTO invoices
+     (invoice_no, customer, amount, status, created_at)
+     VALUES (?, ?, ?, 'UNPAID', datetime('now'))`
+  ).bind(invoiceNo, customer, total).run();
 
   const invoiceId = inv.meta.last_row_id;
 
-  // 2️⃣ 插入 invoice_items
+  // 插入 items
   for (const it of items) {
     await env.DB.prepare(
       "INSERT INTO invoice_items (invoice_id, description, qty, price) VALUES (?, ?, ?, ?)"
@@ -55,7 +71,7 @@ export async function onRequestPost({ request, env }) {
     JSON.stringify({
       success: true,
       invoice_id: invoiceId,
-      total
+      invoice_no: invoiceNo
     }),
     { headers: { "Content-Type": "application/json" } }
   );
