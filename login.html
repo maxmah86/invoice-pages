@@ -7,32 +7,26 @@
 <body>
   <h2>Login</h2>
 
-  <input id="username" placeholder="username"><br>
-  <input id="password" type="password" placeholder="password"><br>
   <button onclick="login()">Login</button>
 
-  <p id="msg" style="color:red;"></p>
+  <p id="msg"></p>
 
-<script>
-async function login() {
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
+  <script>
+    async function login() {
+      msg.innerText = "Logging in...";
 
-  const res = await fetch('/api/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // ⭐ 必须
-    body: JSON.stringify({ username, password })
-  });
+      const res = await fetch("/api/login", {
+        method: "POST"
+      });
 
-  if (!res.ok) {
-    alert('Login failed');
-    return;
-  }
+      if (!res.ok) {
+        msg.innerText = "Login failed";
+        return;
+      }
 
-  location.href = '/index.html'; // ⭐ 只能跳静态页
-}
-</script>
+      // ⭐ 关键：只跳 HTML
+      location.href = "/index.html";
+    }
+  </script>
 </body>
 </html>
-
