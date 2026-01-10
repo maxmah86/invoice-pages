@@ -1,45 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial; background:#f4f6f8; }
-    .box {
-      max-width:400px;margin:80px auto;background:#fff;
-      padding:24px;border-radius:8px;
-    }
-    input,button { width:100%;padding:12px;margin-top:10px; }
-    .err { color:red;margin-top:10px; }
-  </style>
 </head>
 <body>
-<div class="box">
   <h2>Login</h2>
-  <input id="user" placeholder="Username">
-  <input id="pass" type="password" placeholder="Password">
+
+  <input id="username" placeholder="username"><br>
+  <input id="password" type="password" placeholder="password"><br>
   <button onclick="login()">Login</button>
-  <div id="msg" class="err"></div>
-</div>
 
-<script>
-async function login(){
-  const r = await fetch("/api/login",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({
-      username: user.value,
-      password: pass.value
-    })
-  });
+  <p id="msg" style="color:red;"></p>
 
-  if(r.ok){
-    location.href = "/index.html";   // ✅ 明确跳转
-  }else{
-    msg.textContent = "Login failed";
-  }
-}
-</script>
+  <script>
+    async function login() {
+      document.getElementById("msg").innerText = "Logging in...";
+
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: username.value,
+          password: password.value
+        })
+      });
+
+      if (!res.ok) {
+        document.getElementById("msg").innerText = "Login failed";
+        return;
+      }
+
+      location.href = "/";
+    }
+  </script>
 </body>
 </html>
