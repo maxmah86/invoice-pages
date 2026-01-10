@@ -3,29 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>Invoice System</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial; background:#f4f6f8; }
-    .box {
-      max-width:420px;margin:80px auto;background:#fff;
-      padding:24px;border-radius:8px;
-    }
-    a {
-      display:block;padding:14px;margin:10px 0;
-      background:#1f2937;color:#fff;
-      text-align:center;border-radius:6px;
-      text-decoration:none;
-    }
-    a.logout { background:#9b1c1c; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
-<div class="box">
-  <h2>Invoice System</h2>
+  <h2>Invoice Dashboard</h2>
 
-  <a href="invoice.html">➕ Create Invoice</a>
-  <a href="invoices.html">📄 View Invoices</a>
-  <a href="/api/logout" class="logout">🚪 Logout</a>
-</div>
+  <ul>
+    <li><a href="/invoice.html">➕ Create Invoice</a></li>
+    <li><a href="/invoices.html">📄 Invoice List</a></li>
+    <li><a href="#" onclick="logout()">🚪 Logout</a></li>
+  </ul>
+
+<script>
+async function logout(){
+  await fetch("/api/logout",{method:"POST"});
+  location.href="/login.html";
+}
+</script>
 </body>
 </html>
