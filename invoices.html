@@ -3,32 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <title>Invoices</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
 <h2>Invoices</h2>
 
-<table border="1" id="t">
-  <tr>
-    <th>ID</th>
-    <th>No</th>
-    <th>Total</th>
-    <th>Status</th>
-  </tr>
+<table border="1" cellpadding="6">
+<thead>
+<tr>
+  <th>ID</th><th>No</th><th>Total</th><th>Status</th><th>View</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
 </table>
 
 <script>
-fetch("/api/invoices", {
-  credentials: "include"    // ⭐⭐⭐ 关键
-})
-.then(r => r.json())
-.then(list => {
-  const t = document.getElementById("t");
-  list.forEach(i => {
-    const r = t.insertRow();
-    r.insertCell().textContent = i.id;
-    r.insertCell().textContent = i.invoice_no;
-    r.insertCell().textContent = i.total;
-    r.insertCell().textContent = i.status;
+fetch("/api/invoices")
+.then(r=>r.json())
+.then(data=>{
+  data.forEach(i=>{
+    list.insertAdjacentHTML("beforeend",`
+      <tr>
+        <td>${i.id}</td>
+        <td>${i.invoice_no}</td>
+        <td>${i.total}</td>
+        <td>${i.status}</td>
+        <td><a href="/invoice.html?id=${i.id}">Open</a></td>
+      </tr>
+    `);
   });
 });
 </script>
