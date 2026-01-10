@@ -1,32 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Login</title>
+<meta charset="utf-8">
+<title>Login</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+  }
+  .box {
+    width: 320px;
+    margin: 120px auto;
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccc;
+  }
+  input, button {
+    width: 100%;
+    padding: 8px;
+    margin-top: 10px;
+  }
+  button {
+    cursor: pointer;
+  }
+  .err {
+    color: red;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+</style>
 </head>
+
 <body>
-  <h2>Login</h2>
+
+<div class="box">
+  <h3>Login</h3>
+
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
 
   <button onclick="login()">Login</button>
 
-  <p id="msg"></p>
+  <div class="err" id="msg"></div>
+</div>
 
-  <script>
-    async function login() {
-      msg.innerText = "Logging in...";
+<script>
+async function login() {
+  msg.textContent = "";
 
-      const res = await fetch("/api/login", {
-        method: "POST"
-      });
+  const res = await fetch("/api/login", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: username.value,
+      password: password.value
+    })
+  });
 
-      if (!res.ok) {
-        msg.innerText = "Login failed";
-        return;
-      }
+  const text = await res.text();
 
-      // ⭐ 关键：只跳 HTML
-      location.href = "/index.html";
-    }
-  </script>
+  if (!res.ok) {
+    msg.textContent = "Invalid username or password";
+    return;
+  }
+
+  location.href = "/index.html";
+}
+</script>
+
 </body>
 </html>
