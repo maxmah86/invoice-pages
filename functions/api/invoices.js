@@ -1,15 +1,21 @@
-export async function onRequest({ request }) {
+export async function onRequest({ request, env }) {
   const cookie = request.headers.get("Cookie") || "";
 
-  const res = await fetch("https://invoice-api.yourdomain.workers.dev/invoices", {
-    headers: {
-      "Cookie": cookie          // ⭐⭐⭐ 核心
-    }
-  });
+  if (!cookie.includes("session=ok")) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401 }
+    );
+  }
 
-  const text = await res.text();
-  return new Response(text, {
-    status: res.status,
-    headers: { "Content-Type": "application/json" }
-  });
+  const result = await env.DB.prepare(
+    "SELECT id, customer, amount, created_at FROM invoices ORDER BY id DESC"
+  ).all();
+
+  return new Response(
+    JSON.stringify(result.results),
+    {
+      headers: { "Content-Type": "application/json" }
+    }
+  );
 }
