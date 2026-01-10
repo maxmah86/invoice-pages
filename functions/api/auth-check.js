@@ -1,25 +1,21 @@
-export async function onRequest({ request }) {
-  try {
-    const token = request.headers.get("Authorization");
+export async function onRequest(context) {
+  const url = new URL(context.request.url);
+  const path = url.pathname;
 
-    const res = await fetch(
-      "https://invoice-api.myfong86.workers.dev/auth-check",
-      {
-        headers: { Authorization: token || "" }
-      }
-    );
+  // ✅ 永远放行 login 页面
+  if (path === "/login.html") {
+    return context.next();
+  }
 
-    const text = await res.text();
+  const cookie = context.request.headers.get("Cookie") || "";
+  const loggedIn = cookie.includes("session=valid");
 
-    return new Response(text, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" }
-    });
-
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ error: "auth-check proxy error", detail: String(e) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+  if (!loggedIn) {
+    return Response.redirect(
+      new URL("/login.html", context.request.url),
+      302
     );
   }
+
+  return context.next();
 }
