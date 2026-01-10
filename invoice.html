@@ -1,42 +1,61 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Invoice</title>
+  <meta charset="UTF-8">
+  <title>Create Invoice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
+<h2>Create Invoice</h2>
+
+Customer ID:
+<input id="customer_id" value="1"><br><br>
+
+<table border="1" id="items">
+  <tr>
+    <th>Description</th>
+    <th>Qty</th>
+    <th>Price</th>
+  </tr>
+</table>
+
+<button onclick="addRow()">+ Add Item</button><br><br>
+<button onclick="submitInvoice()">Submit</button>
+
+<pre id="msg"></pre>
 
 <script>
-if (!localStorage.getItem("token")) {
-  location.replace("login.html");
+function addRow(){
+  const t=document.getElementById("items");
+  const r=t.insertRow();
+  r.insertCell().innerHTML='<input>';
+  r.insertCell().innerHTML='<input type="number" value="1">';
+  r.insertCell().innerHTML='<input type="number" value="0">';
+}
+
+addRow();
+
+async function submitInvoice(){
+  const rows=[...document.querySelectorAll("#items tr")].slice(1);
+  const items=rows.map(r=>{
+    const c=r.querySelectorAll("input");
+    return { description:c[0].value, qty:+c[1].value, price:+c[2].value };
+  });
+
+  const total=items.reduce((s,i)=>s+i.qty*i.price,0);
+
+  const res=await fetch("/api/invoice",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      customer_id:document.getElementById("customer_id").value,
+      items, total
+    })
+  });
+
+  const j=await res.json();
+  document.getElementById("msg").textContent=JSON.stringify(j,null,2);
 }
 </script>
-
-<div id="content"></div>
-
-<script>
-(async () => {
-  const id = new URLSearchParams(location.search).get("id");
-
-  const res = await fetch("/api/invoice?id=" + id, {
-    headers: { Authorization: localStorage.getItem("token") }
-  });
-
-  const data = await res.json();
-
-  let html = `<h2>${data.invoice.invoice_no}</h2>`;
-  let sum = 0;
-
-  data.items.forEach(i => {
-    const amt = i.qty * i.price;
-    sum += amt;
-    html += `<div>${i.description} — ${i.qty} × ${i.price} = ${amt}</div>`;
-  });
-
-  html += `<hr><strong>Total: RM ${sum.toFixed(2)}</strong>`;
-  content.innerHTML = html;
-})();
-</script>
-
 </body>
 </html>
