@@ -13,11 +13,19 @@
     <li><a href="#" onclick="logout()">Logout</a></li>
   </ul>
 
-  <script>
-    async function logout() {
-      await fetch("/api/logout");
-      location.href = "/login";
-    }
-  </script>
+<script>
+async function checkAuth() {
+  const res = await fetch('/api/auth-check', {
+    credentials: 'include'
+  });
+
+  if (!res.ok) {
+    location.href = '/login.html';
+  }
+}
+
+checkAuth();
+</script>
 </body>
 </html>
+
