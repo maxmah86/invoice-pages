@@ -1,25 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Index</title>
+<meta charset="utf-8">
+<title>Invoice System</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 0;
+  }
+
+  header {
+    background: #2c3e50;
+    color: #fff;
+    padding: 15px 20px;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .container {
+    padding: 20px;
+  }
+
+  h2 {
+    margin-top: 30px;
+    font-size: 18px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+  }
+
+  .menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 6px;
+  }
+
+  .card h3 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+  }
+
+  .card a {
+    display: block;
+    text-decoration: none;
+    color: #0066cc;
+    margin: 6px 0;
+    font-size: 14px;
+  }
+
+  .card a:hover {
+    text-decoration: underline;
+  }
+
+  .logout {
+    margin-top: 30px;
+    text-align: right;
+  }
+
+  .logout button {
+    padding: 8px 14px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+</style>
 </head>
+
 <body>
-  <h1>Index Page</h1>
-  <p>You are logged in.</p>
 
-  <script>
-    async function checkAuth() {
-      const res = await fetch("/api/auth-check", {
-        credentials: "include"
-      });
+<header>
+  <h1>MMAC Invoice System</h1>
+</header>
 
-      if (!res.ok) {
-        location.href = "/login.html";
-      }
-    }
+<div class="container">
 
-    checkAuth();
-  </script>
+  <!-- Invoice -->
+  <h2>Invoice</h2>
+  <div class="menu">
+    <div class="card">
+      <h3>Create</h3>
+      <a href="/invoice.html">➕ Create Invoice</a>
+    </div>
+
+    <div class="card">
+      <h3>Records</h3>
+      <a href="/invoices.html">📄 Invoice List</a>
+    </div>
+  </div>
+
+  <!-- Management -->
+  <h2>Management</h2>
+  <div class="menu">
+    <div class="card">
+      <h3>Status</h3>
+      <a href="/invoices.html">✔ Mark Paid / Unpaid</a>
+    </div>
+
+    <div class="card">
+      <h3>Print</h3>
+      <a href="/invoices.html">🖨 View & Print Invoice</a>
+    </div>
+  </div>
+
+  <!-- System -->
+  <h2>System</h2>
+  <div class="menu">
+    <div class="card">
+      <h3>Account</h3>
+      <a href="/login.html">🔐 Switch User</a>
+    </div>
+
+    <div class="card">
+      <h3>Security</h3>
+      <a href="#" onclick="logout()">🚪 Logout</a>
+    </div>
+  </div>
+
+  <div class="logout">
+    <button onclick="logout()">Logout</button>
+  </div>
+
+</div>
+
+<script>
+async function logout() {
+  await fetch("/api/logout", {
+    method: "POST",
+    credentials: "include"
+  });
+  location.href = "/login.html";
+}
+</script>
+
 </body>
 </html>
