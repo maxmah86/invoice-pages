@@ -31,7 +31,9 @@ export async function onRequest({ request, env }) {
 
   // 2️⃣ 读取 items
   const items = await env.DB.prepare(
-    "SELECT description, qty, price FROM invoice_items WHERE invoice_id=?"
+    "SELECT id, invoice_no, customer, amount, status, created_at
+FROM invoices
+WHERE id=?"
   ).bind(id).all();
 
   return new Response(
