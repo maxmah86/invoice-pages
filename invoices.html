@@ -1,44 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>Invoices</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-<h2>Invoices</h2>
+  <h2>Invoices</h2>
+  <ul id="list"></ul>
 
-<table border="1" cellpadding="6">
-<thead>
-<tr>
-  <th>ID</th>
-  <th>No</th>
-  <th>Total</th>
-  <th>Status</th>
-</tr>
-</thead>
-<tbody id="list"></tbody>
-</table>
-
-<script>
-fetch("/api/invoices")
-.then(r=>r.text())
-.then(t=>{
-  const data = JSON.parse(t);
-  data.forEach(i=>{
-    list.insertAdjacentHTML("beforeend",`
-      <tr>
-        <td>${i.id}</td>
-        <td>${i.invoice_no}</td>
-        <td>${i.total}</td>
-        <td>${i.status}</td>
-      </tr>
-    `);
-  });
-})
-.catch(()=>{
-  alert("Failed to load invoices");
-});
-</script>
+  <script>
+    fetch("/api/invoices")
+      .then(r => r.json())
+      .then(data => {
+        data.forEach(inv => {
+          const li = document.createElement("li");
+          li.innerText = inv.invoice_no + " - RM " + inv.total;
+          list.appendChild(li);
+        });
+      });
+  </script>
 </body>
 </html>
