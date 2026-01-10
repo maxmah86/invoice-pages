@@ -3,106 +3,167 @@
 <head>
 <meta charset="utf-8">
 <title>Invoice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
   body {
     font-family: Arial, sans-serif;
-    color: #000;
-    margin: 20px;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 12px;
   }
 
-  .header {
+  /* ===== 顶部操作 ===== */
+  .top-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
-  .company h2 {
-    margin: 0;
-    font-size: 20px;
-  }
-
-  .company p {
-    margin: 2px 0;
-    font-size: 13px;
-  }
-
-  .invoice-title {
-    text-align: right;
-  }
-
-  .invoice-title h1 {
-    margin: 0;
-    font-size: 28px;
-  }
-
-  .meta {
-    font-size: 13px;
-    margin-top: 10px;
-  }
-
-  hr {
-    margin: 15px 0;
-  }
-
-  .to {
-    font-size: 14px;
-    margin-bottom: 15px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-
-  table th, table td {
-    border: 1px solid #000;
-    padding: 6px;
-  }
-
-  table th {
-    background: #f0f0f0;
-    text-align: center;
-  }
-
-  .right { text-align: right; }
-  .center { text-align: center; }
-
-  .total {
-    margin-top: 10px;
-    text-align: right;
+  .top-actions button {
+    flex: 1;
+    padding: 12px;
     font-size: 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .print-btn {
+    background: #3498db;
+    color: #fff;
+  }
+
+  .back-btn {
+    background: #7f8c8d;
+    color: #fff;
+  }
+
+  /* ===== 卡片通用 ===== */
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* ===== Invoice Header ===== */
+  .invoice-no {
+    font-size: 18px;
     font-weight: bold;
   }
 
-  .terms {
-    margin-top: 20px;
+  .status {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 4px 8px;
     font-size: 13px;
+    border-radius: 4px;
+    color: #fff;
   }
 
-  .bank {
-    margin-top: 10px;
-    font-size: 13px;
-  }
+  .status.PAID { background: #27ae60; }
+  .status.UNPAID { background: #e74c3c; }
 
-  button {
-    margin-bottom: 15px;
-    padding: 6px 12px;
+  .meta {
+    margin-top: 8px;
     font-size: 14px;
+    color: #555;
   }
 
+  /* ===== Items ===== */
+  .item {
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+    margin-top: 10px;
+  }
+
+  .item:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .item-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .item-desc {
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+
+  /* ===== Total ===== */
+  .total {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: right;
+  }
+
+  /* ===== 打印样式（正式发票） ===== */
   @media print {
-    button { display: none; }
-    body { margin: 0; }
+    body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+    }
+
+    .top-actions {
+      display: none;
+    }
+
+    .card {
+      border-radius: 0;
+      padding: 0;
+      margin-bottom: 0;
+    }
+
+    /* 打印时使用正式发票版式 */
+    .print-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .company h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .company p {
+      margin: 2px 0;
+      font-size: 13px;
+    }
+
+    .print-title {
+      text-align: right;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #000;
+      padding: 6px;
+    }
+
+    th {
+      background: #f0f0f0;
+      text-align: center;
+    }
+
+    .right { text-align: right; }
 
     @page {
       size: A4;
       margin: 15mm;
-    }
-
-    table {
-      page-break-inside: avoid;
     }
   }
 </style>
@@ -110,68 +171,61 @@
 
 <body>
 
-<button onclick="window.print()">Print / Save PDF</button>
+<!-- 顶部操作 -->
+<div class="top-actions">
+  <button class="back-btn" onclick="history.back()">← Back</button>
+  <button class="print-btn" onclick="window.print()">Print / PDF</button>
+</div>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="company">
-    <h2>MMAC CONSTRUCTION</h2>
-    <p>201903139488 (002972725-A)</p>
-    <p>52, Jalan Mahogani SD 1/3</p>
-    <p>Sri Damansara, 52200 Kuala Lumpur</p>
-    <p>Tel : 016-444-2128</p>
+<!-- Invoice Summary -->
+<div class="card" id="summary">
+  Loading…
+</div>
+
+<!-- Items -->
+<div class="card" id="items"></div>
+
+<!-- Total -->
+<div class="card total" id="total"></div>
+
+<!-- ===== 打印专用结构（隐藏于手机） ===== -->
+<div class="print-only" style="display:none">
+  <div class="print-header">
+    <div class="company">
+      <h2>MMAC CONSTRUCTION</h2>
+      <p>201903139488 (002972725-A)</p>
+      <p>52, Jalan Mahogani SD 1/3</p>
+      <p>Sri Damansara, 52200 Kuala Lumpur</p>
+      <p>Tel : 016-444-2128</p>
+    </div>
+
+    <div class="print-title">
+      <h1>INVOICE</h1>
+      <div id="print-meta"></div>
+    </div>
   </div>
 
-  <div class="invoice-title">
-    <h1>INVOICE</h1>
-    <div class="meta" id="meta"></div>
-  </div>
+  <div id="print-to"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:5%">NO</th>
+        <th>ITEM DESCRIPTION</th>
+        <th style="width:10%">QTY</th>
+        <th style="width:15%">U/PRICE</th>
+        <th style="width:15%">AMOUNT</th>
+      </tr>
+    </thead>
+    <tbody id="print-items"></tbody>
+  </table>
+
+  <div id="print-total" style="text-align:right;font-weight:bold;margin-top:10px;"></div>
 </div>
-
-<hr>
-
-<!-- TO -->
-<div class="to" id="to"></div>
-
-<!-- ITEMS -->
-<table>
-  <thead>
-    <tr>
-      <th style="width:5%">NO</th>
-      <th>ITEM DESCRIPTION</th>
-      <th style="width:10%">QTY</th>
-      <th style="width:15%">U/PRICE</th>
-      <th style="width:15%">AMOUNT</th>
-    </tr>
-  </thead>
-  <tbody id="items"></tbody>
-</table>
-
-<div class="total" id="total"></div>
-
-<!-- TERMS -->
-<div class="terms">
-  <strong>TERMS :</strong><br>
-  50% deposit upon confirmations and the balance 50% should be clear by project completions.
-</div>
-
-<!-- BANK -->
-<div class="bank">
-  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br>
-  MMAC CONSTRUCTION<br><br>
-  <strong>COMPANY ACCOUNT NUMBER :</strong><br>
-  MAYBANK : 5142-0863-6636
-</div>
-
-<p style="margin-top:20px;font-size:13px;">Thank You.</p>
 
 <script>
 const params = new URLSearchParams(location.search);
 const id = params.get("id");
-
-if (!id) {
-  alert("Missing invoice id");
-}
 
 async function loadInvoice() {
   const res = await fetch(`/api/invoice-view?id=${id}`, {
@@ -185,41 +239,67 @@ async function loadInvoice() {
 
   const data = await res.json();
   const inv = data.invoice;
-
   const invoiceNo = inv.invoice_no || ("INV-" + inv.id);
 
-  // Right-top meta
-  document.getElementById("meta").innerHTML = `
+  // ===== 手机摘要 =====
+  document.getElementById("summary").innerHTML = `
+    <div class="invoice-no">${invoiceNo}</div>
+    <div class="status ${inv.status}">${inv.status}</div>
+    <div class="meta">
+      <div><strong>Customer:</strong> ${inv.customer}</div>
+      <div><strong>Date:</strong> ${inv.created_at}</div>
+    </div>
+  `;
+
+  let total = 0;
+  const itemsDiv = document.getElementById("items");
+  itemsDiv.innerHTML = "<h3>Items</h3>";
+
+  data.items.forEach(it => {
+    const sub = it.qty * it.price;
+    total += sub;
+
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="item-desc">${it.description}</div>
+      <div class="item-row"><span>Qty</span><span>${it.qty}</span></div>
+      <div class="item-row"><span>Price</span><span>RM ${it.price.toFixed(2)}</span></div>
+      <div class="item-row"><strong>Subtotal</strong><strong>RM ${sub.toFixed(2)}</strong></div>
+    `;
+    itemsDiv.appendChild(div);
+  });
+
+  document.getElementById("total").innerText =
+    "Total: RM " + total.toFixed(2);
+
+  // ===== 打印数据 =====
+  document.getElementById("print-meta").innerHTML = `
     Inv : ${invoiceNo}<br>
     Date : ${inv.created_at}<br>
     Page : 1 of 1
   `;
 
-  // To
-  document.getElementById("to").innerHTML = `
-    <strong>To :</strong> ${inv.customer}
-  `;
+  document.getElementById("print-to").innerHTML =
+    "<strong>To :</strong> " + inv.customer;
 
-  let total = 0;
-  const tbody = document.getElementById("items");
-  tbody.innerHTML = "";
+  const pt = document.getElementById("print-items");
+  pt.innerHTML = "";
 
   data.items.forEach((it, idx) => {
     const amount = it.qty * it.price;
-    total += amount;
-
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td class="center">${idx + 1}</td>
+      <td>${idx + 1}</td>
       <td>${it.description}</td>
-      <td class="center">${it.qty}</td>
+      <td>${it.qty}</td>
       <td class="right">RM ${it.price.toFixed(2)}</td>
       <td class="right">RM ${amount.toFixed(2)}</td>
     `;
-    tbody.appendChild(tr);
+    pt.appendChild(tr);
   });
 
-  document.getElementById("total").innerText =
+  document.getElementById("print-total").innerText =
     "RINGGIT MALAYSIA : TOTAL : RM " + total.toFixed(2);
 }
 
