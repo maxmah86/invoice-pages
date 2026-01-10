@@ -1,74 +1,98 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Invoices</title>
+<meta charset="utf-8">
+<title>Invoices</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+  }
+
+  h2 {
+    margin-bottom: 15px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th, td {
+    border: 1px solid #000;
+    padding: 6px;
+  }
+
+  th {
+    background: #f0f0f0;
+    text-align: center;
+  }
+
+  .right { text-align: right; }
+  .center { text-align: center; }
+
+  button {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+</style>
 </head>
+
 <body>
-  <h2>Invoices</h2>
 
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Customer</th>
-        <th>Amount</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="list"></tbody>
-  </table>
+<h2>Invoices</h2>
 
-  <script>
-    async function loadInvoices() {
-      const res = await fetch("/api/invoices", {
-        credentials: "include"
-      });
+<table>
+  <thead>
+    <tr>
+      <th>Invoice No</th>
+      <th>Customer</th>
+      <th>Amount (RM)</th>
+      <th>Status</th>
+      <th>Date</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="list"></tbody>
+</table>
 
-      if (!res.ok) {
-        location.href = "/login.html";
-        return;
-      }
+<script>
+async function loadInvoices() {
+  const res = await fetch("/api/invoices", {
+    credentials: "include"
+  });
 
-      const data = await res.json();
-      list.innerHTML = "";
+  if (!res.ok) {
+    location.href = "/login.html";
+    return;
+  }
 
-      data.forEach(inv => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${inv.id}</td>
-          <td>${inv.customer}</td>
-          <td>${inv.amount}</td>
-          <td>${inv.status}</td>
-          <td>
-            <button onclick="toggleStatus(${inv.id}, '${inv.status}')">
-              Mark ${inv.status === "PAID" ? "UNPAID" : "PAID"}
-            </button>
-          </td>
-        `;
-        list.appendChild(tr);
-      });
-    }
+  const data = await res.json();
+  const tbody = document.getElementById("list");
+  tbody.innerHTML = "";
 
-    async function toggleStatus(id, current) {
-      const next = current === "PAID" ? "UNPAID" : "PAID";
+  data.forEach(inv => {
+    const invoiceNo = inv.invoice_no || ("INV-" + inv.id);
 
-      const res = await fetch("/api/invoice-status", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: next })
-      });
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="center">${invoiceNo}</td>
+      <td>${inv.customer}</td>
+      <td class="right">${inv.amount.toFixed(2)}</td>
+      <td class="center">${inv.status}</td>
+      <td class="center">${inv.created_at}</td>
+      <td class="center">
+        <a href="/invoice-view.html?id=${inv.id}">View</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
-      if (res.ok) {
-        loadInvoices();
-      } else {
-        alert("Failed to update status");
-      }
-    }
+loadInvoices();
+</script>
 
-    loadInvoices();
-  </script>
 </body>
 </html>
