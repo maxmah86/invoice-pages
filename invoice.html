@@ -172,13 +172,9 @@ async function submitInvoice() {
     return;
   }
 
-  let data;
-  try {
-    data = await res.json();
-  } catch {
-    msg.textContent = "Invalid server response";
-    return;
-  }
+  const text = await res.text();
+msg.textContent = text;
+return;
 
   if (!res.ok) {
     msg.textContent = data.error || "Failed to create invoice";
@@ -195,3 +191,4 @@ addRow();
 
 </body>
 </html>
+
