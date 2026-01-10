@@ -13,7 +13,8 @@
         <th>ID</th>
         <th>Customer</th>
         <th>Amount</th>
-        <th>Created</th>
+        <th>Status</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody id="list"></tbody>
@@ -31,6 +32,7 @@
       }
 
       const data = await res.json();
+      list.innerHTML = "";
 
       data.forEach(inv => {
         const tr = document.createElement("tr");
@@ -38,10 +40,32 @@
           <td>${inv.id}</td>
           <td>${inv.customer}</td>
           <td>${inv.amount}</td>
-          <td>${inv.created_at}</td>
+          <td>${inv.status}</td>
+          <td>
+            <button onclick="toggleStatus(${inv.id}, '${inv.status}')">
+              Mark ${inv.status === "PAID" ? "UNPAID" : "PAID"}
+            </button>
+          </td>
         `;
         list.appendChild(tr);
       });
+    }
+
+    async function toggleStatus(id, current) {
+      const next = current === "PAID" ? "UNPAID" : "PAID";
+
+      const res = await fetch("/api/invoice-status", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: next })
+      });
+
+      if (res.ok) {
+        loadInvoices();
+      } else {
+        alert("Failed to update status");
+      }
     }
 
     loadInvoices();
