@@ -1,30 +1,46 @@
 export async function onRequestPost({ request }) {
   try {
+    // 1. 原样读取 body
     const body = await request.text();
+
+    // 2. 原样读取 cookie
     const cookie = request.headers.get("Cookie") || "";
 
-    const res = await fetch(
+    // 3. 转发到 invoice-api（Worker）
+    const apiRes = await fetch(
       "https://invoice-api.your-worker-name.workers.dev/invoice",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Cookie": cookie       // ⭐⭐⭐ 关键：转发 cookie
+          "Cookie": cookie
         },
         body
       }
     );
 
-    const text = await res.text();
+    // 4. 不做任何解析，直接拿 text
+    const text = await apiRes.text();
 
+    // 5. 明确返回 JSON
     return new Response(text, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" }
+      status: apiRes.status,
+      headers: {
+        "Content-Type": "application/json"
+      }
     });
-  } catch (e) {
+
+  } catch (err) {
+    // 6. 兜底错误，也必须返回 JSON
     return new Response(
-      JSON.stringify({ error: "Invoice POST proxy error", detail: String(e) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({
+        error: "Pages Function invoice proxy error",
+        detail: String(err)
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      }
     );
   }
 }
