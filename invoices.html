@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Invoices</title>
 </head>
+  <button onclick="printInvoice()">Print / Save PDF</button>
 <body>
   <h2>Invoices</h2>
 
@@ -21,6 +22,9 @@
   </table>
 
   <script>
+    function printInvoice() {
+  window.print();
+    };
     async function loadInvoices() {
       const res = await fetch("/api/invoices", {
         credentials: "include"
@@ -75,4 +79,5 @@
   </script>
 </body>
 </html>
+
 
