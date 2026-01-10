@@ -8,20 +8,27 @@
 <h2>Invoices</h2>
 
 <table border="1" id="t">
-  <tr><th>ID</th><th>No</th><th>Total</th><th>Status</th></tr>
+  <tr>
+    <th>ID</th>
+    <th>No</th>
+    <th>Total</th>
+    <th>Status</th>
+  </tr>
 </table>
 
 <script>
-fetch("/api/invoices")
-.then(r=>r.json())
-.then(list=>{
-  const t=document.getElementById("t");
-  list.forEach(i=>{
-    const r=t.insertRow();
-    r.insertCell().textContent=i.id;
-    r.insertCell().textContent=i.invoice_no;
-    r.insertCell().textContent=i.total;
-    r.insertCell().textContent=i.status;
+fetch("/api/invoices", {
+  credentials: "include"    // ⭐⭐⭐ 关键
+})
+.then(r => r.json())
+.then(list => {
+  const t = document.getElementById("t");
+  list.forEach(i => {
+    const r = t.insertRow();
+    r.insertCell().textContent = i.id;
+    r.insertCell().textContent = i.invoice_no;
+    r.insertCell().textContent = i.total;
+    r.insertCell().textContent = i.status;
   });
 });
 </script>
