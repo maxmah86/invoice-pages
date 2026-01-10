@@ -3,39 +3,89 @@
 <head>
 <meta charset="utf-8">
 <title>Invoices</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
   body {
     font-family: Arial, sans-serif;
-    margin: 20px;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 12px;
   }
 
   h2 {
-    margin-bottom: 15px;
+    margin-top: 0;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
+  .invoice {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-left: 6px solid #ccc;
+  }
+
+  .invoice.paid {
+    border-left-color: #27ae60;
+  }
+
+  .invoice.unpaid {
+    border-left-color: #e74c3c;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+
+  .label {
+    color: #666;
+  }
+
+  .value {
+    font-weight: bold;
+  }
+
+  .status {
     font-size: 13px;
-  }
-
-  th, td {
-    border: 1px solid #000;
-    padding: 6px;
-  }
-
-  th {
-    background: #f0f0f0;
-    text-align: center;
-  }
-
-  .right { text-align: right; }
-  .center { text-align: center; }
-
-  button {
     padding: 4px 8px;
-    font-size: 12px;
+    border-radius: 4px;
+    color: #fff;
+  }
+
+  .status.PAID {
+    background: #27ae60;
+  }
+
+  .status.UNPAID {
+    background: #e74c3c;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .actions button {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .view-btn {
+    background: #3498db;
+    color: #fff;
+  }
+
+  .toggle-btn {
+    background: #f1c40f;
+    color: #000;
   }
 </style>
 </head>
@@ -44,21 +94,20 @@
 
 <h2>Invoices</h2>
 
-<table>
-  <thead>
-    <tr>
-      <th>Invoice No</th>
-      <th>Customer</th>
-      <th>Amount (RM)</th>
-      <th>Status</th>
-      <th>Date</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody id="list"></tbody>
-</table>
+<div id="list">Loading…</div>
 
 <script>
+/* ===== 登录检查 ===== */
+(async function checkAuth() {
+  const res = await fetch("/api/auth-check", {
+    credentials: "include"
+  });
+  if (!res.ok) {
+    location.href = "/login.html";
+  }
+})();
+
+/* ===== 加载 invoices ===== */
 async function loadInvoices() {
   const res = await fetch("/api/invoices", {
     credentials: "include"
@@ -70,25 +119,78 @@ async function loadInvoices() {
   }
 
   const data = await res.json();
-  const tbody = document.getElementById("list");
-  tbody.innerHTML = "";
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if (data.length === 0) {
+    list.innerHTML = "<p>No invoices found.</p>";
+    return;
+  }
 
   data.forEach(inv => {
     const invoiceNo = inv.invoice_no || ("INV-" + inv.id);
+    const div = document.createElement("div");
+    div.className = "invoice " + (inv.status === "PAID" ? "paid" : "unpaid");
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="center">${invoiceNo}</td>
-      <td>${inv.customer}</td>
-      <td class="right">${inv.amount.toFixed(2)}</td>
-      <td class="center">${inv.status}</td>
-      <td class="center">${inv.created_at}</td>
-      <td class="center">
-        <a href="/invoice-view.html?id=${inv.id}">View</a>
-      </td>
+    div.innerHTML = `
+      <div class="row">
+        <span class="label">Invoice</span>
+        <span class="value">${invoiceNo}</span>
+      </div>
+
+      <div class="row">
+        <span class="label">Customer</span>
+        <span class="value">${inv.customer}</span>
+      </div>
+
+      <div class="row">
+        <span class="label">Amount</span>
+        <span class="value">RM ${Number(inv.amount).toFixed(2)}</span>
+      </div>
+
+      <div class="row">
+        <span class="label">Status</span>
+        <span class="status ${inv.status}">${inv.status}</span>
+      </div>
+
+      <div class="actions">
+        <button class="view-btn"
+          onclick="viewInvoice(${inv.id})">
+          View
+        </button>
+
+        <button class="toggle-btn"
+          onclick="toggleStatus(${inv.id}, '${inv.status}')">
+          ${inv.status === "PAID" ? "Mark UNPAID" : "Mark PAID"}
+        </button>
+      </div>
     `;
-    tbody.appendChild(tr);
+
+    list.appendChild(div);
   });
+}
+
+/* ===== 切换状态 ===== */
+async function toggleStatus(id, current) {
+  const next = current === "PAID" ? "UNPAID" : "PAID";
+
+  const res = await fetch("/api/invoice-status", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status: next })
+  });
+
+  if (res.ok) {
+    loadInvoices();
+  } else {
+    alert("Failed to update status");
+  }
+}
+
+/* ===== 查看 invoice ===== */
+function viewInvoice(id) {
+  location.href = "/invoice-view.html?id=" + id;
 }
 
 loadInvoices();
