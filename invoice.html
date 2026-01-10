@@ -7,27 +7,64 @@
 <body>
   <h2>Create Invoice</h2>
 
+  <label>Customer</label><br>
   <input id="customer" placeholder="Customer name"><br><br>
-  <input id="amount" type="number" placeholder="Amount"><br><br>
 
-  <button onclick="submitInvoice()">Submit</button>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Qty</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
+
+  <button onclick="addRow()">+ Add Item</button><br><br>
+  <button onclick="submitInvoice()">Submit Invoice</button>
 
   <pre id="msg"></pre>
 
   <script>
+    function addRow() {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input></td>
+        <td><input type="number" value="1"></td>
+        <td><input type="number" value="0"></td>
+      `;
+      items.appendChild(tr);
+    }
+
+    // 默认加一行
+    addRow();
+
     async function submitInvoice() {
+      const rows = [...items.querySelectorAll("tr")];
+      const data = {
+        customer: customer.value,
+        items: rows.map(r => ({
+          description: r.cells[0].firstChild.value,
+          qty: Number(r.cells[1].firstChild.value),
+          price: Number(r.cells[2].firstChild.value)
+        }))
+      };
+
       const res = await fetch("/api/invoice", {
         method: "POST",
-        credentials: "include",   // ⭐ 必须
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer: customer.value,
-          amount: Number(amount.value)
-        })
+        body: JSON.stringify(data)
       });
 
       const text = await res.text();
       msg.textContent = text;
+
+      if (res.ok) {
+        alert("Invoice created");
+        location.href = "/invoices.html";
+      }
     }
   </script>
 </body>
