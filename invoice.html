@@ -1,71 +1,208 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Create Invoice</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create Invoice</title>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 15px;
+  }
+
+  h2 {
+    margin-top: 0;
+  }
+
+  .box {
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+
+  label {
+    font-size: 14px;
+    font-weight: bold;
+    display: block;
+    margin-top: 10px;
+  }
+
+  input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-top: 5px;
+    box-sizing: border-box;
+  }
+
+  .item {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+
+  .row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .row input {
+    flex: 1;
+  }
+
+  .subtotal {
+    text-align: right;
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .add-btn, .submit-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    margin-top: 15px;
+    cursor: pointer;
+  }
+
+  .add-btn {
+    background: #3498db;
+    color: #fff;
+  }
+
+  .submit-btn {
+    background: #27ae60;
+    color: #fff;
+  }
+
+  .total {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: right;
+    margin-top: 10px;
+  }
+</style>
 </head>
+
 <body>
-  <h2>Create Invoice</h2>
 
-  <label>Customer</label><br>
-  <input id="customer" placeholder="Customer name"><br><br>
+<h2>Create Invoice</h2>
 
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th>Qty</th>
-        <th>Price</th>
-      </tr>
-    </thead>
-    <tbody id="items"></tbody>
-  </table>
+<div class="box">
+  <label>Customer</label>
+  <input id="customer" placeholder="Customer name">
+</div>
 
-  <button onclick="addRow()">+ Add Item</button><br><br>
-  <button onclick="submitInvoice()">Submit Invoice</button>
+<div class="box">
+  <h3>Items</h3>
+  <div id="items"></div>
 
-  <pre id="msg"></pre>
+  <button class="add-btn" onclick="addItem()">+ Add Item</button>
 
-  <script>
-    function addRow() {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><input></td>
-        <td><input type="number" value="1"></td>
-        <td><input type="number" value="0"></td>
-      `;
-      items.appendChild(tr);
+  <div class="total" id="total">Total: RM 0.00</div>
+</div>
+
+<button class="submit-btn" onclick="submitInvoice()">Submit Invoice</button>
+
+<script>
+function addItem(desc = "", qty = 1, price = 0) {
+  const div = document.createElement("div");
+  div.className = "item";
+
+  div.innerHTML = `
+    <label>Description</label>
+    <input class="desc" placeholder="Item description" value="${desc}">
+
+    <div class="row">
+      <div>
+        <label>Qty</label>
+        <input class="qty" type="number" value="${qty}">
+      </div>
+      <div>
+        <label>Price</label>
+        <input class="price" type="number" value="${price}">
+      </div>
+    </div>
+
+    <div class="subtotal">Subtotal: RM <span>0.00</span></div>
+  `;
+
+  items.appendChild(div);
+
+  div.querySelectorAll("input").forEach(i => {
+    i.addEventListener("input", updateTotal);
+  });
+
+  updateTotal();
+}
+
+// 默认一行
+addItem();
+
+function updateTotal() {
+  let total = 0;
+
+  document.querySelectorAll(".item").forEach(item => {
+    const qty = Number(item.querySelector(".qty").value) || 0;
+    const price = Number(item.querySelector(".price").value) || 0;
+    const sub = qty * price;
+
+    item.querySelector(".subtotal span").innerText = sub.toFixed(2);
+    total += sub;
+  });
+
+  document.getElementById("total").innerText =
+    "Total: RM " + total.toFixed(2);
+}
+
+async function submitInvoice() {
+  const customer = document.getElementById("customer").value.trim();
+  if (!customer) {
+    alert("Please enter customer name");
+    return;
+  }
+
+  const itemsData = [];
+  document.querySelectorAll(".item").forEach(item => {
+    const desc = item.querySelector(".desc").value.trim();
+    const qty = Number(item.querySelector(".qty").value);
+    const price = Number(item.querySelector(".price").value);
+
+    if (desc && qty > 0) {
+      itemsData.push({ description: desc, qty, price });
     }
+  });
 
-    // 默认加一行
-    addRow();
+  if (itemsData.length === 0) {
+    alert("Please add at least one item");
+    return;
+  }
 
-    async function submitInvoice() {
-      const rows = [...items.querySelectorAll("tr")];
-      const data = {
-        customer: customer.value,
-        items: rows.map(r => ({
-          description: r.cells[0].firstChild.value,
-          qty: Number(r.cells[1].firstChild.value),
-          price: Number(r.cells[2].firstChild.value)
-        }))
-      };
+  const res = await fetch("/api/invoice", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      customer,
+      items: itemsData
+    })
+  });
 
-      const res = await fetch("/api/invoice", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+  if (!res.ok) {
+    alert("Failed to create invoice");
+    return;
+  }
 
-      const text = await res.text();
-      msg.textContent = text;
+  alert("Invoice created");
+  location.href = "/invoices.html";
+}
+</script>
 
-      if (res.ok) {
-        alert("Invoice created");
-        location.href = "/invoices.html";
-      }
-    }
-  </script>
 </body>
 </html>
