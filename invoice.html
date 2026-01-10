@@ -1,65 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>Create Invoice</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
-<h2>Create Invoice</h2>
+  <h2>Create Invoice</h2>
 
-<input id="customer" placeholder="Customer name"><br><br>
+  <input id="customer" placeholder="Customer name"><br><br>
 
-<table border="1" cellpadding="6">
-<thead>
-<tr><th>Description</th><th>Qty</th><th>Price</th></tr>
-</thead>
-<tbody id="items"></tbody>
-</table>
+  <input id="desc" placeholder="Item description">
+  <input id="qty" type="number" placeholder="Qty">
+  <input id="price" type="number" placeholder="Price"><br><br>
 
-<button onclick="add()">Add Item</button><br><br>
-<button onclick="submit()">Submit Invoice</button>
+  <button onclick="submitInvoice()">Submit</button>
 
-<script>
-function add(){
-  items.insertAdjacentHTML("beforeend",`
-    <tr>
-      <td><input></td>
-      <td><input type="number" value="1"></td>
-      <td><input type="number" value="0"></td>
-    </tr>
-  `);
-}
-add();
+  <p id="msg"></p>
 
-async function submit(){
-  const rows=[...items.rows].map(r=>({
-    description:r.cells[0].firstChild.value,
-    qty:+r.cells[1].firstChild.value,
-    price:+r.cells[2].firstChild.value
-  }));
+  <script>
+    async function submitInvoice() {
+      const res = await fetch("/api/invoice", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: customer.value,
+          items: [{
+            description: desc.value,
+            qty: Number(qty.value),
+            price: Number(price.value)
+          }]
+        })
+      });
 
-  const total = rows.reduce((s,i)=>s+i.qty*i.price,0);
+      if (!res.ok) {
+        msg.innerText = "Server error";
+        return;
+      }
 
-  const res = await fetch("/api/invoice",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      customer:{ name: customer.value },
-      items: rows,
-      total
-    })
-  });
-
-  const text = await res.text();
-  try {
-    const json = JSON.parse(text);
-    alert("Invoice created: " + json.invoice_no);
-    location.href="/invoices.html";
-  } catch {
-    alert("Server error:\n" + text);
-  }
-}
-</script>
+      msg.innerText = "Invoice created";
+    }
+  </script>
 </body>
 </html>
