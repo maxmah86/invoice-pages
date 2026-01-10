@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice View</title>
+</head>
+<body>
+  <h2>Invoice</h2>
+
+  <div id="info"></div>
+
+  <h3>Items</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Subtotal</th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+
+    async function loadInvoice() {
+      const res = await fetch(`/api/invoice-view?id=${id}`, {
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        location.href = "/login.html";
+        return;
+      }
+
+      const data = await res.json();
+      const inv = data.invoice;
+
+      info.innerHTML = `
+        <p><strong>ID:</strong> ${inv.id}</p>
+        <p><strong>Customer:</strong> ${inv.customer}</p>
+        <p><strong>Status:</strong> ${inv.status}</p>
+        <p><strong>Total:</strong> ${inv.amount}</p>
+        <p><strong>Created:</strong> ${inv.created_at}</p>
+      `;
+
+      data.items.forEach(it => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${it.description}</td>
+          <td>${it.qty}</td>
+          <td>${it.price}</td>
+          <td>${(it.qty * it.price).toFixed(2)}</td>
+        `;
+        items.appendChild(tr);
+      });
+    }
+
+    loadInvoice();
+  </script>
+</body>
+</html>
