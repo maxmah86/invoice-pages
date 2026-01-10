@@ -59,6 +59,4 @@ export async function onRequestPost({ request, env }) {
     }),
     { headers: { "Content-Type": "application/json" } }
   );
-}export async function onRequestPost({ request, env }) {
-  const cookie = request.headers.get("Cookie") || "";
-
+}
