@@ -1,6 +1,5 @@
 export async function onRequest({ request, env }) {
   const cookie = request.headers.get("Cookie") || "";
-
   if (!cookie.includes("session=ok")) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
@@ -9,13 +8,11 @@ export async function onRequest({ request, env }) {
   }
 
   const result = await env.DB.prepare(
-    "SELECT id, customer, amount, created_at FROM invoices ORDER BY id DESC"
+    "SELECT id, customer, amount, status, created_at FROM invoices ORDER BY id DESC"
   ).all();
 
   return new Response(
     JSON.stringify(result.results),
-    {
-      headers: { "Content-Type": "application/json" }
-    }
+    { headers: { "Content-Type": "application/json" } }
   );
 }
