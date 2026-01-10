@@ -6,6 +6,20 @@
 </head>
 <body>
   <h1>Index Page</h1>
-  <p>If you see this, login redirect works.</p>
+  <p>You are logged in.</p>
+
+  <script>
+    async function checkAuth() {
+      const res = await fetch("/api/auth-check", {
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        location.href = "/login.html";
+      }
+    }
+
+    checkAuth();
+  </script>
 </body>
 </html>
