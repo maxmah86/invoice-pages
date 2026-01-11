@@ -24,7 +24,7 @@ body {
   font-size: 13px;
 }
 
-.company h1 {
+.company h2 {
   margin: 0 0 4px;
 }
 
@@ -90,19 +90,6 @@ th {
   margin-top: 14px;
 }
 
-/* 操作按钮 */
-.actions {
-  margin: 12px 0;
-  display: flex;
-  gap: 8px;
-}
-
-.actions button {
-  flex: 1;
-  padding: 10px;
-  font-size: 14px;
-}
-
 /* 📱 手机优化（不改结构） */
 @media (max-width: 768px) {
   table {
@@ -120,10 +107,6 @@ th {
 
 /* 🖨️ 打印 */
 @media print {
-  .actions {
-    display: none;
-  }
-
   @page {
     size: A4;
     margin: 15mm;
@@ -141,11 +124,6 @@ th {
 </head>
 
 <body>
-
-<!--<div class="actions">
-  <button onclick="history.back()">← Back</button>
-  <button onclick="window.print()">Print / PDF</button>
-</div>-->
 
 <div class="header">
   <div class="company">
@@ -183,7 +161,7 @@ th {
   </tfoot>
 </table>
 
-<!-- ===== 底部标注（已补回） ===== -->
+<!-- ===== 底部标注 ===== -->
 <div class="footer">
   <strong>RINGGIT MALAYSIA :</strong>
   TOTAL : RM <span id="total-text"></span>
@@ -227,8 +205,7 @@ async function loadInvoice() {
 
   document.getElementById("meta").innerHTML = `
     Inv : ${inv.invoice_no}<br>
-    Date : ${inv.created_at}<br>
-    Status : ${inv.status}
+    Date : ${inv.created_at}
   `;
 
   document.getElementById("to").innerHTML =
