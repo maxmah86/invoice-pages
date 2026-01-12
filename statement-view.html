@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Statement</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial; margin:16px; }
+h1 { margin-bottom:4px; }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th, td { border:1px solid #000; padding:6px; font-size:13px; }
+th { background:#eee; }
+.right { text-align:right; }
+.total { font-weight:bold; text-align:right; margin-top:10px; }
+@media print { button { display:none; } }
+</style>
+</head>
+<body>
+
+<button onclick="window.print()">Print</button>
+
+<h1>STATEMENT</h1>
+<div><strong>Customer:</strong> <span id="customer"></span></div>
+<div><strong>Period:</strong> <span id="period"></span></div>
+
+<table>
+<thead>
+<tr>
+  <th>Date</th>
+  <th>Invoice No</th>
+  <th>Status</th>
+  <th class="right">Amount (RM)</th>
+</tr>
+</thead>
+<tbody id="rows"></tbody>
+</table>
+
+<div class="total">
+  Outstanding Balance: RM <span id="balance"></span>
+</div>
+
+<script>
+const p = new URLSearchParams(location.search);
+const customer = p.get("customer");
+const from = p.get("from");
+const to = p.get("to");
+
+document.getElementById("customer").textContent = customer;
+document.getElementById("period").textContent =
+  `${from || "Start"} → ${to || "Today"}`;
+
+fetch(`/api/statement?customer=${encodeURIComponent(customer)}&from=${from}&to=${to}`,
+  { credentials: "include" }
+)
+.then(r => r.json())
+.then(data => {
+  let balance = 0;
+  const tbody = document.getElementById("rows");
+
+  data.invoices.forEach(inv => {
+    if (inv.status === "UNPAID") balance += inv.amount;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${inv.created_at}</td>
+      <td>${inv.invoice_no}</td>
+      <td>${inv.status}</td>
+      <td class="right">${inv.amount.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("balance").textContent = balance.toFixed(2);
+});
+</script>
+
+</body>
+</html>
