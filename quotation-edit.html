@@ -1,34 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Edit Quotation</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-body { font-family: Arial; margin: 16px; }
-h1 { margin-bottom: 10px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  background: #f5f5f5;
+}
+
+h1 {
+  margin-bottom: 12px;
+}
+
+.card {
+  background: #fff;
+  padding: 14px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+label {
+  font-size: 14px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 4px;
+}
 
 input {
   width: 100%;
   padding: 8px;
-  margin: 6px 0;
-  box-sizing: border-box;
+  font-size: 14px;
+  margin-bottom: 8px;
 }
 
-.item {
-  border: 1px solid #ccc;
-  padding: 10px;
-  margin-top: 10px;
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr 80px 100px 40px;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.item-row input {
+  margin-bottom: 0;
 }
 
 button {
   padding: 10px;
-  margin-top: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-add {
+  background: #e0e0e0;
+  border: none;
+}
+
+.btn-save {
+  background: #2e7d32;
+  color: #fff;
+  border: none;
   width: 100%;
 }
 
+.btn-cancel {
+  background: #9e9e9e;
+  color: #fff;
+  border: none;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.btn-delete {
+  background: #d32f2f;
+  color: #fff;
+  border: none;
+}
+
 .total {
+  text-align: right;
+  font-size: 16px;
   font-weight: bold;
   margin-top: 10px;
 }
@@ -39,93 +93,117 @@ button {
 
 <h1>Edit Quotation</h1>
 
-<label>Customer</label>
-<input id="customer">
-
-<div id="items"></div>
-
-<button onclick="addItem()">➕ Add Item</button>
-
-<div class="total">
-  Total: RM <span id="total">0.00</span>
+<div class="card">
+  <label>Customer</label>
+  <input id="customer" placeholder="Customer name" />
 </div>
 
-<button onclick="save()">💾 Save</button>
+<div class="card">
+  <label>Items</label>
+  <div id="items"></div>
+
+  <button class="btn-add" onclick="addItem()">+ Add Item</button>
+
+  <div class="total">
+    Total: RM <span id="total">0.00</span>
+  </div>
+</div>
+
+<button class="btn-save" onclick="save()">Save Changes</button>
+<button class="btn-cancel" onclick="cancel()">Cancel</button>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
-const itemsDiv = document.getElementById("items");
+function q(name) {
+  return new URLSearchParams(location.search).get(name);
+}
 
-function addItem(item = {}) {
+const id = q("id");
+let quotationStatus = "";
+
+function addItem(desc = "", qty = 1, price = 0) {
   const div = document.createElement("div");
-  div.className = "item";
+  div.className = "item-row";
   div.innerHTML = `
-    <input placeholder="Description" value="${item.description || ""}">
-    <input type="number" placeholder="Qty" value="${item.qty || 1}">
-    <input type="number" placeholder="Price" value="${item.price || 0}">
-    <button onclick="this.parentElement.remove(); calc()">Remove</button>
+    <input placeholder="Description" value="${desc}">
+    <input type="number" min="1" value="${qty}">
+    <input type="number" step="0.01" min="0" value="${price}">
+    <button class="btn-delete" onclick="this.parentNode.remove(); calc()">✕</button>
   `;
-  itemsDiv.appendChild(div);
-  calc();
+  document.getElementById("items").appendChild(div);
 }
 
 function calc() {
   let total = 0;
-  itemsDiv.querySelectorAll(".item").forEach(div => {
-    const qty = Number(div.children[1].value);
-    const price = Number(div.children[2].value);
+  document.querySelectorAll(".item-row").forEach(row => {
+    const qty = Number(row.children[1].value || 0);
+    const price = Number(row.children[2].value || 0);
     total += qty * price;
   });
   document.getElementById("total").textContent = total.toFixed(2);
 }
 
-function load() {
-  fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
-    .then(r => r.json())
-    .then(data => {
-      if (data.quotation.status !== "OPEN") {
-        alert("Quotation cannot be edited");
-        location.href = "/quotations.html";
-        return;
-      }
-      document.getElementById("customer").value = data.quotation.customer;
-      data.items.forEach(addItem);
-      calc();
-    });
+function cancel() {
+  location.href = `/quotation-view.html?id=${id}`;
 }
 
-function save() {
+async function save() {
+  if (quotationStatus !== "OPEN") {
+    alert("Only OPEN quotations can be edited");
+    return;
+  }
+
   const items = [];
-  itemsDiv.querySelectorAll(".item").forEach(div => {
+  document.querySelectorAll(".item-row").forEach(row => {
     items.push({
-      description: div.children[0].value,
-      qty: Number(div.children[1].value),
-      price: Number(div.children[2].value)
+      description: row.children[0].value,
+      qty: Number(row.children[1].value),
+      price: Number(row.children[2].value)
     });
   });
 
-  fetch("/api/quotation-edit", {
+  const res = await fetch("/api/quotation-edit", {
     method: "POST",
-    credentials: "include",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({
       id,
       customer: document.getElementById("customer").value,
       items
     })
-  })
-  .then(r => {
-    if (!r.ok) throw new Error("Save failed");
-    return r.json();
-  })
-  .then(() => {
-    alert("Saved");
-    location.href = `/quotation-view.html?id=${id}`;
-  })
-  .catch(e => alert(e.message));
+  });
+
+  if (!res.ok) {
+    alert("Failed to save quotation");
+    return;
+  }
+
+  location.href = `/quotation-view.html?id=${id}`;
 }
 
-load();
+fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
+.then(res => {
+  if (res.status === 401) {
+    location.replace("/login.html");
+    throw new Error();
+  }
+  return res.json();
+})
+.then(data => {
+  const q = data.quotation;
+  quotationStatus = q.status;
+
+  document.getElementById("customer").value = q.customer;
+
+  if (q.status !== "OPEN") {
+    alert("This quotation is not editable");
+    location.replace(`/quotation-view.html?id=${id}`);
+    return;
+  }
+
+  data.items.forEach(i => addItem(i.description, i.qty, i.price));
+  calc();
+})
+.catch(() => {});
 </script>
 
 </body>
