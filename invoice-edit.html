@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Edit Invoice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 12px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.box {
+  background: #fff;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+
+.item {
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row > div {
+  flex: 1;
+}
+
+.subtotal {
+  text-align: right;
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 14px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #27ae60;
+  color: #fff;
+}
+
+.cancel-btn {
+  background: #7f8c8d;
+  color: #fff;
+}
+
+.add-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  margin-top: 10px;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.total {
+  text-align: right;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Edit Invoice</h2>
+
+<div class="box">
+  <label>Customer</label>
+  <input id="customer">
+</div>
+
+<div class="box">
+  <h3>Items</h3>
+  <div id="items"></div>
+
+  <button class="add-btn" onclick="addItem()">+ Add Item</button>
+
+  <div class="total" id="total">Total: RM 0.00</div>
+</div>
+
+<div class="actions">
+  <button class="save-btn" onclick="save()">Save</button>
+  <button class="cancel-btn" onclick="cancel()">Cancel</button>
+</div>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+/* ===== 加载 invoice 数据 ===== */
+async function loadInvoice() {
+  const res = await fetch(`/api/invoice-view?id=${id}`, {
+    credentials: "include"
+  });
+
+  if (!res.ok) {
+    location.href = "/login.html";
+    return;
+  }
+
+  const data = await res.json();
+  const inv = data.invoice;
+
+  // 只允许编辑 UNPAID（前端兜底）
+  if (inv.status !== "UNPAID") {
+    alert("This invoice cannot be edited.");
+    location.href = "/invoice-view.html?id=" + id;
+    return;
+  }
+
+  document.getElementById("customer").value = inv.customer;
+
+  data.items.forEach(it => {
+    addItem(it.description, it.qty, it.price);
+  });
+
+  updateTotal();
+}
+
+/* ===== 新增 item ===== */
+function addItem(desc = "", qty = 1, price = 0) {
+  const div = document.createElement("div");
+  div.className = "item";
+
+  div.innerHTML = `
+    <label>Description</label>
+    <input class="desc" value="${desc}">
+
+    <div class="row">
+      <div>
+        <label>Qty</label>
+        <input type="number" class="qty" value="${qty}">
+      </div>
+      <div>
+        <label>Price</label>
+        <input type="number" class="price" value="${price}">
+      </div>
+    </div>
+
+    <div class="subtotal">
+      Subtotal: RM <span>0.00</span>
+    </div>
+  `;
+
+  items.appendChild(div);
+
+  div.querySelectorAll("input").forEach(i =>
+    i.addEventListener("input", updateTotal)
+  );
+}
+
+/* ===== 计算 total ===== */
+function updateTotal() {
+  let total = 0;
+
+  document.querySelectorAll(".item").forEach(item => {
+    const qty = Number(item.querySelector(".qty").value) || 0;
+    const price = Number(item.querySelector(".price").value) || 0;
+    const sub = qty * price;
+
+    item.querySelector(".subtotal span").innerText = sub.toFixed(2);
+    total += sub;
+  });
+
+  document.getElementById("total").innerText =
+    "Total: RM " + total.toFixed(2);
+}
+
+/* ===== 保存 ===== */
+async function save() {
+  const customer = document.getElementById("customer").value.trim();
+  if (!customer) {
+    alert("Customer is required");
+    return;
+  }
+
+  const itemsData = [];
+  document.querySelectorAll(".item").forEach(item => {
+    const desc = item.querySelector(".desc").value.trim();
+    const qty = Number(item.querySelector(".qty").value);
+    const price = Number(item.querySelector(".price").value);
+
+    if (desc && qty > 0) {
+      itemsData.push({ description: desc, qty, price });
+    }
+  });
+
+  if (itemsData.length === 0) {
+    alert("At least one item is required");
+    return;
+  }
+
+  const res = await fetch("/api/invoice-edit", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id,
+      customer,
+      items: itemsData
+    })
+  });
+
+  if (!res.ok) {
+    alert("Failed to save invoice");
+    return;
+  }
+
+  alert("Invoice updated");
+  location.href = "/invoice-view.html?id=" + id;
+}
+
+/* ===== 取消 ===== */
+function cancel() {
+  location.href = "/invoice-view.html?id=" + id;
+}
+
+loadInvoice();
+</script>
+
+</body>
+</html>
