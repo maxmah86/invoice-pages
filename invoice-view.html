@@ -15,6 +15,7 @@ body {
 .header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
 }
 
 .company {
@@ -22,18 +23,23 @@ body {
   line-height: 1.5;
 }
 
+.invoice-box {
+  text-align: right;
+}
+
 .invoice-title {
   font-size: 26px;
   font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.invoice-meta {
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .section {
   margin-top: 20px;
-}
-
-.info {
-  font-size: 14px;
-  margin-bottom: 12px;
 }
 
 table {
@@ -88,26 +94,26 @@ th {
     52200 Kuala Lumpur, Malaysia<br>
     Tel: 016-444-2128
   </div>
-  <div class="invoice-title">
-    INVOICE
-  </div>
-</div>
 
-<div class="section info">
-  <div><strong>Invoice No:</strong> <span id="invoiceNo"></span></div>
-  <div><strong>Date:</strong> <span id="invoiceDate"></span></div>
-  <div><strong>To:</strong> <span id="customer"></span></div>
+  <div class="invoice-box">
+    <div class="invoice-title">INVOICE</div>
+    <div class="invoice-meta">
+      <div><strong>Invoice No:</strong> <span id="invoiceNo"></span></div>
+      <div><strong>Date:</strong> <span id="invoiceDate"></span></div>
+      <div><strong>To:</strong> <span id="customer"></span></div>
+    </div>
+  </div>
 </div>
 
 <div class="section">
   <table>
     <thead>
       <tr>
-        <th>No</th>
+        <th style="width:5%">No</th>
         <th>Description</th>
-        <th>Qty</th>
-        <th>Unit Price</th>
-        <th>Amount (RM)</th>
+        <th style="width:10%">Qty</th>
+        <th style="width:15%">Unit Price</th>
+        <th style="width:15%">Amount (RM)</th>
       </tr>
     </thead>
     <tbody id="items"></tbody>
