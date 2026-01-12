@@ -18,6 +18,11 @@ body {
   align-items: flex-start;
 }
 
+.company h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
 .company {
   font-size: 14px;
   line-height: 1.5;
@@ -30,7 +35,17 @@ body {
 .invoice-title {
   font-size: 26px;
   font-weight: bold;
-  margin-bottom: 6px;
+}
+
+.invoice-actions {
+  margin: 6px 0;
+}
+
+.invoice-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-left: 6px;
+  cursor: pointer;
 }
 
 .invoice-meta {
@@ -83,11 +98,9 @@ th {
 
 <body>
 
-<button onclick="window.print()">Print / Save PDF</button>
-
 <div class="header">
   <div class="company">
-    <strong>MMAC CONSTRUCTION</strong><br>
+    <h1>MMAC CONSTRUCTION</h1>
     201903134488 (002977225-A)<br>
     52, Jalan Mahogani SD 1/3<br>
     Sri Damansara<br>
@@ -97,6 +110,12 @@ th {
 
   <div class="invoice-box">
     <div class="invoice-title">INVOICE</div>
+
+    <div class="invoice-actions">
+      <button onclick="editInvoice()">EDIT</button>
+      <button onclick="voidInvoice()">VOID</button>
+    </div>
+
     <div class="invoice-meta">
       <div><strong>Invoice No:</strong> <span id="invoiceNo"></span></div>
       <div><strong>Date:</strong> <span id="invoiceDate"></span></div>
@@ -147,9 +166,27 @@ function getQuery(name) {
 
 const id = getQuery("id");
 
-if (!id) {
-  alert("Missing invoice id");
-  throw new Error("No invoice id");
+function editInvoice() {
+  location.href = `/invoice-edit.html?id=${id}`;
+}
+
+async function voidInvoice() {
+  if (!confirm("Are you sure you want to VOID this invoice?")) return;
+
+  const res = await fetch("/api/invoice-void", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id })
+  });
+
+  if (!res.ok) {
+    alert("Failed to void invoice");
+    return;
+  }
+
+  alert("Invoice voided");
+  location.reload();
 }
 
 fetch(`/api/invoice-view?id=${id}`, {
@@ -160,20 +197,12 @@ fetch(`/api/invoice-view?id=${id}`, {
     location.replace("/login.html");
     throw new Error("Unauthorized");
   }
-  if (!res.ok) {
-    throw new Error("Failed to load invoice");
-  }
   return res.json();
 })
 .then(data => {
-  document.getElementById("invoiceNo").textContent =
-    data.invoice.invoice_no;
-
-  document.getElementById("invoiceDate").textContent =
-    data.invoice.created_at;
-
-  document.getElementById("customer").textContent =
-    data.invoice.customer;
+  document.getElementById("invoiceNo").textContent = data.invoice.invoice_no;
+  document.getElementById("invoiceDate").textContent = data.invoice.created_at;
+  document.getElementById("customer").textContent = data.invoice.customer;
 
   let total = 0;
   const tbody = document.getElementById("items");
@@ -194,14 +223,9 @@ fetch(`/api/invoice-view?id=${id}`, {
     tbody.appendChild(tr);
   });
 
-  document.getElementById("total").textContent =
-    total.toFixed(2);
-
+  document.getElementById("total").textContent = total.toFixed(2);
   document.getElementById("totalWords").textContent =
     "RM " + total.toFixed(2);
-})
-.catch(err => {
-  alert(err.message);
 });
 </script>
 
