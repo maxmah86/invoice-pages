@@ -16,7 +16,6 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
 }
 
 .company h1 {
@@ -39,16 +38,13 @@ body {
 }
 
 .quote-actions {
-  margin: 8px 0;
-  display: flex;
-  gap: 6px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+  margin: 6px 0;
 }
 
 .quote-actions button {
   padding: 6px 12px;
   font-size: 13px;
+  margin-left: 6px;
   cursor: pointer;
 }
 
@@ -56,6 +52,14 @@ body {
   font-size: 14px;
   line-height: 1.6;
 }
+
+.status {
+  font-weight: bold;
+}
+
+.status.OPEN { color: #1c7ed6; }
+.status.ACCEPTED { color: #2f9e44; }
+.status.VOID { color: #c92a2a; }
 
 .section {
   margin-top: 20px;
@@ -116,17 +120,18 @@ th {
     <div class="quote-title">QUOTATION</div>
 
     <div class="quote-actions">
-      <button id="editBtn" style="display:none" onclick="goEdit()">EDIT</button>
-      <button id="convertBtn" style="display:none" onclick="convertToInvoice()">
-        CONVERT TO INVOICE
-      </button>
+      <button id="editBtn" style="display:none" onclick="editQuotation()">EDIT</button>
+      <button id="convertBtn" style="display:none" onclick="convertQuotation()">CONVERT TO INVOICE</button>
     </div>
 
     <div class="quote-meta">
       <div><strong>Quotation No:</strong> <span id="quoteNo"></span></div>
       <div><strong>Date:</strong> <span id="quoteDate"></span></div>
       <div><strong>To:</strong> <span id="customer"></span></div>
-      <div><strong>Status:</strong> <span id="status"></span></div>
+      <div>
+        <strong>Status:</strong>
+        <span id="status" class="status"></span>
+      </div>
     </div>
   </div>
 </div>
@@ -164,17 +169,13 @@ th {
 </div>
 
 <script>
-function getQuery(name) {
-  return new URLSearchParams(window.location.search).get(name);
+const id = new URLSearchParams(location.search).get("id");
+
+function editQuotation() {
+  location.href = `/quotation-edit.html?id=${id}`;
 }
 
-const id = getQuery("id");
-
-function goEdit() {
-  location.href = `/quotation.html?id=${id}`;
-}
-
-async function convertToInvoice() {
+async function convertQuotation() {
   if (!confirm("Convert this quotation to invoice?")) return;
 
   const res = await fetch("/api/quotation-convert", {
@@ -209,7 +210,10 @@ fetch(`/api/quotation-view?id=${id}`, {
   document.getElementById("quoteNo").textContent = q.quotation_no;
   document.getElementById("quoteDate").textContent = q.created_at;
   document.getElementById("customer").textContent = q.customer;
-  document.getElementById("status").textContent = q.status;
+
+  const statusEl = document.getElementById("status");
+  statusEl.textContent = q.status;
+  statusEl.classList.add(q.status);
 
   if (q.status === "OPEN") {
     document.getElementById("editBtn").style.display = "inline-block";
