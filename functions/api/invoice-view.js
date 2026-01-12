@@ -1,10 +1,21 @@
 export async function onRequest({ request, env }) {
   // ===== 登录检查 =====
   const cookie = request.headers.get("Cookie") || "";
-  if (!cookie.includes("session=ok")) {
+  const loggedIn = cookie
+    .split(";")
+    .map(c => c.trim())
+    .includes("session=ok");
+
+  if (!loggedIn) {
     return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
+      JSON.stringify({ error: "Unauthorized", loggedIn: false }),
+      {
+        status: 401,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store"
+        }
+      }
     );
   }
 
@@ -15,11 +26,14 @@ export async function onRequest({ request, env }) {
   if (!id) {
     return new Response(
       JSON.stringify({ error: "Missing invoice id" }),
-      { status: 400 }
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" }
+      }
     );
   }
 
-  // ===== 读取 invoice 主表（含 invoice_no）=====
+  // ===== 读取 invoice 主表 =====
   const invoice = await env.DB.prepare(
     `
     SELECT
@@ -37,7 +51,10 @@ export async function onRequest({ request, env }) {
   if (!invoice) {
     return new Response(
       JSON.stringify({ error: "Invoice not found" }),
-      { status: 404 }
+      {
+        status: 404,
+        headers: { "Content-Type": "application/json" }
+      }
     );
   }
 
@@ -54,14 +71,18 @@ export async function onRequest({ request, env }) {
     `
   ).bind(id).all();
 
-  // ===== 返回 JSON =====
+  // ===== 正常返回 =====
   return new Response(
     JSON.stringify({
       invoice,
-      items: itemsResult.results
+      items: itemsResult.results || []
     }),
     {
-      headers: { "Content-Type": "application/json" }
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      }
     }
   );
 }
