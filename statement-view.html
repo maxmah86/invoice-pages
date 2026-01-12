@@ -1,77 +1,200 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Statement</title>
+<title>Statement of Account</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-body { font-family: Arial; margin:16px; }
-h1 { margin-bottom:4px; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { border:1px solid #000; padding:6px; font-size:13px; }
-th { background:#eee; }
-.right { text-align:right; }
-.total { font-weight:bold; text-align:right; margin-top:10px; }
-@media print { button { display:none; } }
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  color: #000;
+}
+
+.header {
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.meta {
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.summary {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.summary div {
+  margin-bottom: 4px;
+}
+
+.customer-block {
+  margin-top: 24px;
+}
+
+.customer-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 13px;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+.right {
+  text-align: right;
+}
+
+.balance {
+  font-weight: bold;
+}
+
+.status-PAID { color: #2f9e44; }
+.status-UNPAID { color: #1c7ed6; }
+.status-VOID { color: #c92a2a; }
+
+.print-btn {
+  margin-bottom: 10px;
+}
+
+@media print {
+  button { display: none; }
+}
 </style>
 </head>
+
 <body>
 
-<button onclick="window.print()">Print</button>
+<button class="print-btn" onclick="window.print()">Print / Save PDF</button>
 
-<h1>STATEMENT</h1>
-<div><strong>Customer:</strong> <span id="customer"></span></div>
-<div><strong>Period:</strong> <span id="period"></span></div>
-
-<table>
-<thead>
-<tr>
-  <th>Date</th>
-  <th>Invoice No</th>
-  <th>Status</th>
-  <th class="right">Amount (RM)</th>
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
-
-<div class="total">
-  Outstanding Balance: RM <span id="balance"></span>
+<div class="header">
+  <h1>STATEMENT OF ACCOUNT</h1>
+  <div class="meta">
+    <div><strong>Customer:</strong> <span id="customerLabel"></span></div>
+    <div><strong>Period:</strong> <span id="periodLabel"></span></div>
+  </div>
 </div>
 
-<script>
-const p = new URLSearchParams(location.search);
-const customer = p.get("customer");
-const from = p.get("from");
-const to = p.get("to");
+<div class="summary">
+  <div>Total Invoiced: RM <span id="totalInvoiced">0.00</span></div>
+  <div>Total Paid: RM <span id="totalPaid">0.00</span></div>
+  <div><strong>Outstanding Balance: RM <span id="outstanding">0.00</span></strong></div>
+</div>
 
-document.getElementById("customer").textContent = customer;
-document.getElementById("period").textContent =
+<div id="content"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const customerParam = params.get("customer");
+const from = params.get("from");
+const to = params.get("to");
+
+document.getElementById("customerLabel").textContent =
+  customerParam || "ALL CUSTOMERS";
+
+document.getElementById("periodLabel").textContent =
   `${from || "Start"} → ${to || "Today"}`;
 
-fetch(`/api/statement?customer=${encodeURIComponent(customer)}&from=${from}&to=${to}`,
-  { credentials: "include" }
-)
-.then(r => r.json())
-.then(data => {
-  let balance = 0;
-  const tbody = document.getElementById("rows");
+let invoices = [];
 
-  data.invoices.forEach(inv => {
-    if (inv.status === "UNPAID") balance += inv.amount;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${inv.created_at}</td>
-      <td>${inv.invoice_no}</td>
-      <td>${inv.status}</td>
-      <td class="right">${inv.amount.toFixed(2)}</td>
-    `;
-    tbody.appendChild(tr);
+fetch(`/api/statement?${params.toString()}`, { credentials: "include" })
+  .then(r => r.json())
+  .then(data => {
+    invoices = data.invoices || [];
+    render();
   });
 
-  document.getElementById("balance").textContent = balance.toFixed(2);
-});
+function render() {
+  const container = document.getElementById("content");
+  container.innerHTML = "";
+
+  let totalInv = 0;
+  let totalPaid = 0;
+
+  // ===== Group by customer =====
+  const groups = {};
+  invoices.forEach(inv => {
+    if (!groups[inv.customer]) groups[inv.customer] = [];
+    groups[inv.customer].push(inv);
+
+    if (inv.status !== "VOID") totalInv += inv.amount;
+    if (inv.status === "PAID") totalPaid += inv.amount;
+  });
+
+  document.getElementById("totalInvoiced").textContent = totalInv.toFixed(2);
+  document.getElementById("totalPaid").textContent = totalPaid.toFixed(2);
+  document.getElementById("outstanding").textContent =
+    (totalInv - totalPaid).toFixed(2);
+
+  // ===== Render each customer =====
+  Object.keys(groups).forEach(customer => {
+    const block = document.createElement("div");
+    block.className = "customer-block";
+
+    let balance = 0;
+
+    block.innerHTML = `
+      <div class="customer-title">${customer}</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Ref No</th>
+            <th>Status</th>
+            <th class="right">Debit (RM)</th>
+            <th class="right">Credit (RM)</th>
+            <th class="right">Balance (RM)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    `;
+
+    const tbody = block.querySelector("tbody");
+
+    groups[customer].forEach(inv => {
+      let debit = 0;
+      let credit = 0;
+
+      if (inv.status === "UNPAID") debit = inv.amount;
+      if (inv.status === "PAID") credit = inv.amount;
+
+      if (inv.status !== "VOID") balance += (debit - credit);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${inv.created_at}</td>
+        <td>${inv.invoice_no}</td>
+        <td class="status-${inv.status}">${inv.status}</td>
+        <td class="right">${debit ? debit.toFixed(2) : ""}</td>
+        <td class="right">${credit ? credit.toFixed(2) : ""}</td>
+        <td class="right balance">${balance.toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    container.appendChild(block);
+  });
+}
 </script>
 
 </body>
