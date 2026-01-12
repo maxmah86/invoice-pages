@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Statement</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial; margin:16px; }
+input, button { width:100%; padding:10px; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<h1>Statement</h1>
+
+<label>Customer</label>
+<input id="customer" placeholder="Customer name">
+
+<label>From Date</label>
+<input type="date" id="from">
+
+<label>To Date</label>
+<input type="date" id="to">
+
+<button onclick="view()">View Statement</button>
+
+<script>
+function view() {
+  const c = document.getElementById("customer").value;
+  const f = document.getElementById("from").value;
+  const t = document.getElementById("to").value;
+
+  if (!c) {
+    alert("Customer required");
+    return;
+  }
+
+  location.href =
+    `/statement-view.html?customer=${encodeURIComponent(c)}&from=${f}&to=${t}`;
+}
+</script>
+
+</body>
+</html>
