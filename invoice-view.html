@@ -141,23 +141,37 @@ function getQuery(name) {
 
 const id = getQuery("id");
 
-fetch(`/api/invoice-with-customer?id=${id}`, {
+if (!id) {
+  alert("Missing invoice id");
+  throw new Error("No invoice id");
+}
+
+fetch(`/api/invoice-view?id=${id}`, {
   credentials: "include"
 })
 .then(res => {
   if (res.status === 401) {
-    location.href = "/login.html";
+    location.replace("/login.html");
     throw new Error("Unauthorized");
+  }
+  if (!res.ok) {
+    throw new Error("Failed to load invoice");
   }
   return res.json();
 })
 .then(data => {
-  document.getElementById("invoiceNo").textContent = data.invoice.invoice_no;
-  document.getElementById("invoiceDate").textContent = data.invoice.created_at;
-  document.getElementById("customer").textContent = data.invoice.customer;
+  document.getElementById("invoiceNo").textContent =
+    data.invoice.invoice_no;
+
+  document.getElementById("invoiceDate").textContent =
+    data.invoice.created_at;
+
+  document.getElementById("customer").textContent =
+    data.invoice.customer;
 
   let total = 0;
   const tbody = document.getElementById("items");
+  tbody.innerHTML = "";
 
   data.items.forEach((item, i) => {
     const amount = item.qty * item.price;
@@ -174,16 +188,16 @@ fetch(`/api/invoice-with-customer?id=${id}`, {
     tbody.appendChild(tr);
   });
 
-  document.getElementById("total").textContent = total.toFixed(2);
-  document.getElementById("totalWords").textContent = numberToWords(total);
+  document.getElementById("total").textContent =
+    total.toFixed(2);
+
+  document.getElementById("totalWords").textContent =
+    "RM " + total.toFixed(2);
 })
 .catch(err => {
   alert(err.message);
 });
-
-function numberToWords(num) {
-  return "RM " + num.toFixed(2);
-}
 </script>
+
 </body>
 </html>
