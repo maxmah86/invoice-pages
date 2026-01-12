@@ -1,210 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <title>Quotations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 12px;
+  margin: 16px;
+  background: #f5f5f5;
 }
 
-h2 {
+h1 {
   margin-top: 0;
 }
 
-.quote {
+.filter-box {
   background: #fff;
-  border-radius: 8px;
   padding: 12px;
-  margin-bottom: 12px;
-  border-left: 6px solid #ccc;
-}
-
-.quote.OPEN {
-  border-left-color: #3498db;
-}
-
-.quote.ACCEPTED {
-  border-left-color: #27ae60;
-}
-
-.quote.VOID {
-  border-left-color: #7f8c8d;
-  opacity: 0.6;
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 14px;
-}
-
-.label {
-  color: #666;
-}
-
-.value {
-  font-weight: bold;
-}
-
-.status {
-  font-size: 13px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: #fff;
-}
-
-.status.OPEN {
-  background: #3498db;
-}
-
-.status.ACCEPTED {
-  background: #27ae60;
-}
-
-.status.VOID {
-  background: #7f8c8d;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.actions button {
-  flex: 1;
-  padding: 10px;
-  font-size: 14px;
-  border: none;
   border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.filter-box label {
+  font-size: 13px;
+  font-weight: bold;
+  display: block;
+  margin-top: 6px;
+}
+
+.filter-box input,
+.filter-box select {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.list {
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.item {
+  border-bottom: 1px solid #eee;
+  padding: 12px;
   cursor: pointer;
 }
 
-.view-btn {
-  background: #2c3e50;
-  color: #fff;
+.item:last-child {
+  border-bottom: none;
 }
 
-.convert-btn {
-  background: #f1c40f;
-  color: #000;
+.item .row {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.status {
+  font-weight: bold;
+}
+
+.OPEN { color: #1c7ed6; }
+.ACCEPTED { color: #2f9e44; }
+.VOID { color: #c92a2a; }
+
+/* ===== 打印时隐藏过滤 ===== */
+@media print {
+  .filter-box { display: none; }
 }
 </style>
 </head>
 
 <body>
 
-<h2>Quotations</h2>
+<h1>Quotations</h1>
 
-<div id="list">Loading…</div>
+<!-- ===== Filters ===== -->
+<div class="filter-box">
+  <label>Status</label>
+  <select id="filterStatus" onchange="applyFilter()">
+    <option value="">ALL</option>
+    <option value="OPEN">OPEN</option>
+    <option value="ACCEPTED">ACCEPTED</option>
+    <option value="VOID">VOID</option>
+  </select>
+
+  <label>Quotation No</label>
+  <input id="filterQuoteNo" placeholder="Search quotation no" oninput="applyFilter()">
+
+  <label>Customer</label>
+  <input id="filterCustomer" placeholder="Search customer" oninput="applyFilter()">
+</div>
+
+<!-- ===== Quotation List ===== -->
+<div class="list" id="list"></div>
 
 <script>
-/* ===== 登录检查 ===== */
-(async function checkAuth() {
-  const res = await fetch("/api/auth-check", {
-    credentials: "include"
-  });
-  if (!res.ok) {
-    location.href = "/login.html";
+let quotations = [];
+
+fetch("/api/quotations", { credentials: "include" })
+.then(res => {
+  if (res.status === 401) {
+    location.replace("/login.html");
+    throw new Error("Unauthorized");
   }
-})();
+  return res.json();
+})
+.then(data => {
+  quotations = data;
+  render(quotations);
+})
+.catch(err => alert(err.message));
 
-/* ===== 加载 quotations ===== */
-async function loadQuotations() {
-  const res = await fetch("/api/quotations", {
-    credentials: "include"
+function applyFilter() {
+  const status = document.getElementById("filterStatus").value;
+  const quoteNo = document.getElementById("filterQuoteNo").value.toLowerCase();
+  const customer = document.getElementById("filterCustomer").value.toLowerCase();
+
+  const filtered = quotations.filter(q => {
+    if (status && q.status !== status) return false;
+    if (quoteNo && !q.quotation_no.toLowerCase().includes(quoteNo)) return false;
+    if (customer && !q.customer.toLowerCase().includes(customer)) return false;
+    return true;
   });
 
-  if (!res.ok) {
-    location.href = "/login.html";
+  render(filtered);
+}
+
+function render(list) {
+  const container = document.getElementById("list");
+  container.innerHTML = "";
+
+  if (!list.length) {
+    container.innerHTML = "<div class='item'>No quotations found</div>";
     return;
   }
 
-  const data = await res.json();
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-
-  if (data.length === 0) {
-    list.innerHTML = "<p>No quotations found.</p>";
-    return;
-  }
-
-  data.forEach(q => {
+  list.forEach(q => {
     const div = document.createElement("div");
-    div.className = "quote " + q.status;
+    div.className = "item";
+    div.onclick = () => {
+      location.href = `/quotation-view.html?id=${q.id}`;
+    };
 
     div.innerHTML = `
-      <div class="row">
-        <span class="label">Quotation</span>
-        <span class="value">${q.quotation_no}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">Customer</span>
-        <span class="value">${q.customer}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">Amount</span>
-        <span class="value">RM ${Number(q.amount).toFixed(2)}</span>
-      </div>
-
-      <div class="row">
-        <span class="label">Status</span>
-        <span class="status ${q.status}">${q.status}</span>
-      </div>
-
-      <div class="actions">
-        <button class="view-btn"
-          onclick="viewQuotation(${q.id})">
-          View
-        </button>
-
-        ${q.status === "OPEN"
-          ? `<button class="convert-btn"
-              onclick="convert(${q.id})">
-              Convert
-            </button>`
-          : ``}
-      </div>
+      <div class="row"><strong>${q.quotation_no}</strong></div>
+      <div class="row">Customer: ${q.customer}</div>
+      <div class="row">Total: RM ${q.amount.toFixed(2)}</div>
+      <div class="row status ${q.status}">${q.status}</div>
     `;
-
-    list.appendChild(div);
+    container.appendChild(div);
   });
 }
-
-/* ===== 查看 ===== */
-function viewQuotation(id) {
-  location.href = "/quotation-view.html?id=" + id;
-}
-
-/* ===== Convert（下一步会补完整） ===== */
-async function convert(id) {
-  if (!confirm("Convert this quotation to invoice?")) return;
-
-  const res = await fetch("/api/quotation-convert", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quotation_id: id })
-  });
-
-  if (res.ok) {
-    alert("Quotation converted to invoice");
-    loadQuotations();
-  } else {
-    alert("Failed to convert quotation");
-  }
-}
-
-loadQuotations();
 </script>
 
 </body>
