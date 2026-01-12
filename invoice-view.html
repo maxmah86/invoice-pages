@@ -1,286 +1,180 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Invoice</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <title>Invoice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  background: #fff;
-  margin: 0;
-  padding: 10px;
-  color: #000;
-}
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 16px;
+      color: #000;
+      background: #fff;
+    }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
 
-.company {
-  font-size: 13px;
-}
+    .company {
+      font-size: 14px;
+      line-height: 1.5;
+    }
 
-.company h2 {
-  margin: 0 0 4px;
-}
+    .title {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: right;
+    }
 
-.invoice-title {
-  text-align: right;
-}
+    .info {
+      margin: 16px 0;
+      font-size: 14px;
+    }
 
-.invoice-title h1 {
-  margin: 0;
-}
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 14px;
+    }
 
-.meta {
-  font-size: 13px;
-  margin-top: 4px;
-}
+    th, td {
+      border: 1px solid #000;
+      padding: 6px;
+      text-align: left;
+    }
 
-.to {
-  margin-top: 12px;
-  font-size: 13px;
-}
+    th {
+      background: #f0f0f0;
+      text-align: center;
+    }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  font-size: 14px;
-}
+    td.qty,
+    td.price,
+    td.amount {
+      text-align: right;
+    }
 
-th, td {
-  border: 1px solid #000;
-  padding: 8px;
-}
+    .total {
+      margin-top: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: right;
+    }
 
-th {
-  background: #f0f0f0;
-  text-align: center;
-}
+    .terms {
+      margin-top: 24px;
+      font-size: 12px;
+    }
 
-.right {
-  text-align: right;
-}
-
-.total-row td {
-  font-weight: bold;
-}
-
-/* ===== 底部标注 ===== */
-.footer {
-  margin-top: 14px;
-  font-size: 13px;
-}
-
-.footer strong {
-  display: block;
-  margin-top: 8px;
-}
-
-.bank {
-  margin-top: 6px;
-}
-
-.thanks {
-  margin-top: 14px;
-}
-
-/* ===== Edit / Void Actions ===== */
-.actions {
-  margin-top: 16px;
-  display: flex;
-  gap: 10px;
-}
-
-.actions button {
-  flex: 1;
-  padding: 12px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.edit-btn {
-  background: #3498db;
-  color: #fff;
-  border: none;
-}
-
-.void-btn {
-  background: #e74c3c;
-  color: #fff;
-  border: none;
-}
-
-/* 📱 手机优化 */
-@media (max-width: 768px) {
-  table {
-    font-size: 13px;
-  }
-
-  th, td {
-    padding: 6px;
-  }
-
-  .company, .meta, .to, .footer {
-    font-size: 12px;
-  }
-}
-
-/* 🖨️ 打印 */
-@media print {
-  .actions {
-    display: none;
-  }
-
-  @page {
-    size: A4;
-    margin: 15mm;
-  }
-}
-</style>
+    @media print {
+      body {
+        margin: 0;
+      }
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="header">
-  <div class="company">
-    <h2>MMAC CONSTRUCTION</h2>
-    201903139488 (002972725-A)<br>
-    52, Jalan Mahogani SD 1/3<br>
-    Sri Damansara, 52200 Kuala Lumpur<br>
-    Tel : 016-444-2128
+  <div class="header">
+    <div class="company">
+      <strong>MMAC CONSTRUCTION</strong><br />
+      201903134488 (002977225-A)<br />
+      52, Jalan Mahogani SD 1/3<br />
+      Sri Damansara<br />
+      52200 Kuala Lumpur, Malaysia<br />
+      Tel: 016-444-2128
+    </div>
+
+    <div class="title">
+      INVOICE
+    </div>
   </div>
 
-  <div class="invoice-title">
-    <h1>INVOICE</h1>
-    <div class="meta" id="meta"></div>
-  </div>
-</div>
-
-<div class="to" id="to"></div>
-
-<table>
-  <thead>
-    <tr>
-      <th style="width:5%">NO</th>
-      <th>ITEM DESCRIPTION</th>
-      <th style="width:10%">QTY</th>
-      <th style="width:15%">U/PRICE</th>
-      <th style="width:15%">AMOUNT</th>
-    </tr>
-  </thead>
-  <tbody id="items"></tbody>
-  <tfoot>
-    <tr class="total-row">
-      <td colspan="4" class="right">TOTAL (RM)</td>
-      <td class="right" id="total"></td>
-    </tr>
-  </tfoot>
-</table>
-
-<!-- ===== 底部标注 ===== -->
-<div class="footer">
-  <strong>RINGGIT MALAYSIA :</strong>
-  TOTAL : RM <span id="total-text"></span>
-
-  <strong>TERMS :</strong>
-  50% deposit upon confirmation and the balance 50% should be clear by project completion.
-
-  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong>
-  MMAC CONSTRUCTION
-
-  <div class="bank">
-    <strong>COMPANY ACCOUNT NUMBER :</strong>
-    MAYBANK : 5142-0863-6636
+  <div class="info">
+    <div><strong>Invoice No:</strong> <span id="invoiceNo"></span></div>
+    <div><strong>Date:</strong> <span id="invoiceDate"></span></div>
+    <div><strong>To:</strong> <span id="customer"></span></div>
   </div>
 
-  <div class="thanks">
-    Thank You.
-  </div>
-</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:5%">No</th>
+        <th>Description</th>
+        <th style="width:10%">Qty</th>
+        <th style="width:15%">Unit Price</th>
+        <th style="width:15%">Amount</th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
 
-<!-- ===== Edit / Void 按钮（仅 UNPAID 显示） ===== -->
-<div class="actions" id="actions"></div>
+  <div class="total">
+    TOTAL (RM): <span id="totalAmount"></span>
+  </div>
+
+  <div class="terms">
+    <strong>TERMS:</strong><br />
+    50% deposit upon confirmation and the balance 50% should be cleared by project completion.<br /><br />
+
+    <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br />
+    MMAC CONSTRUCTION<br /><br />
+
+    <strong>COMPANY ACCOUNT NUMBER:</strong><br />
+    MAYBANK : 5142-0863-6636<br /><br />
+
+    Thank you.
+  </div>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
 
-async function loadInvoice() {
-  const res = await fetch(`/api/invoice-view?id=${id}`, {
-    credentials: "include"
-  });
+if (!id) {
+  alert("Missing invoice id");
+  throw new Error("No invoice id");
+}
 
-  if (!res.ok) {
-    location.href = "/login.html";
-    return;
-  }
-
-  const data = await res.json();
-  const inv = data.invoice;
-
-  document.getElementById("meta").innerHTML = `
-    Inv : ${inv.invoice_no}<br>
-    Date : ${inv.created_at}
-  `;
-
-  document.getElementById("to").innerHTML =
-    "<strong>To :</strong><br>" + inv.customer;
+fetch(`/api/invoice-with-customer?id=${id}`, {
+  credentials: "include"
+})
+.then(r => {
+  if (!r.ok) throw new Error("Failed to load invoice");
+  return r.json();
+})
+.then(data => {
+  document.getElementById("invoiceNo").textContent = data.invoice.invoice_no;
+  document.getElementById("invoiceDate").textContent = data.invoice.created_at;
+  document.getElementById("customer").textContent = data.invoice.customer;
 
   let total = 0;
   const tbody = document.getElementById("items");
-  tbody.innerHTML = "";
 
   data.items.forEach((it, i) => {
-    const amt = it.qty * it.price;
-    total += amt;
+    const amount = it.qty * it.price;
+    total += amount;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i + 1}</td>
       <td>${it.description}</td>
-      <td class="right">${it.qty}</td>
-      <td class="right">${it.price.toFixed(2)}</td>
-      <td class="right">${amt.toFixed(2)}</td>
+      <td class="qty">${it.qty}</td>
+      <td class="price">${it.price.toFixed(2)}</td>
+      <td class="amount">${amount.toFixed(2)}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  document.getElementById("total").innerText = total.toFixed(2);
-  document.getElementById("total-text").innerText = total.toFixed(2);
-
-  // ===== 仅 UNPAID 显示 Edit / Void =====
-  if (inv.status === "UNPAID") {
-    document.getElementById("actions").innerHTML = `
-      <button class="edit-btn" onclick="editInvoice()">Edit</button>
-      <button class="void-btn" onclick="voidInvoice()">Void</button>
-    `;
-  }
-}
-
-function editInvoice() {
-  location.href = "/invoice-edit.html?id=" + id;
-}
-
-async function voidInvoice() {
-  if (!confirm("Are you sure you want to void this invoice?")) return;
-
-  await fetch("/api/invoice-void", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id })
-  });
-
-  alert("Invoice voided");
-  location.reload();
-}
-
-loadInvoice();
+  document.getElementById("totalAmount").textContent = total.toFixed(2);
+})
+.catch(err => {
+  alert(err.message);
+});
 </script>
 
 </body>
