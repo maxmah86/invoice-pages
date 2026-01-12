@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quotations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 12px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.quote {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-left: 6px solid #ccc;
+}
+
+.quote.OPEN {
+  border-left-color: #3498db;
+}
+
+.quote.ACCEPTED {
+  border-left-color: #27ae60;
+}
+
+.quote.VOID {
+  border-left-color: #7f8c8d;
+  opacity: 0.6;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.label {
+  color: #666;
+}
+
+.value {
+  font-weight: bold;
+}
+
+.status {
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.status.OPEN {
+  background: #3498db;
+}
+
+.status.ACCEPTED {
+  background: #27ae60;
+}
+
+.status.VOID {
+  background: #7f8c8d;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.view-btn {
+  background: #2c3e50;
+  color: #fff;
+}
+
+.convert-btn {
+  background: #f1c40f;
+  color: #000;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Quotations</h2>
+
+<div id="list">Loading…</div>
+
+<script>
+/* ===== 登录检查 ===== */
+(async function checkAuth() {
+  const res = await fetch("/api/auth-check", {
+    credentials: "include"
+  });
+  if (!res.ok) {
+    location.href = "/login.html";
+  }
+})();
+
+/* ===== 加载 quotations ===== */
+async function loadQuotations() {
+  const res = await fetch("/api/quotations", {
+    credentials: "include"
+  });
+
+  if (!res.ok) {
+    location.href = "/login.html";
+    return;
+  }
+
+  const data = await res.json();
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  if (data.length === 0) {
+    list.innerHTML = "<p>No quotations found.</p>";
+    return;
+  }
+
+  data.forEach(q => {
+    const div = document.createElement("div");
+    div.className = "quote " + q.status;
+
+    div.innerHTML = `
+      <div class="row">
+        <span class="label">Quotation</span>
+        <span class="value">${q.quotation_no}</span>
+      </div>
+
+      <div class="row">
+        <span class="label">Customer</span>
+        <span class="value">${q.customer}</span>
+      </div>
+
+      <div class="row">
+        <span class="label">Amount</span>
+        <span class="value">RM ${Number(q.amount).toFixed(2)}</span>
+      </div>
+
+      <div class="row">
+        <span class="label">Status</span>
+        <span class="status ${q.status}">${q.status}</span>
+      </div>
+
+      <div class="actions">
+        <button class="view-btn"
+          onclick="viewQuotation(${q.id})">
+          View
+        </button>
+
+        ${q.status === "OPEN"
+          ? `<button class="convert-btn"
+              onclick="convert(${q.id})">
+              Convert
+            </button>`
+          : ``}
+      </div>
+    `;
+
+    list.appendChild(div);
+  });
+}
+
+/* ===== 查看 ===== */
+function viewQuotation(id) {
+  location.href = "/quotation-view.html?id=" + id;
+}
+
+/* ===== Convert（下一步会补完整） ===== */
+async function convert(id) {
+  if (!confirm("Convert this quotation to invoice?")) return;
+
+  const res = await fetch("/api/quotation-convert", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ quotation_id: id })
+  });
+
+  if (res.ok) {
+    alert("Quotation converted to invoice");
+    loadQuotations();
+  } else {
+    alert("Failed to convert quotation");
+  }
+}
+
+loadQuotations();
+</script>
+
+</body>
+</html>
