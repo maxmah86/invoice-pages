@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8" />
 <title>Quotation</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #fff;
-  margin: 0;
-  padding: 10px;
+  margin: 16px;
   color: #000;
 }
 
@@ -20,98 +18,79 @@ body {
   align-items: flex-start;
 }
 
+.company h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
 .company {
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-.company h2 {
-  margin: 0 0 4px;
-}
-
-.title {
+.quote-box {
   text-align: right;
 }
 
-.title h1 {
-  margin: 0;
+.quote-title {
+  font-size: 26px;
+  font-weight: bold;
 }
 
-.meta {
-  font-size: 13px;
-  margin-top: 4px;
+.quote-actions {
+  margin: 6px 0;
 }
 
-.to {
-  margin-top: 12px;
+.quote-actions button {
+  padding: 6px 12px;
   font-size: 13px;
+  cursor: pointer;
+}
+
+.quote-meta {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.section {
+  margin-top: 20px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 12px;
-  font-size: 14px;
+  margin-top: 10px;
 }
 
 th, td {
   border: 1px solid #000;
-  padding: 8px;
+  padding: 6px;
+  font-size: 13px;
 }
 
 th {
   background: #f0f0f0;
-  text-align: center;
 }
 
-.right {
+.text-right {
   text-align: right;
 }
 
-.total-row td {
+.total {
+  font-size: 16px;
   font-weight: bold;
+  text-align: right;
+  margin-top: 12px;
 }
 
-/* ===== 底部标注 ===== */
 .footer {
-  margin-top: 14px;
+  margin-top: 20px;
   font-size: 13px;
+  line-height: 1.6;
 }
 
-.footer strong {
-  display: block;
-  margin-top: 8px;
-}
-
-.bank {
-  margin-top: 6px;
-}
-
-.note {
-  margin-top: 10px;
-  font-style: italic;
-}
-
-/* 📱 手机优化 */
-@media (max-width: 768px) {
-  table {
-    font-size: 13px;
-  }
-
-  th, td {
-    padding: 6px;
-  }
-
-  .company, .meta, .to, .footer {
-    font-size: 12px;
-  }
-}
-
-/* 🖨️ 打印 */
 @media print {
-  @page {
-    size: A4;
-    margin: 15mm;
-  }
+  button { display: none; }
 }
 </style>
 </head>
@@ -120,109 +99,129 @@ th {
 
 <div class="header">
   <div class="company">
-    <h2>MMAC CONSTRUCTION</h2>
-    201903139488 (002972725-A)<br>
+    <h1>MMAC CONSTRUCTION</h1>
+    201903134488 (002977225-A)<br>
     52, Jalan Mahogani SD 1/3<br>
-    Sri Damansara, 52200 Kuala Lumpur<br>
-    Tel : 016-444-2128
+    Sri Damansara<br>
+    52200 Kuala Lumpur, Malaysia<br>
+    Tel: 016-444-2128
   </div>
 
-  <div class="title">
-    <h1>QUOTATION</h1>
-    <div class="meta" id="meta"></div>
+  <div class="quote-box">
+    <div class="quote-title">QUOTATION</div>
+
+    <div class="quote-actions" id="convertBox" style="display:none;">
+      <button onclick="convertToInvoice()">CONVERT TO INVOICE</button>
+    </div>
+
+    <div class="quote-meta">
+      <div><strong>Quotation No:</strong> <span id="quoteNo"></span></div>
+      <div><strong>Date:</strong> <span id="quoteDate"></span></div>
+      <div><strong>To:</strong> <span id="customer"></span></div>
+    </div>
   </div>
 </div>
 
-<div class="to" id="to"></div>
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:5%">No</th>
+        <th>Description</th>
+        <th style="width:10%">Qty</th>
+        <th style="width:15%">Unit Price</th>
+        <th style="width:15%">Amount (RM)</th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
 
-<table>
-  <thead>
-    <tr>
-      <th style="width:5%">NO</th>
-      <th>ITEM DESCRIPTION</th>
-      <th style="width:10%">QTY</th>
-      <th style="width:15%">U/PRICE</th>
-      <th style="width:15%">AMOUNT</th>
-    </tr>
-  </thead>
-  <tbody id="items"></tbody>
-  <tfoot>
-    <tr class="total-row">
-      <td colspan="4" class="right">TOTAL (RM)</td>
-      <td class="right" id="total"></td>
-    </tr>
-  </tfoot>
-</table>
+  <div class="total">
+    TOTAL (RM): <span id="total"></span>
+  </div>
+</div>
 
-<!-- ===== 底部标注 ===== -->
 <div class="footer">
-  <strong>RINGGIT MALAYSIA :</strong>
-  TOTAL : RM <span id="total-text"></span>
+  <strong>TERMS:</strong><br>
+  Prices quoted are valid for 30 days from the date of this quotation.<br><br>
 
-  <strong>TERMS :</strong>
-  Prices quoted are valid for 30 days from the date of this quotation.
+  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br>
+  MMAC CONSTRUCTION<br><br>
 
-  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong>
-  MMAC CONSTRUCTION
+  <strong>COMPANY ACCOUNT NUMBER:</strong><br>
+  MAYBANK : 5142-0863-6636<br><br>
 
-  <div class="bank">
-    <strong>COMPANY ACCOUNT NUMBER :</strong>
-    MAYBANK : 5142-0863-6636
-  </div>
-
-  <div class="note">
-    * This is a quotation only. Invoice will be issued upon confirmation.
-  </div>
+  This is a quotation only. Invoice will be issued upon confirmation.
 </div>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+function getQuery(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
 
-async function loadQuotation() {
-  const res = await fetch(`/api/quotation-view?id=${id}`, {
-    credentials: "include"
+const id = getQuery("id");
+
+async function convertToInvoice() {
+  if (!confirm("Convert this quotation to invoice?")) return;
+
+  const res = await fetch("/api/quotation-convert", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ quotation_id: id })
   });
 
   if (!res.ok) {
-    location.href = "/login.html";
+    alert("Failed to convert quotation");
     return;
   }
 
   const data = await res.json();
+  location.href = `/invoice-view.html?id=${data.invoice_id}`;
+}
+
+fetch(`/api/quotation-view?id=${id}`, {
+  credentials: "include"
+})
+.then(res => {
+  if (res.status === 401) {
+    location.replace("/login.html");
+    throw new Error("Unauthorized");
+  }
+  return res.json();
+})
+.then(data => {
   const q = data.quotation;
 
-  document.getElementById("meta").innerHTML = `
-    QT : ${q.quotation_no}<br>
-    Date : ${q.created_at}
-  `;
+  document.getElementById("quoteNo").textContent = q.quotation_no;
+  document.getElementById("quoteDate").textContent = q.created_at;
+  document.getElementById("customer").textContent = q.customer;
 
-  document.getElementById("to").innerHTML =
-    "<strong>To :</strong><br>" + q.customer;
+  if (q.status === "OPEN") {
+    document.getElementById("convertBox").style.display = "block";
+  }
 
   let total = 0;
   const tbody = document.getElementById("items");
   tbody.innerHTML = "";
 
-  data.items.forEach((it, i) => {
-    const amt = it.qty * it.price;
-    total += amt;
+  data.items.forEach((item, i) => {
+    const amount = item.qty * item.price;
+    total += amount;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i + 1}</td>
-      <td>${it.description}</td>
-      <td class="right">${it.qty}</td>
-      <td class="right">${it.price.toFixed(2)}</td>
-      <td class="right">${amt.toFixed(2)}</td>
+      <td>${item.description}</td>
+      <td class="text-right">${item.qty}</td>
+      <td class="text-right">${item.price.toFixed(2)}</td>
+      <td class="text-right">${amount.toFixed(2)}</td>
     `;
     tbody.appendChild(tr);
   });
 
-  document.getElementById("total").innerText = total.toFixed(2);
-  document.getElementById("total-text").innerText = total.toFixed(2);
-}
-
-loadQuotation();
+  document.getElementById("total").textContent = total.toFixed(2);
+});
 </script>
 
 </body>
