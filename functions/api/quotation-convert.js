@@ -1,26 +1,62 @@
 export async function onRequestPost({ request, env }) {
+  // 1️⃣ auth
   const cookie = request.headers.get("Cookie") || "";
-  if (!cookie.includes("session=ok"))
-    return new Response("Unauthorized", { status: 401 });
+  if (!cookie.includes("auth=ok")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
+  // 2️⃣ input
   const { quotation_id } = await request.json();
+  if (!quotation_id) {
+    return new Response(JSON.stringify({ error: "Missing quotation_id" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
+  // 3️⃣ load quotation
   const q = await env.DB.prepare(
-    "SELECT * FROM quotations WHERE id=? AND status='OPEN'"
-  ).bind(quotation_id).first();
+    `SELECT * FROM quotations WHERE id = ? AND status = 'OPEN'`
+  )
+    .bind(quotation_id)
+    .first();
 
-  if (!q) return new Response("Invalid quotation", { status: 400 });
+  if (!q) {
+    return new Response(JSON.stringify({ error: "Quotation not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
-  const items = await env.DB.prepare(
-    "SELECT * FROM quotation_items WHERE quotation_id=?"
-  ).bind(quotation_id).all();
+  // 4️⃣ create invoice_no
+  const invoiceNo = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(Math.random() * 10000)}`;
 
-  // 👉 这里直接复用你现有 invoice-create 逻辑
-  // 插入 invoices + invoice_items（略，你已经有）
-
+  // 5️⃣ insert invoice (⚠️完全匹配你的表)
   await env.DB.prepare(
-    "UPDATE quotations SET status='ACCEPTED' WHERE id=?"
-  ).bind(quotation_id).run();
+    `
+    INSERT INTO invoices
+    (invoice_no, customer, amount, status, created_at)
+    VALUES (?, ?, ?, 'UNPAID', datetime('now'))
+    `
+  )
+    .bind(invoiceNo, q.customer, q.amount)
+    .run();
 
-  return Response.json({ success: true });
+  // 6️⃣ update quotation
+  await env.DB.prepare(
+    `UPDATE quotations SET status = 'ACCEPTED' WHERE id = ?`
+  )
+    .bind(quotation_id)
+    .run();
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      invoice_no: invoiceNo,
+    }),
+    { headers: { "Content-Type": "application/json" } }
+  );
 }
