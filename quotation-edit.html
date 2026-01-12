@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Edit Quotation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body { font-family: Arial; margin: 16px; }
+h1 { margin-bottom: 10px; }
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0;
+  box-sizing: border-box;
+}
+
+.item {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+button {
+  padding: 10px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+.total {
+  font-weight: bold;
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Edit Quotation</h1>
+
+<label>Customer</label>
+<input id="customer">
+
+<div id="items"></div>
+
+<button onclick="addItem()">➕ Add Item</button>
+
+<div class="total">
+  Total: RM <span id="total">0.00</span>
+</div>
+
+<button onclick="save()">💾 Save</button>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+const itemsDiv = document.getElementById("items");
+
+function addItem(item = {}) {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = `
+    <input placeholder="Description" value="${item.description || ""}">
+    <input type="number" placeholder="Qty" value="${item.qty || 1}">
+    <input type="number" placeholder="Price" value="${item.price || 0}">
+    <button onclick="this.parentElement.remove(); calc()">Remove</button>
+  `;
+  itemsDiv.appendChild(div);
+  calc();
+}
+
+function calc() {
+  let total = 0;
+  itemsDiv.querySelectorAll(".item").forEach(div => {
+    const qty = Number(div.children[1].value);
+    const price = Number(div.children[2].value);
+    total += qty * price;
+  });
+  document.getElementById("total").textContent = total.toFixed(2);
+}
+
+function load() {
+  fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
+    .then(r => r.json())
+    .then(data => {
+      if (data.quotation.status !== "OPEN") {
+        alert("Quotation cannot be edited");
+        location.href = "/quotations.html";
+        return;
+      }
+      document.getElementById("customer").value = data.quotation.customer;
+      data.items.forEach(addItem);
+      calc();
+    });
+}
+
+function save() {
+  const items = [];
+  itemsDiv.querySelectorAll(".item").forEach(div => {
+    items.push({
+      description: div.children[0].value,
+      qty: Number(div.children[1].value),
+      price: Number(div.children[2].value)
+    });
+  });
+
+  fetch("/api/quotation-edit", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id,
+      customer: document.getElementById("customer").value,
+      items
+    })
+  })
+  .then(r => {
+    if (!r.ok) throw new Error("Save failed");
+    return r.json();
+  })
+  .then(() => {
+    alert("Saved");
+    location.href = `/quotation-view.html?id=${id}`;
+  })
+  .catch(e => alert(e.message));
+}
+
+load();
+</script>
+
+</body>
+</html>
