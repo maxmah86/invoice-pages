@@ -213,7 +213,11 @@ fetch(`/api/quotation-view?id=${id}`, {
   const q = data.quotation;
 
   document.getElementById("quoteNo").textContent = q.quotation_no;
-  document.getElementById("quoteDate").textContent = q.created_at;
+
+  // ✅ 只显示日期（去掉时间）
+  const dateOnly = q.created_at.split(" ")[0];
+  document.getElementById("quoteDate").textContent = dateOnly;
+
   document.getElementById("customer").textContent = q.customer;
 
   const statusEl = document.getElementById("status");
