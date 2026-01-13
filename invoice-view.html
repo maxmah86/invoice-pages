@@ -1,126 +1,223 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Statement of Account</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<title>Invoice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-body { font-family: Arial; margin:16px; color:#000; }
-h1 { margin-bottom:4px; }
-.summary { margin-top:10px; font-size:14px; }
-.summary div { margin-bottom:4px; }
-table { width:100%; border-collapse:collapse; margin-top:12px; }
-th, td { border:1px solid #000; padding:6px; font-size:13px; }
-th { background:#eee; }
-.right { text-align:right; }
-.balance { font-weight:bold; }
-@media print { button, select { display:none; } }
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  color: #000;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.company h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.company {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.invoice-box {
+  text-align: right;
+}
+
+.invoice-title {
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.invoice-actions {
+  margin: 6px 0;
+}
+
+.invoice-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-left: 6px;
+  cursor: pointer;
+}
+
+.invoice-meta {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 13px;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.total {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: right;
+  margin-top: 12px;
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media print {
+  button { display: none; }
+}
 </style>
 </head>
 
 <body>
 
-<button onclick="window.print()">Print</button>
+<div class="header">
+  <div class="company">
+    <h1>MMAC CONSTRUCTION</h1>
+    201903134488 (002977225-A)<br>
+    52, Jalan Mahogani SD 1/3<br>
+    Sri Damansara<br>
+    52200 Kuala Lumpur, Malaysia<br>
+    Tel: 016-444-2128
+  </div>
 
-<h1>STATEMENT OF ACCOUNT</h1>
+  <div class="invoice-box">
+    <div class="invoice-title">INVOICE</div>
 
-<div><strong>Customer:</strong> <span id="customer"></span></div>
-<div><strong>Period:</strong> <span id="period"></span></div>
+    <div class="invoice-actions">
+      <button onclick="editInvoice()">EDIT</button>
+      <button onclick="voidInvoice()">VOID</button>
+    </div>
 
-<div class="summary">
-  <div>Total Invoiced: RM <span id="totalInvoiced">0.00</span></div>
-  <div>Total Paid: RM <span id="totalPaid">0.00</span></div>
-  <div><strong>Outstanding Balance: RM <span id="outstanding">0.00</span></strong></div>
+    <div class="invoice-meta">
+      <div><strong>Invoice No:</strong> <span id="invoiceNo"></span></div>
+      <div><strong>Date:</strong> <span id="invoiceDate"></span></div>
+      <div><strong>To:</strong> <span id="customer"></span></div>
+    </div>
+  </div>
 </div>
 
-<label>Filter Status</label>
-<select id="filter" onchange="render()">
-  <option value="">ALL</option>
-  <option value="UNPAID">UNPAID</option>
-  <option value="PAID">PAID</option>
-  <option value="VOID">VOID</option>
-</select>
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:5%">No</th>
+        <th>Description</th>
+        <th style="width:10%">Qty</th>
+        <th style="width:15%">Unit Price</th>
+        <th style="width:15%">Amount (RM)</th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
 
-<table>
-<thead>
-<tr>
-  <th>Date</th>
-  <th>Ref No</th>
-  <th>Description</th>
-  <th class="right">Debit (RM)</th>
-  <th class="right">Credit (RM)</th>
-  <th class="right">Balance (RM)</th>
-</tr>
-</thead>
-<tbody id="rows"></tbody>
-</table>
+  <div class="total">
+    TOTAL (RM): <span id="total"></span>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>TERMS:</strong><br>
+  50% deposit upon confirmation and the balance 50% should be cleared by project completion.<br><br>
+
+  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br>
+  MMAC CONSTRUCTION<br><br>
+
+  <strong>COMPANY ACCOUNT NUMBER:</strong><br>
+  MAYBANK : 5142-0863-6636<br><br>
+
+  Thank you.
+</div>
 
 <script>
-const p = new URLSearchParams(location.search);
-const customer = p.get("customer");
-const from = p.get("from");
-const to = p.get("to");
+const id = new URLSearchParams(location.search).get("id");
 
-document.getElementById("customer").textContent = customer;
-document.getElementById("period").textContent =
-  `${from || "Start"} → ${to || "Today"}`;
+function editInvoice() {
+  location.href = `/invoice-edit.html?id=${id}`;
+}
 
-let invoices = [];
+async function voidInvoice() {
+  if (!confirm("Are you sure you want to VOID this invoice?")) return;
 
-fetch(`/api/statement?customer=${encodeURIComponent(customer)}&from=${from}&to=${to}`,
-  { credentials: "include" }
-)
-.then(r => r.json())
-.then(data => {
-  invoices = data.invoices;
-  calcSummary();
-  render();
-});
-
-function calcSummary() {
-  let totalInv = 0;
-  let paid = 0;
-
-  invoices.forEach(i => {
-    if (i.status !== "VOID") totalInv += i.amount;
-    if (i.status === "PAID") paid += i.amount;
+  const res = await fetch("/api/invoice-void", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id })
   });
 
-  document.getElementById("totalInvoiced").textContent = totalInv.toFixed(2);
-  document.getElementById("totalPaid").textContent = paid.toFixed(2);
-  document.getElementById("outstanding").textContent = (totalInv - paid).toFixed(2);
+  if (!res.ok) {
+    alert("Failed to void invoice");
+    return;
+  }
+
+  alert("Invoice voided");
+  location.reload();
 }
 
-function render() {
-  const tbody = document.getElementById("rows");
+fetch(`/api/invoice-view?id=${id}`, {
+  credentials: "include"
+})
+.then(res => {
+  if (res.status === 401) {
+    location.replace("/login.html");
+    throw new Error("Unauthorized");
+  }
+  return res.json();
+})
+.then(data => {
+  document.getElementById("invoiceNo").textContent = data.invoice.invoice_no;
+  document.getElementById("invoiceDate").textContent = data.invoice.created_at;
+  document.getElementById("customer").textContent = data.invoice.customer;
+
+  let total = 0;
+  const tbody = document.getElementById("items");
   tbody.innerHTML = "";
 
-  let balance = 0;
-  const filter = document.getElementById("filter").value;
+  data.items.forEach((item, i) => {
+    const amount = item.qty * item.price;
+    total += amount;
 
-  invoices
-    .filter(i => !filter || i.status === filter)
-    .forEach(inv => {
-      let debit = 0, credit = 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${item.description}</td>
+      <td class="text-right">${item.qty}</td>
+      <td class="text-right">${item.price.toFixed(2)}</td>
+      <td class="text-right">${amount.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 
-      if (inv.status === "UNPAID") debit = inv.amount;
-      if (inv.status === "PAID") credit = inv.amount;
-
-      if (inv.status !== "VOID") balance += (debit - credit);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${inv.created_at}</td>
-        <td>${inv.invoice_no}</td>
-        <td>Invoice</td>
-        <td class="right">${debit ? debit.toFixed(2) : ""}</td>
-        <td class="right">${credit ? credit.toFixed(2) : ""}</td>
-        <td class="right balance">${balance.toFixed(2)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-}
+  document.getElementById("total").textContent = total.toFixed(2);
+});
 </script>
 
 </body>
