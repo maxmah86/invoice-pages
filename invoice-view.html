@@ -195,7 +195,11 @@ fetch(`/api/invoice-view?id=${id}`, {
 })
 .then(data => {
   document.getElementById("invoiceNo").textContent = data.invoice.invoice_no;
-  document.getElementById("invoiceDate").textContent = data.invoice.created_at;
+
+  // ✅ 只显示日期（去掉时间）
+  const dateOnly = data.invoice.created_at.split(" ")[0];
+  document.getElementById("invoiceDate").textContent = dateOnly;
+
   document.getElementById("customer").textContent = data.invoice.customer;
 
   let total = 0;
