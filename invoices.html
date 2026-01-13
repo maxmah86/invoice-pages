@@ -47,14 +47,13 @@ h1 {
 .item {
   border-bottom: 1px solid #eee;
   padding: 12px;
-  cursor: pointer;
 }
 
 .item:last-child {
   border-bottom: none;
 }
 
-.item .row {
+.row {
   font-size: 14px;
   margin-bottom: 4px;
 }
@@ -67,9 +66,16 @@ h1 {
 .PAID { color: #2f9e44; }
 .VOID { color: #c92a2a; }
 
-/* ===== 打印时隐藏过滤 ===== */
-@media print {
-  .filter-box { display: none; }
+.actions {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.actions button {
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -112,8 +118,7 @@ fetch("/api/invoices", { credentials: "include" })
 .then(data => {
   invoices = data;
   render(invoices);
-})
-.catch(err => alert(err.message));
+});
 
 function applyFilter() {
   const status = document.getElementById("filterStatus").value;
@@ -142,18 +147,55 @@ function render(list) {
   list.forEach(inv => {
     const div = document.createElement("div");
     div.className = "item";
-    div.onclick = () => {
-      location.href = `/invoice-view.html?id=${inv.id}`;
-    };
 
     div.innerHTML = `
       <div class="row"><strong>${inv.invoice_no}</strong></div>
       <div class="row">Customer: ${inv.customer}</div>
       <div class="row">Total: RM ${inv.amount.toFixed(2)}</div>
       <div class="row status ${inv.status}">${inv.status}</div>
+      <div class="actions">
+        <button onclick="view(${inv.id})">View</button>
+        ${renderActionButton(inv)}
+      </div>
     `;
     container.appendChild(div);
   });
+}
+
+function renderActionButton(inv) {
+  if (inv.status === "UNPAID") {
+    return `<button onclick="setStatus(${inv.id}, 'PAID')">Mark PAID</button>`;
+  }
+  if (inv.status === "PAID") {
+    return `<button onclick="setStatus(${inv.id}, 'UNPAID')">Mark UNPAID</button>`;
+  }
+  return "";
+}
+
+function view(id) {
+  location.href = `/invoice-view.html?id=${id}`;
+}
+
+async function setStatus(id, status) {
+  if (!confirm(`Set invoice to ${status}?`)) return;
+
+  const res = await fetch("/api/invoice-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id, status })
+  });
+
+  if (!res.ok) {
+    alert("Failed to update status");
+    return;
+  }
+
+  // 本地更新状态（不用 reload）
+  const inv = invoices.find(i => i.id === id);
+  if (inv) inv.status = status;
+
+  applyFilter();
 }
 </script>
 
