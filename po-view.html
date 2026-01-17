@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>View PO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 12px;
+  background: #f6f6f6;
+}
+h2 {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.card {
+  background: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+.label {
+  font-size: 12px;
+  color: #666;
+}
+.value {
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+.item {
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+.total {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: right;
+}
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 8px;
+}
+.back {
+  background: #3498db;
+  color: #fff;
+  border: none;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Purchase Order</h2>
+
+<div class="card">
+  <div class="label">PO No</div>
+  <div class="value" id="po_no">-</div>
+
+  <div class="label">PO Date</div>
+  <div class="value" id="po_date">-</div>
+
+  <div class="label">Status</div>
+  <div class="value" id="status">-</div>
+</div>
+
+<div class="card">
+  <div class="label">Supplier</div>
+  <div class="value" id="supplier_name">-</div>
+
+  <div class="label">Address</div>
+  <div class="value" id="supplier_address">-</div>
+</div>
+
+<div class="card">
+  <div class="label">Items</div>
+  <div id="items"></div>
+</div>
+
+<div class="card">
+  <div class="total">Total: RM <span id="total">0.00</span></div>
+</div>
+
+<button class="back" onclick="history.back()">Back</button>
+
+<!-- LOGIN REQUIRE -->
+<script>
+(async () => {
+  try {
+    const r = await fetch("/api/auth-check");
+    if (!r.ok) location.href = "login.html";
+  } catch {
+    location.href = "login.html";
+  }
+})();
+</script>
+
+<script>
+const qs = new URLSearchParams(location.search);
+const id = qs.get("id");
+
+if (!id) {
+  alert("Missing PO id");
+  history.back();
+}
+
+async function loadPO() {
+  const r = await fetch("/api/po-view?id=" + id);
+  if (!r.ok) {
+    alert("Failed to load PO");
+    return;
+  }
+
+  const data = await r.json();
+
+  po_no.textContent = data.po_no;
+  po_date.textContent = data.po_date;
+  status.textContent = data.status;
+  supplier_name.textContent = data.supplier_name;
+  supplier_address.textContent = data.supplier_address || "-";
+  total.textContent = Number(data.total).toFixed(2);
+
+  items.innerHTML = "";
+  data.items.forEach(it => {
+    const d = document.createElement("div");
+    d.className = "item";
+    d.innerHTML = `
+      <div class="value">${it.description}</div>
+      <div class="label">
+        ${it.qty} × ${Number(it.unit_price).toFixed(2)}
+        = ${Number(it.line_total).toFixed(2)}
+      </div>
+    `;
+    items.appendChild(d);
+  });
+}
+
+loadPO();
+</script>
+
+</body>
+</html>
