@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Edit Purchase Order</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  color: #000;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.company h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.company {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.invoice-box {
+  text-align: right;
+}
+
+.invoice-title {
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.invoice-actions {
+  margin: 6px 0;
+}
+
+.invoice-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-left: 6px;
+  cursor: pointer;
+}
+
+.invoice-meta {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 13px;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.total {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: right;
+  margin-top: 12px;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+  font-size: 13px;
+}
+
+@media print {
+  button { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="company">
+    <h1>MMAC CONSTRUCTION</h1>
+    201903134488 (002977225-A)<br>
+    52, Jalan Mahogani SD 1/3<br>
+    Sri Damansara<br>
+    52200 Kuala Lumpur, Malaysia<br>
+    Tel: 016-444-2128
+  </div>
+
+  <div class="invoice-box">
+    <div class="invoice-title">EDIT PURCHASE ORDER</div>
+
+    <div class="invoice-actions">
+      <button onclick="savePO()">SAVE</button>
+      <button onclick="goBack()">CANCEL</button>
+    </div>
+
+    <div class="invoice-meta">
+      <div><strong>PO No:</strong> <span id="poNo"></span></div>
+      <div><strong>Date:</strong> <span id="poDate"></span></div>
+      <div>
+        <strong>Supplier:</strong><br>
+        <input id="supplier" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:5%">No</th>
+        <th>Description</th>
+        <th style="width:10%">Qty</th>
+        <th style="width:15%">Unit Price</th>
+        <th style="width:15%">Amount (RM)</th>
+        <th style="width:5%"></th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
+
+  <button onclick="addRow()">+ Add Item</button>
+
+  <div class="total">
+    TOTAL (RM): <span id="total"></span>
+  </div>
+</div>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+function goBack() {
+  history.back();
+}
+
+function addRow(item = {}) {
+  const tbody = document.getElementById("items");
+  const row = document.createElement("tr");
+
+  row.innerHTML = `
+    <td></td>
+    <td><input class="desc" value="${item.description || ""}"></td>
+    <td><input type="number" class="qty text-right" value="${item.qty || 0}"></td>
+    <td><input type="number" class="price text-right" value="${item.unit_price || 0}"></td>
+    <td class="text-right amount">0.00</td>
+    <td><button onclick="this.closest('tr').remove(); calc()">X</button></td>
+  `;
+
+  tbody.appendChild(row);
+  calc();
+}
+
+function calc() {
+  let total = 0;
+  document.querySelectorAll("#items tr").forEach((tr, i) => {
+    tr.children[0].textContent = i + 1;
+    const qty = Number(tr.querySelector(".qty").value) || 0;
+    const price = Number(tr.querySelector(".price").value) || 0;
+    const amount = qty * price;
+    tr.querySelector(".amount").textContent = amount.toFixed(2);
+    total += amount;
+  });
+  document.getElementById("total").textContent = total.toFixed(2);
+}
+
+async function savePO() {
+  const items = [];
+  document.querySelectorAll("#items tr").forEach(tr => {
+    items.push({
+      description: tr.querySelector(".desc").value,
+      qty: tr.querySelector(".qty").value,
+      unit_price: tr.querySelector(".price").value
+    });
+  });
+
+  const payload = {
+    id,
+    supplier_name: document.getElementById("supplier").value,
+    items
+  };
+
+  const res = await fetch("/api/po-edit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    alert("Failed to save PO");
+    return;
+  }
+
+  alert("PO updated");
+  location.href = `/po-view.html?id=${id}`;
+}
+
+/* ===== LOAD PO ===== */
+fetch(`/api/po-view?id=${id}`, { credentials: "include" })
+  .then(res => {
+    if (res.status === 401) location.replace("/login.html");
+    return res.json();
+  })
+  .then(data => {
+    document.getElementById("poNo").textContent = data.po_no;
+    document.getElementById("poDate").textContent = data.po_date;
+    document.getElementById("supplier").value = data.supplier_name;
+
+    data.items.forEach(addRow);
+  });
+</script>
+
+</body>
+</html>
