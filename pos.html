@@ -32,10 +32,28 @@ h1 {
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .po-no {
   font-weight: bold;
   font-size: 16px;
 }
+
+.badge {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 12px;
+  color: #fff;
+}
+
+.badge.OPEN { background: #2980b9; }
+.badge.APPROVED { background: #27ae60; }
+.badge.CLOSED { background: #7f8c8d; }
+.badge.VOID { background: #c0392b; }
 
 .po-meta {
   font-size: 13px;
@@ -64,9 +82,8 @@ h1 {
   color: #fff;
 }
 
-.btn-view {
-  background: #2980b9;
-}
+.btn-view { background: #2980b9; }
+.btn-edit { background: #f39c12; color:#000; }
 
 .btn-create {
   background: #27ae60;
@@ -113,7 +130,7 @@ fetch("/api/auth-check", { credentials: "include" })
 
 <script>
 async function loadPOs() {
-  const r = await fetch("/api/pos");
+  const r = await fetch("/api/pos", { credentials: "include" });
   if (!r.ok) {
     alert("Failed to load purchase orders");
     return;
@@ -136,15 +153,24 @@ async function loadPOs() {
     const c = document.createElement("div");
     c.className = "card";
     c.innerHTML = `
-      <div class="po-no">${po.po_no}</div>
+      <div class="row">
+        <div class="po-no">${po.po_no}</div>
+        <div class="badge ${po.status}">${po.status}</div>
+      </div>
+
       <div class="po-meta">
         ${po.po_date} · ${po.supplier_name}
       </div>
+
       <div class="po-total">
         Total: RM ${Number(po.total).toFixed(2)}
       </div>
+
       <div class="actions">
         <a class="btn-view" href="/po-view.html?id=${po.id}">View</a>
+        ${po.status === 'OPEN'
+          ? `<a class="btn-edit" href="/po-edit.html?id=${po.id}">Edit</a>`
+          : ``}
       </div>
     `;
     list.appendChild(c);
