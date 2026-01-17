@@ -30,8 +30,6 @@ export async function onRequestPost({ request, env }) {
   }
 
   const {
-    po_no,
-    po_date,
     supplier_name,
     supplier_address,
     subtotal,
@@ -39,7 +37,7 @@ export async function onRequestPost({ request, env }) {
     items
   } = body;
 
-  if (!po_no || !po_date || !supplier_name || !Array.isArray(items)) {
+  if (!supplier_name || !Array.isArray(items) || items.length === 0) {
     return new Response(
       JSON.stringify({ error: "Missing required fields" }),
       { status: 400 }
@@ -47,16 +45,15 @@ export async function onRequestPost({ request, env }) {
   }
 
   /* ===============================
-     INSERT PO (HEADER)
+     INSERT PO HEADER
+     (po_no & po_date from SQL DEFAULT)
      =============================== */
   const poResult = await env.DB.prepare(`
     INSERT INTO purchase_orders
-      (po_no, po_date, supplier_name, supplier_address, subtotal, total, status)
+      (supplier_name, supplier_address, subtotal, total, status)
     VALUES
-      (?, ?, ?, ?, ?, ?, 'OPEN')
+      (?, ?, ?, ?, 'OPEN')
   `).bind(
-    po_no,
-    po_date,
     supplier_name,
     supplier_address || "",
     subtotal || 0,
@@ -66,9 +63,9 @@ export async function onRequestPost({ request, env }) {
   const purchaseOrderId = poResult.meta.last_row_id;
 
   /* ===============================
-     INSERT ITEMS
+     INSERT PO ITEMS
      =============================== */
-  const stmt = env.DB.prepare(`
+  const itemStmt = env.DB.prepare(`
     INSERT INTO purchase_order_items
       (purchase_order_id, description, qty, unit_price, line_total)
     VALUES
@@ -76,7 +73,7 @@ export async function onRequestPost({ request, env }) {
   `);
 
   for (const item of items) {
-    await stmt.bind(
+    await itemStmt.bind(
       purchaseOrderId,
       item.description || "",
       item.qty || 0,
