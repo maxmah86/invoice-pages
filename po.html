@@ -1,10 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Create Purchase Order</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<title>Create PO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 12px;
+  background: #f7f7f7;
+}
+h2 {
+  text-align: center;
+}
+fieldset {
+  border: 0;
+  margin-bottom: 16px;
+  padding: 0;
+}
+label {
+  display: block;
+  margin-bottom: 10px;
+}
+input, textarea, button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+textarea {
+  resize: vertical;
+}
+.item {
+  background: #fff;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+.item button {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  margin-top: 6px;
+}
+button.add {
+  background: #3498db;
+  color: #fff;
+  border: none;
+}
+button.save {
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  margin-top: 10px;
+}
+.summary {
+  background: #fff;
+  padding: 12px;
+  border-radius: 6px;
+}
+</style>
 </head>
 
 <body>
@@ -13,149 +69,106 @@
 
 <form id="poForm">
 
-  <!-- PO Header -->
-  <fieldset>
-    <legend>Purchase Order Info</legend>
+<fieldset>
+  <label>PO No
+    <input name="po_no" required>
+  </label>
 
-    <label>
-      PO No:
-      <input type="text" name="po_no" required />
-    </label>
+  <label>PO Date
+    <input type="date" name="po_date" required>
+  </label>
 
-    <label>
-      PO Date:
-      <input type="date" name="po_date" required />
-    </label>
+  <label>Supplier Name
+    <input name="supplier_name" required>
+  </label>
 
-    <label>
-      Supplier Name:
-      <input type="text" name="supplier_name" required />
-    </label>
+  <label>Supplier Address
+    <textarea name="supplier_address" rows="3"></textarea>
+  </label>
+</fieldset>
 
-    <label>
-      Supplier Address:
-      <textarea name="supplier_address" rows="3"></textarea>
-    </label>
-  </fieldset>
+<h3>Items</h3>
+<div id="items"></div>
 
-  <br />
+<button type="button" class="add" onclick="addItem()">+ Add Item</button>
 
-  <!-- Items -->
-  <fieldset>
-    <legend>Items</legend>
+<div class="summary">
+  <label>Subtotal
+    <input id="subtotal" readonly>
+  </label>
+  <label>Total
+    <input id="total" readonly>
+  </label>
+</div>
 
-    <table border="1" width="100%" id="itemsTable">
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th width="80">Qty</th>
-          <th width="120">Unit Price</th>
-          <th width="120">Amount</th>
-          <th width="60"></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <br />
-    <button type="button" onclick="addRow()">+ Add Item</button>
-  </fieldset>
-
-  <br />
-
-  <!-- Totals -->
-  <fieldset>
-    <legend>Summary</legend>
-
-    <label>
-      Subtotal:
-      <input type="number" id="subtotal" readonly />
-    </label>
-
-    <label>
-      Total:
-      <input type="number" id="total" readonly />
-    </label>
-  </fieldset>
-
-  <br />
-
-  <button type="submit">Save Purchase Order</button>
-  <a href="pos.html">Cancel</a>
+<button type="submit" class="save">Save PO</button>
+<a href="pos.html">Cancel</a>
 
 </form>
 
+<!-- LOGIN REQUIRE -->
 <script>
-/* ===============================
-   LOGIN REQUIRE (PAGE GUARD)
-   =============================== */
-(async function requireLogin() {
+(async () => {
   try {
-    const res = await fetch("/api/auth-check");
-    if (!res.ok) {
-      location.href = "login.html";
-    }
-  } catch (e) {
+    const r = await fetch("/api/auth-check");
+    if (!r.ok) location.href = "login.html";
+  } catch {
     location.href = "login.html";
   }
 })();
 </script>
 
 <script>
-/* ===============================
-   PO FORM LOGIC
-   =============================== */
+const itemsDiv = document.getElementById("items");
 
-const tbody = document.querySelector("#itemsTable tbody");
-
-function addRow() {
-  const tr = document.createElement("tr");
-
-  tr.innerHTML = `
-    <td><input type="text" class="desc" required></td>
-    <td><input type="number" class="qty" value="1" min="0" step="0.01"></td>
-    <td><input type="number" class="price" value="0" min="0" step="0.01"></td>
-    <td><input type="number" class="amount" readonly></td>
-    <td><button type="button" onclick="removeRow(this)">X</button></td>
+function addItem() {
+  const div = document.createElement("div");
+  div.className = "item";
+  div.innerHTML = `
+    <label>Description
+      <input class="desc" required>
+    </label>
+    <label>Qty
+      <input type="number" class="qty" value="1" step="0.01">
+    </label>
+    <label>Unit Price
+      <input type="number" class="price" value="0" step="0.01">
+    </label>
+    <label>Amount
+      <input class="amount" readonly>
+    </label>
+    <button type="button" onclick="this.parentElement.remove(); calc()">Remove</button>
   `;
-
-  tbody.appendChild(tr);
-  recalc();
+  itemsDiv.appendChild(div);
+  calc();
 }
 
-function removeRow(btn) {
-  btn.closest("tr").remove();
-  recalc();
-}
-
-function recalc() {
-  let subtotal = 0;
-
-  document.querySelectorAll("#itemsTable tbody tr").forEach(row => {
-    const qty = parseFloat(row.querySelector(".qty").value) || 0;
-    const price = parseFloat(row.querySelector(".price").value) || 0;
-    const amount = qty * price;
-    row.querySelector(".amount").value = amount.toFixed(2);
-    subtotal += amount;
+function calc() {
+  let total = 0;
+  document.querySelectorAll(".item").forEach(i => {
+    const q = +i.querySelector(".qty").value || 0;
+    const p = +i.querySelector(".price").value || 0;
+    const a = q * p;
+    i.querySelector(".amount").value = a.toFixed(2);
+    total += a;
   });
-
-  document.getElementById("subtotal").value = subtotal.toFixed(2);
-  document.getElementById("total").value = subtotal.toFixed(2);
+  subtotal.value = total.toFixed(2);
+  total.value = total.toFixed(2);
 }
 
-tbody.addEventListener("input", recalc);
-addRow(); // default first row
+itemsDiv.addEventListener("input", calc);
+addItem();
 
-document.getElementById("poForm").addEventListener("submit", async e => {
+poForm.onsubmit = async e => {
   e.preventDefault();
 
   const items = [];
-  document.querySelectorAll("#itemsTable tbody tr").forEach(row => {
+  document.querySelectorAll(".item").forEach(i => {
     items.push({
-      description: row.querySelector(".desc").value,
-      qty: row.querySelector(".qty").value,
-      unit_price: row.querySelector(".price").value,
-      line_total: row.querySelector(".amount").value
+      description: i.querySelector(".desc").value,
+      qty: i.querySelector(".qty").value,
+      unit_price: i.querySelector(".price").value,
+      line_total: i.querySelector(".amount").value
     });
   });
 
@@ -164,24 +177,24 @@ document.getElementById("poForm").addEventListener("submit", async e => {
     po_date: poForm.po_date.value,
     supplier_name: poForm.supplier_name.value,
     supplier_address: poForm.supplier_address.value,
-    subtotal: document.getElementById("subtotal").value,
-    total: document.getElementById("total").value,
+    subtotal: subtotal.value,
+    total: total.value,
     items
   };
 
-  const res = await fetch("/api/po-create", {
+  const r = await fetch("/api/po-create", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {"Content-Type":"application/json"},
     body: JSON.stringify(data)
   });
 
-  if (res.ok) {
-    alert("Purchase Order created");
+  if (r.ok) {
+    alert("PO Created");
     location.href = "pos.html";
   } else {
-    alert("Failed to create Purchase Order");
+    alert("Failed");
   }
-});
+};
 </script>
 
 </body>
