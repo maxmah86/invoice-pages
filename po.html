@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Purchase Order</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+<h2>Create Purchase Order</h2>
+
+<form id="poForm">
+
+  <!-- PO Header -->
+  <fieldset>
+    <legend>Purchase Order Info</legend>
+
+    <label>
+      PO No:
+      <input type="text" name="po_no" required />
+    </label>
+
+    <label>
+      PO Date:
+      <input type="date" name="po_date" required />
+    </label>
+
+    <label>
+      Supplier Name:
+      <input type="text" name="supplier_name" required />
+    </label>
+
+    <label>
+      Supplier Address:
+      <textarea name="supplier_address" rows="3"></textarea>
+    </label>
+  </fieldset>
+
+  <br />
+
+  <!-- Items -->
+  <fieldset>
+    <legend>Items</legend>
+
+    <table border="1" width="100%" id="itemsTable">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th width="80">Qty</th>
+          <th width="120">Unit Price</th>
+          <th width="120">Amount</th>
+          <th width="60"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <br />
+    <button type="button" onclick="addRow()">+ Add Item</button>
+  </fieldset>
+
+  <br />
+
+  <!-- Totals -->
+  <fieldset>
+    <legend>Summary</legend>
+
+    <label>
+      Subtotal:
+      <input type="number" id="subtotal" readonly />
+    </label>
+
+    <label>
+      Total:
+      <input type="number" id="total" readonly />
+    </label>
+  </fieldset>
+
+  <br />
+
+  <button type="submit">Save Purchase Order</button>
+  <a href="pos.html">Cancel</a>
+
+</form>
+
+<script>
+/* ===============================
+   LOGIN REQUIRE (PAGE GUARD)
+   =============================== */
+(async function requireLogin() {
+  try {
+    const res = await fetch("/api/auth-check");
+    if (!res.ok) {
+      location.href = "login.html";
+    }
+  } catch (e) {
+    location.href = "login.html";
+  }
+})();
+</script>
+
+<script>
+/* ===============================
+   PO FORM LOGIC
+   =============================== */
+
+const tbody = document.querySelector("#itemsTable tbody");
+
+function addRow() {
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+    <td><input type="text" class="desc" required></td>
+    <td><input type="number" class="qty" value="1" min="0" step="0.01"></td>
+    <td><input type="number" class="price" value="0" min="0" step="0.01"></td>
+    <td><input type="number" class="amount" readonly></td>
+    <td><button type="button" onclick="removeRow(this)">X</button></td>
+  `;
+
+  tbody.appendChild(tr);
+  recalc();
+}
+
+function removeRow(btn) {
+  btn.closest("tr").remove();
+  recalc();
+}
+
+function recalc() {
+  let subtotal = 0;
+
+  document.querySelectorAll("#itemsTable tbody tr").forEach(row => {
+    const qty = parseFloat(row.querySelector(".qty").value) || 0;
+    const price = parseFloat(row.querySelector(".price").value) || 0;
+    const amount = qty * price;
+    row.querySelector(".amount").value = amount.toFixed(2);
+    subtotal += amount;
+  });
+
+  document.getElementById("subtotal").value = subtotal.toFixed(2);
+  document.getElementById("total").value = subtotal.toFixed(2);
+}
+
+tbody.addEventListener("input", recalc);
+addRow(); // default first row
+
+document.getElementById("poForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const items = [];
+  document.querySelectorAll("#itemsTable tbody tr").forEach(row => {
+    items.push({
+      description: row.querySelector(".desc").value,
+      qty: row.querySelector(".qty").value,
+      unit_price: row.querySelector(".price").value,
+      line_total: row.querySelector(".amount").value
+    });
+  });
+
+  const data = {
+    po_no: poForm.po_no.value,
+    po_date: poForm.po_date.value,
+    supplier_name: poForm.supplier_name.value,
+    supplier_address: poForm.supplier_address.value,
+    subtotal: document.getElementById("subtotal").value,
+    total: document.getElementById("total").value,
+    items
+  };
+
+  const res = await fetch("/api/po-create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    alert("Purchase Order created");
+    location.href = "pos.html";
+  } else {
+    alert("Failed to create Purchase Order");
+  }
+});
+</script>
+
+</body>
+</html>
