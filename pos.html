@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Purchase Orders</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 16px;
+  color: #000;
+}
+
+h1 {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.po-no {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.po-meta {
+  font-size: 13px;
+  color: #555;
+  margin-top: 4px;
+}
+
+.po-total {
+  margin-top: 6px;
+  font-weight: bold;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.actions a {
+  flex: 1;
+  text-align: center;
+  padding: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: 6px;
+  color: #fff;
+}
+
+.btn-view {
+  background: #2980b9;
+}
+
+.btn-create {
+  background: #27ae60;
+  display: block;
+  margin-bottom: 16px;
+  text-align: center;
+  padding: 12px;
+  text-decoration: none;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.empty {
+  text-align: center;
+  color: #777;
+  margin-top: 40px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Purchase Orders</h1>
+<div class="subtitle">Supplier purchase orders</div>
+
+<a class="btn-create" href="/po.html">+ Create Purchase Order</a>
+
+<div id="list"></div>
+
+<div id="empty" class="empty" style="display:none;">
+  No purchase orders found.
+</div>
+
+<!-- LOGIN REQUIRE -->
+<script>
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) location.replace("/login.html");
+  })
+  .catch(() => location.replace("/login.html"));
+</script>
+
+<script>
+async function loadPOs() {
+  const r = await fetch("/api/pos");
+  if (!r.ok) {
+    alert("Failed to load purchase orders");
+    return;
+  }
+
+  const data = await r.json();
+  const list = document.getElementById("list");
+  const empty = document.getElementById("empty");
+
+  list.innerHTML = "";
+
+  if (!data.length) {
+    empty.style.display = "block";
+    return;
+  }
+
+  empty.style.display = "none";
+
+  data.forEach(po => {
+    const c = document.createElement("div");
+    c.className = "card";
+    c.innerHTML = `
+      <div class="po-no">${po.po_no}</div>
+      <div class="po-meta">
+        ${po.po_date} · ${po.supplier_name}
+      </div>
+      <div class="po-total">
+        Total: RM ${Number(po.total).toFixed(2)}
+      </div>
+      <div class="actions">
+        <a class="btn-view" href="/po-view.html?id=${po.id}">View</a>
+      </div>
+    `;
+    list.appendChild(c);
+  });
+}
+
+loadPOs();
+</script>
+
+</body>
+</html>
