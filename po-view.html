@@ -112,13 +112,16 @@ th {
   <div class="invoice-box">
     <div class="invoice-title">PURCHASE ORDER</div>
 
+    <!-- ✅ 新增 EDIT 按钮 -->
     <div class="invoice-actions">
-      <button onclick="goBack()">BACK</button>
+      <button onclick="editPO()">EDIT</button>
+      <button onclick="printPO()">PRINT</button>
     </div>
 
     <div class="invoice-meta">
       <div><strong>PO No:</strong> <span id="poNo"></span></div>
       <div><strong>Date:</strong> <span id="poDate"></span></div>
+      <div><strong>Status:</strong> <span id="status"></span></div>
       <div><strong>Supplier:</strong> <span id="supplier"></span></div>
     </div>
   </div>
@@ -146,18 +149,18 @@ th {
 <div class="footer">
   <strong>NOTES:</strong><br>
   Please supply the above items/services as per stated quantities and prices.<br><br>
-
-  <strong>DELIVERY / COMPLETION:</strong><br>
-  As agreed.<br><br>
-
   Thank you.
 </div>
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
-function goBack() {
-  history.back();
+function editPO() {
+  location.href = `/po-edit.html?id=${id}`;
+}
+
+function printPO() {
+  window.print();
 }
 
 fetch(`/api/po-view?id=${id}`, {
@@ -173,6 +176,7 @@ fetch(`/api/po-view?id=${id}`, {
 .then(data => {
   document.getElementById("poNo").textContent = data.po_no;
   document.getElementById("poDate").textContent = data.po_date;
+  document.getElementById("status").textContent = data.status;
   document.getElementById("supplier").textContent = data.supplier_name;
 
   let total = 0;
