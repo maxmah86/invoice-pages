@@ -2,122 +2,169 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard</title>
+<title>MMAC Management System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
   font-family: Arial, sans-serif;
+  background: #f4f6f8;
   margin: 0;
-  background: #f4f4f4;
+  padding: 16px;
+  color: #000;
 }
-header {
-  background: #2c3e50;
-  color: #fff;
-  padding: 14px;
-  text-align: center;
-  font-size: 18px;
+
+h1 {
+  margin-top: 0;
+  margin-bottom: 4px;
 }
-.container {
-  padding: 12px;
+
+.subtitle {
+  color: #555;
+  margin-bottom: 16px;
 }
+
+.section {
+  margin-top: 24px;
+}
+
 .card {
   background: #fff;
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-.card h3 {
-  margin: 0 0 8px 0;
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
 }
+
 .card p {
-  margin: 0 0 12px 0;
-  color: #666;
+  margin: 0 0 12px;
   font-size: 14px;
+  color: #555;
 }
-.card a {
-  display: block;
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions a {
+  flex: 1;
+  min-width: 120px;
   text-align: center;
-  padding: 12px;
-  background: #3498db;
-  color: #fff;
+  padding: 10px;
   text-decoration: none;
+  font-size: 14px;
   border-radius: 6px;
-  font-size: 16px;
+  color: #fff;
 }
-.card.secondary a {
-  background: #27ae60;
-}
-.card.gray a {
-  background: #7f8c8d;
-}
-.footer {
+
+.btn-primary { background: #2c3e50; }
+.btn-success { background: #27ae60; }
+.btn-warning { background: #f39c12; color:#000; }
+.btn-info    { background: #2980b9; }
+.btn-purple  { background: #6f42c1; }
+
+.logout {
+  margin-top: 24px;
   text-align: center;
-  padding: 12px;
-  font-size: 13px;
-  color: #888;
+}
+
+.logout button {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  MMAC System
-</header>
+<h1>MMAC CONSTRUCTION</h1>
+<div class="subtitle">Invoice • Quotation • Statement • Purchase Order</div>
 
-<div class="container">
-
-  <!-- INVOICES -->
+<!-- ===== Invoice ===== -->
+<div class="section">
   <div class="card">
-    <h3>Invoices</h3>
-    <p>Create & manage customer invoices</p>
-    <a href="invoices.html">Open Invoices</a>
+    <h2>Invoice</h2>
+    <p>Create, manage, edit and track invoices.</p>
+    <div class="actions">
+      <a class="btn-success" href="/invoice.html">Create Invoice</a>
+      <a class="btn-primary" href="/invoices.html">Invoice List</a>
+    </div>
   </div>
-
-  <!-- QUOTATIONS -->
-  <div class="card secondary">
-    <h3>Quotations</h3>
-    <p>Prepare and convert quotations</p>
-    <a href="quotations.html">Open Quotations</a>
-  </div>
-
-  <!-- PURCHASE ORDERS -->
-  <div class="card">
-    <h3>Purchase Orders</h3>
-    <p>Create & manage supplier POs</p>
-    <a href="pos.html">Open Purchase Orders</a>
-  </div>
-
-  <!-- STATEMENTS -->
-  <div class="card gray">
-    <h3>Statements</h3>
-    <p>Customer statements & summaries</p>
-    <a href="statement.html">Open Statements</a>
-  </div>
-
-  <!-- QUICK ACTIONS -->
-  <div class="card secondary">
-    <h3>Quick Create</h3>
-    <a href="invoice.html">+ New Invoice</a>
-  </div>
-
 </div>
 
-<div class="footer">
-  Logged in · MMAC Transport & Services
+<!-- ===== Quotation ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Quotation</h2>
+    <p>Create quotation and convert to invoice.</p>
+    <div class="actions">
+      <a class="btn-info" href="/quotation.html">Create Quotation</a>
+      <a class="btn-primary" href="/quotations.html">Quotation List</a>
+    </div>
+  </div>
 </div>
 
-<!-- LOGIN REQUIRE -->
+<!-- ===== Purchase Order ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Purchase Order</h2>
+    <p>Create and manage supplier purchase orders.</p>
+    <div class="actions">
+      <a class="btn-warning" href="/po.html">Create PO</a>
+      <a class="btn-primary" href="/pos.html">PO List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Statement ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Statement</h2>
+    <p>View customer statement and outstanding balance.</p>
+    <div class="actions">
+      <a class="btn-purple" href="/statement.html">View Statement</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Logout ===== -->
+<div class="logout">
+  <button onclick="logout()">Logout</button>
+</div>
+
 <script>
-(async () => {
-  try {
-    const r = await fetch("/api/auth-check");
-    if (!r.ok) location.href = "login.html";
-  } catch {
-    location.href = "login.html";
-  }
-})();
+// ===== 登录检查 =====
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) {
+      location.replace("/login.html");
+    }
+  })
+  .catch(() => {
+    location.replace("/login.html");
+  });
+
+// ===== Logout =====
+async function logout() {
+  await fetch("/api/logout", {
+    method: "POST",
+    credentials: "include"
+  });
+  location.replace("/login.html");
+}
 </script>
 
 </body>
