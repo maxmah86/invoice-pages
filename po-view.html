@@ -1,100 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Purchase Order</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
-<!-- 保留你原本 invoice-view 的 CSS -->
-<link rel="stylesheet" href="style.css">
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  color: #000;
+}
 
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.company h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.company {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.invoice-box {
+  text-align: right;
+}
+
+.invoice-title {
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.invoice-actions {
+  margin: 6px 0;
+}
+
+.invoice-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-left: 6px;
+  cursor: pointer;
+}
+
+.invoice-meta {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 13px;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.total {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: right;
+  margin-top: 12px;
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media print {
+  button { display: none; }
+}
+</style>
 </head>
 
 <body>
 
-<h2>Purchase Order</h2>
+<div class="header">
+  <div class="company">
+    <h1>MMAC CONSTRUCTION</h1>
+    201903134488 (002977225-A)<br>
+    52, Jalan Mahogani SD 1/3<br>
+    Sri Damansara<br>
+    52200 Kuala Lumpur, Malaysia<br>
+    Tel: 016-444-2128
+  </div>
 
-<!-- ===== PO INFO ===== -->
-<div class="card">
-  <div><strong>PO No:</strong> <span id="po_no"></span></div>
-  <div><strong>PO Date:</strong> <span id="po_date"></span></div>
-  <div><strong>Status:</strong> <span id="status"></span></div>
+  <div class="invoice-box">
+    <div class="invoice-title">PURCHASE ORDER</div>
+
+    <div class="invoice-actions">
+      <button onclick="goBack()">BACK</button>
+    </div>
+
+    <div class="invoice-meta">
+      <div><strong>PO No:</strong> <span id="poNo"></span></div>
+      <div><strong>Date:</strong> <span id="poDate"></span></div>
+      <div><strong>Supplier:</strong> <span id="supplier"></span></div>
+    </div>
+  </div>
 </div>
 
-<!-- ===== SUPPLIER ===== -->
-<div class="card">
-  <div><strong>Supplier:</strong></div>
-  <div id="supplier_name"></div>
-  <div id="supplier_address"></div>
-</div>
-
-<!-- ===== ITEMS ===== -->
-<div class="card">
-  <table width="100%" border="1" cellspacing="0" cellpadding="6">
+<div class="section">
+  <table>
     <thead>
       <tr>
+        <th style="width:5%">No</th>
         <th>Description</th>
-        <th width="60">Qty</th>
-        <th width="90">Unit</th>
-        <th width="90">Amount</th>
+        <th style="width:10%">Qty</th>
+        <th style="width:15%">Unit Price</th>
+        <th style="width:15%">Amount (RM)</th>
       </tr>
     </thead>
     <tbody id="items"></tbody>
   </table>
+
+  <div class="total">
+    TOTAL (RM): <span id="total"></span>
+  </div>
 </div>
 
-<!-- ===== TOTAL ===== -->
-<div class="card" style="text-align:right;">
-  <strong>Total: RM <span id="total"></span></strong>
+<div class="footer">
+  <strong>NOTES:</strong><br>
+  Please supply the above items/services as per stated quantities and prices.<br><br>
+
+  <strong>DELIVERY / COMPLETION:</strong><br>
+  As agreed.<br><br>
+
+  Thank you.
 </div>
-
-<a href="pos.html">← Back</a>
-
-<!-- ===== LOGIN REQUIRE ===== -->
-<script>
-fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
-  })
-  .catch(() => location.replace("/login.html"));
-</script>
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
-if (!id) {
-  alert("Missing PO id");
+
+function goBack() {
   history.back();
 }
 
-fetch("/api/po-view?id=" + id)
-  .then(r => r.json())
-  .then(data => {
+fetch(`/api/po-view?id=${id}`, {
+  credentials: "include"
+})
+.then(res => {
+  if (res.status === 401) {
+    location.replace("/login.html");
+    throw new Error("Unauthorized");
+  }
+  return res.json();
+})
+.then(data => {
+  document.getElementById("poNo").textContent = data.po_no;
+  document.getElementById("poDate").textContent = data.po_date;
+  document.getElementById("supplier").textContent = data.supplier_name;
 
-    po_no.textContent = data.po_no;
-    po_date.textContent = data.po_date;
-    status.textContent = data.status;
+  let total = 0;
+  const tbody = document.getElementById("items");
+  tbody.innerHTML = "";
 
-    supplier_name.textContent = data.supplier_name;
-    supplier_address.textContent = data.supplier_address || "";
+  data.items.forEach((item, i) => {
+    const amount = item.qty * item.unit_price;
+    total += amount;
 
-    total.textContent = Number(data.total).toFixed(2);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${item.description}</td>
+      <td class="text-right">${item.qty}</td>
+      <td class="text-right">${Number(item.unit_price).toFixed(2)}</td>
+      <td class="text-right">${amount.toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 
-    const tbody = document.getElementById("items");
-    tbody.innerHTML = "";
-
-    data.items.forEach(i => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${i.description}</td>
-        <td>${i.qty}</td>
-        <td>${Number(i.unit_price).toFixed(2)}</td>
-        <td>${Number(i.line_total).toFixed(2)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  })
-  .catch(() => alert("Failed to load PO"));
+  document.getElementById("total").textContent = total.toFixed(2);
+});
 </script>
 
 </body>
