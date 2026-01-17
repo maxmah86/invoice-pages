@@ -14,13 +14,44 @@ body {
   color: #000;
 }
 
-h1 {
-  margin: 0 0 4px;
+h1 { margin: 0 0 4px; }
+.subtitle { color: #555; margin-bottom: 12px; }
+
+.filter-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
-.subtitle {
-  color: #555;
-  margin-bottom: 16px;
+.filter-box input,
+.filter-box select,
+.filter-box button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.filter-box button {
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+}
+
+.summary-total {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.summary-total .big {
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .card {
@@ -42,11 +73,6 @@ h1 {
   margin-top: 6px;
 }
 
-.amount {
-  margin-top: 8px;
-  font-weight: bold;
-}
-
 .badges {
   margin-top: 6px;
   display: flex;
@@ -64,6 +90,11 @@ h1 {
 .OPEN { background: #2980b9; }
 .APPROVED { background: #27ae60; }
 .CLOSED { background: #7f8c8d; }
+
+.amount {
+  margin-top: 8px;
+  font-weight: bold;
+}
 </style>
 </head>
 
@@ -71,6 +102,29 @@ h1 {
 
 <h1>PO Summary</h1>
 <div class="subtitle">Purchase Orders by Supplier</div>
+
+<!-- ===== FILTER ===== -->
+<div class="filter-box">
+  <input id="supplierFilter" placeholder="Filter by supplier name">
+  <select id="statusFilter">
+    <option value="">All Status</option>
+    <option value="OPEN">OPEN</option>
+    <option value="APPROVED">APPROVED</option>
+    <option value="CLOSED">CLOSED</option>
+  </select>
+  <button onclick="loadSummary()">Apply Filter</button>
+</div>
+
+<!-- ===== OVERALL TOTAL ===== -->
+<div class="summary-total">
+  <div>Total PO: <span id="totalPO" class="big">0</span></div>
+  <div>Total Amount: RM <span id="totalAmount" class="big">0.00</span></div>
+  <div>
+    OPEN: <span id="openCount">0</span> ·
+    APPROVED: <span id="approvedCount">0</span> ·
+    CLOSED: <span id="closedCount">0</span>
+  </div>
+</div>
 
 <div id="list"></div>
 
@@ -82,51 +136,60 @@ h1 {
 <script>
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
-  })
+  .then(d => { if (!d.loggedIn) location.replace("/login.html"); })
   .catch(() => location.replace("/login.html"));
 </script>
 
 <script>
 async function loadSummary() {
-  const r = await fetch("/api/po-summary", { credentials: "include" });
+  const supplier = document.getElementById("supplierFilter").value;
+  const status = document.getElementById("statusFilter").value;
+
+  const qs = new URLSearchParams();
+  if (supplier) qs.set("supplier", supplier);
+  if (status) qs.set("status", status);
+
+  const r = await fetch("/api/po-summary?" + qs.toString(), {
+    credentials: "include"
+  });
+
   if (!r.ok) {
-    alert("Failed to load PO summary");
+    alert("Failed to load summary");
     return;
   }
 
   const data = await r.json();
+
+  // overall
+  document.getElementById("totalPO").textContent = data.overall.total_po;
+  document.getElementById("totalAmount").textContent =
+    Number(data.overall.total_amount).toFixed(2);
+  document.getElementById("openCount").textContent = data.overall.open_count;
+  document.getElementById("approvedCount").textContent = data.overall.approved_count;
+  document.getElementById("closedCount").textContent = data.overall.closed_count;
+
   const list = document.getElementById("list");
   const empty = document.getElementById("empty");
-
   list.innerHTML = "";
 
-  if (!data.length) {
+  if (!data.rows.length) {
     empty.style.display = "block";
     return;
   }
 
   empty.style.display = "none";
 
-  data.forEach(row => {
+  data.rows.forEach(row => {
     const c = document.createElement("div");
     c.className = "card";
     c.innerHTML = `
       <div class="supplier">${row.supplier_name}</div>
-
-      <div class="meta">
-        Total POs: ${row.total_po}
-      </div>
-
+      <div class="meta">Total PO: ${row.total_po}</div>
       <div class="badges">
         <span class="badge OPEN">OPEN: ${row.open_count}</span>
         <span class="badge APPROVED">APPROVED: ${row.approved_count}</span>
-        ${row.closed_count
-          ? `<span class="badge CLOSED">CLOSED: ${row.closed_count}</span>`
-          : ``}
+        <span class="badge CLOSED">CLOSED: ${row.closed_count}</span>
       </div>
-
       <div class="amount">
         Total Amount: RM ${Number(row.total_amount).toFixed(2)}
       </div>
