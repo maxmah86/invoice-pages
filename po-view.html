@@ -1,70 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Purchase Order</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* 样式与 quotation-view 一致（略，直接沿用） */
+body { font-family: Arial, sans-serif; margin:16px; color:#000; }
+.header { display:flex; justify-content:space-between; }
+h1 { margin:0; }
+table { width:100%; border-collapse:collapse; margin-top:16px; }
+th,td { border:1px solid #000; padding:6px; font-size:13px; }
+th { background:#f0f0f0; }
+.text-right { text-align:right; }
+.total { font-weight:bold; font-size:16px; text-align:right; margin-top:10px; }
+@media print { button { display:none; } }
 </style>
 </head>
 
 <body>
 
-<h2>PURCHASE ORDER</h2>
-
-<div>
-  <strong>PO No:</strong> <span id="poNo"></span><br>
-  <strong>Date:</strong> <span id="poDate"></span><br>
-  <strong>Supplier:</strong> <span id="supplier"></span><br>
-  <strong>Status:</strong> <span id="status"></span>
+<div class="header">
+  <div>
+    <h1>MMAC CONSTRUCTION</h1>
+    201903134488 (002977225-A)<br>
+    Tel: 016-444-2128
+  </div>
+  <div style="text-align:right">
+    <h2>PURCHASE ORDER</h2>
+    <div>PO No: <span id="poNo"></span></div>
+    <div>Date: <span id="poDate"></span></div>
+    <div>Supplier: <span id="supplier"></span></div>
+    <div>Status: <span id="status"></span></div>
+  </div>
 </div>
 
 <table>
-  <thead>
-    <tr>
-      <th>No</th>
-      <th>Description</th>
-      <th>Qty</th>
-      <th>Unit Price</th>
-      <th>Amount</th>
-    </tr>
-  </thead>
-  <tbody id="items"></tbody>
+<thead>
+<tr>
+  <th>No</th>
+  <th>Description</th>
+  <th>Qty</th>
+  <th>Unit Price</th>
+  <th>Amount</th>
+</tr>
+</thead>
+<tbody id="items"></tbody>
 </table>
 
-<div>
-  <strong>TOTAL (RM):</strong> <span id="total"></span>
+<div class="total">
+  TOTAL (RM): <span id="total"></span>
 </div>
+
+<div style="margin-top:20px">
+  <b>Delivery:</b><br>
+  <span id="delivery"></span>
+</div>
+
+<div style="margin-top:20px">
+  <b>Notes:</b><br>
+  <span id="notes"></span>
+</div>
+
+<button onclick="window.print()">PRINT / SAVE PDF</button>
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
-fetch(`/api/po-view?id=${id}`, { credentials: "include" })
-.then(res => res.json())
-.then(data => {
+fetch(`/api/po-view?id=${id}`, { credentials:"include" })
+.then(r=>r.json())
+.then(data=>{
   const po = data.po;
 
-  document.getElementById("poNo").textContent = po.po_no;
-  document.getElementById("poDate").textContent = po.po_date;
-  document.getElementById("supplier").textContent = po.supplier;
-  document.getElementById("status").textContent = po.status;
+  poNo.textContent = po.po_no;
+  poDate.textContent = po.po_date;
+  supplier.textContent = po.supplier;
+  status.textContent = po.status;
+  delivery.textContent =
+    (po.delivery_address || "-") + " " +
+    (po.delivery_date || "") + " " +
+    (po.delivery_time || "");
+  notes.textContent = po.notes || "-";
 
   let total = 0;
   const tbody = document.getElementById("items");
 
-  data.items.forEach((item, i) => {
-    const amount = item.qty * item.price;
+  data.items.forEach((it,i)=>{
+    const amount = it.qty * it.price;
     total += amount;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${item.description}</td>
-      <td>${item.qty}</td>
-      <td>${item.price.toFixed(2)}</td>
-      <td>${amount.toFixed(2)}</td>
+      <td>${i+1}</td>
+      <td>${it.description}</td>
+      <td class="text-right">${it.qty}</td>
+      <td class="text-right">${it.price.toFixed(2)}</td>
+      <td class="text-right">${amount.toFixed(2)}</td>
     `;
     tbody.appendChild(tr);
   });
