@@ -1,86 +1,58 @@
+// /functions/api/po-view.js
 export async function onRequestGet({ request, env }) {
-
-  /* ===============================
-     AUTH CHECK
-     =============================== */
-  const authRes = await fetch(new URL("/api/auth-check", request.url), {
-    headers: {
-      cookie: request.headers.get("cookie") || ""
-    }
+  const auth = await fetch(new URL("/api/auth-check", request.url), {
+    headers: { cookie: request.headers.get("cookie") || "" }
   });
-
-  if (!authRes.ok) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
-    );
+  if (!auth.ok) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  /* ===============================
-     GET ID
-     =============================== */
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-
+  const id = new URL(request.url).searchParams.get("id");
   if (!id) {
-    return new Response(
-      JSON.stringify({ error: "Missing id" }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
   }
 
-  /* ===============================
-     QUERY PO HEADER
-     =============================== */
   const po = await env.DB.prepare(`
     SELECT
-      id,
       po_no,
       po_date,
-      status,
       supplier_name,
-      supplier_address,
-      subtotal,
-      total
+      status,
+      notes,
+      delivery_address,
+      delivery_date,
+      delivery_time
     FROM purchase_orders
     WHERE id = ?
   `).bind(id).first();
 
   if (!po) {
-    return new Response(
-      JSON.stringify({ error: "PO not found" }),
-      { status: 404 }
-    );
+    return new Response(JSON.stringify({ error: "PO not found" }), { status: 404 });
   }
 
-  /* ===============================
-     QUERY PO ITEMS
-     =============================== */
-  const itemsResult = await env.DB.prepare(`
+  const items = await env.DB.prepare(`
     SELECT
       description,
       qty,
-      unit_price,
-      line_total
+      unit_price AS price   -- 🔥 关键：映射成 price
     FROM purchase_order_items
     WHERE purchase_order_id = ?
     ORDER BY id ASC
   `).bind(id).all();
 
-  /* ===============================
-     RESPONSE
-     =============================== */
-  return new Response(
-    JSON.stringify({
+  return new Response(JSON.stringify({
+    po: {
       po_no: po.po_no,
       po_date: po.po_date,
+      supplier: po.supplier_name,
       status: po.status,
-      supplier_name: po.supplier_name,
-      supplier_address: po.supplier_address,
-      subtotal: po.subtotal,
-      total: po.total,
-      items: itemsResult.results
-    }),
-    { status: 200 }
-  );
+      notes: po.notes,
+      delivery_address: po.delivery_address,
+      delivery_date: po.delivery_date,
+      delivery_time: po.delivery_time
+    },
+    items: items.results
+  }), {
+    headers: { "Content-Type": "application/json" }
+  });
 }
