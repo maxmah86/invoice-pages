@@ -39,7 +39,7 @@ body {
 }
 
 .quote-actions {
-  margin: 6px 0;
+  margin: 8px 0;
 }
 
 .quote-actions button {
@@ -99,7 +99,7 @@ th {
   line-height: 1.6;
 }
 
-/* ===== 打印隐藏按钮 ===== */
+/* ===== PRINT MODE ===== */
 @media print {
   button {
     display: none !important;
@@ -124,9 +124,7 @@ th {
     <div class="quote-title">QUOTATION</div>
 
     <div class="quote-actions">
-      <!-- ✅ 新增 Print -->
-      <button onclick="printQuotation()">PRINT / SAVE PDF</button>
-
+      <button id="printBtn" onclick="printQuotation()">PRINT / SAVE PDF</button>
       <button id="editBtn" style="display:none" onclick="editQuotation()">EDIT</button>
       <button id="convertBtn" style="display:none" onclick="convertQuotation()">CONVERT TO INVOICE</button>
     </div>
@@ -178,14 +176,24 @@ th {
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
+/* ===== PRINT FUNCTION (PDF filename) ===== */
 function printQuotation() {
+  const originalTitle = document.title;
+
+  document.title = `quotation-${id}.pdf`;
   window.print();
+
+  setTimeout(() => {
+    document.title = originalTitle;
+  }, 500);
 }
 
+/* ===== EDIT ===== */
 function editQuotation() {
   location.href = `/quotation-edit.html?id=${id}`;
 }
 
+/* ===== CONVERT ===== */
 async function convertQuotation() {
   if (!confirm("Convert this quotation to invoice?")) return;
 
@@ -205,9 +213,8 @@ async function convertQuotation() {
   location.href = `/invoice-view.html?id=${data.invoice_id}`;
 }
 
-fetch(`/api/quotation-view?id=${id}`, {
-  credentials: "include"
-})
+/* ===== LOAD DATA ===== */
+fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
 .then(res => {
   if (res.status === 401) {
     location.replace("/login.html");
