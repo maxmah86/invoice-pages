@@ -2,210 +2,157 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>View Purchase Order</title>
+<title>Purchase Order</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background:#f4f6f8;
-  margin:0;
-  padding:16px;
+  color: #000;
+  padding: 24px;
+  background: #fff;
 }
 
-h1 {
-  margin:0 0 6px;
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-.subtitle {
-  font-size:14px;
-  color:#555;
-  margin-bottom:16px;
+.company {
+  width: 55%;
 }
 
-.card {
-  background:#fff;
-  padding:16px;
-  border-radius:8px;
-  margin-bottom:14px;
-  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+.company h2 {
+  margin: 0;
 }
 
-.row {
-  font-size:14px;
-  margin-bottom:6px;
+.po-info {
+  width: 40%;
+  text-align: right;
 }
 
-.label {
-  font-weight:bold;
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
 }
 
-.status {
-  display:inline-block;
-  padding:4px 10px;
-  border-radius:12px;
-  font-size:12px;
+.table th, .table td {
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 14px;
 }
 
-.status.OPEN { background:#f39c12;color:#000; }
-.status.SENT { background:#2980b9;color:#fff; }
-.status.DELIVERED { background:#27ae60;color:#fff; }
-
-table {
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
+.table th {
+  background: #f2f2f2;
 }
 
-th, td {
-  border-bottom:1px solid #ddd;
-  padding:6px;
+.total {
+  text-align: right;
+  margin-top: 10px;
+  font-weight: bold;
 }
 
-th {
-  background:#f0f0f0;
+.section {
+  margin-top: 20px;
+  font-size: 14px;
 }
 
-.right {
-  text-align:right;
+.signature {
+  margin-top: 40px;
 }
-
-.actions button {
-  width:100%;
-  padding:12px;
-  margin-top:8px;
-  font-size:15px;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
-}
-
-.btn-primary { background:#2c3e50;color:#fff; }
-.btn-secondary { background:#7f8c8d;color:#fff; }
 </style>
 </head>
 
 <body>
 
-<h1>Purchase Order</h1>
-<div class="subtitle">MMAC Construction</div>
+<div class="header">
+  <div class="company">
+    <h2>MMAC CONSTRUCTION</h2>
+    <div>201903134488 (002977225-A)</div>
+    <div>52, Jalan Mahogani SD 1/3</div>
+    <div>Sri Damansara</div>
+    <div>52200 Kuala Lumpur, Malaysia</div>
+    <div>Tel: 016-444-2128</div>
+  </div>
 
-<!-- ===== BASIC INFO ===== -->
-<div class="card" id="basic"></div>
-
-<!-- ===== DELIVERY ===== -->
-<div class="card" id="delivery"></div>
-
-<!-- ===== ITEMS ===== -->
-<div class="card">
-  <h3 style="margin-top:0;">Items</h3>
-  <table id="itemsTable">
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th width="60">Qty</th>
-        <th width="80">Price</th>
-        <th width="90">Amount</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="po-info">
+    <h2>PURCHASE ORDER</h2>
+    <div><strong>PO No:</strong> <span id="po_no"></span></div>
+    <div><strong>Date:</strong> <span id="po_date"></span></div>
+    <div><strong>Supplier:</strong> <span id="supplier_name"></span></div>
+  </div>
 </div>
 
-<!-- ===== TOTAL ===== -->
-<div class="card">
-  <div class="right">Subtotal: RM <span id="subtotal">0.00</span></div>
-  <div class="right"><strong>Total: RM <span id="total">0.00</span></strong></div>
+<table class="table">
+  <thead>
+    <tr>
+      <th>No</th>
+      <th>Description</th>
+      <th>Qty</th>
+      <th>Unit Price</th>
+      <th>Amount (RM)</th>
+    </tr>
+  </thead>
+  <tbody id="items"></tbody>
+</table>
+
+<div class="total">
+  TOTAL (RM): <span id="total"></span>
 </div>
 
-<!-- ===== NOTES ===== -->
-<div class="card" id="notesCard"></div>
+<div class="section">
+  <strong>NOTES:</strong>
+  <div id="notes"></div>
+</div>
 
-<!-- ===== ACTIONS ===== -->
-<div class="card actions">
-  <button class="btn-primary" onclick="history.back()">Back</button>
+<div class="section">
+  <strong>DELIVERY / COMPLETION:</strong>
+  <div>Address: <span id="delivery_address"></span></div>
+  <div>Date: <span id="delivery_date"></span></div>
+  <div>Time: <span id="delivery_time"></span></div>
+</div>
+
+<div class="section">
+  Thank you.
+</div>
+
+<div class="signature">
+  <strong>Signed by:</strong> <span id="signed_by"></span><br>
+  <span id="signed_at"></span>
 </div>
 
 <script>
-/* ===== AUTH CHECK ===== */
-fetch("/api/auth-check",{credentials:"include"})
-  .then(r=>r.json())
-  .then(d=>{
-    if(!d.loggedIn) location.replace("/login.html");
-  })
-  .catch(()=>location.replace("/login.html"));
+const id = new URLSearchParams(location.search).get("id");
 
-/* ===== GET ID ===== */
-const params = new URLSearchParams(location.search);
-const id = params.get("id");
-if (!id) {
-  alert("Missing PO ID");
-  history.back();
-}
+fetch(`/api/po-view?id=${id}`, { credentials: "include" })
+  .then(r => r.json())
+  .then(po => {
+    document.getElementById("po_no").textContent = po.po_no;
+    document.getElementById("po_date").textContent = po.po_date;
+    document.getElementById("supplier_name").textContent = po.supplier_name;
+    document.getElementById("total").textContent = Number(po.total).toFixed(2);
+    document.getElementById("notes").textContent = po.notes || "";
+    document.getElementById("delivery_address").textContent = po.delivery_address || "";
+    document.getElementById("delivery_date").textContent = po.delivery_date || "";
+    document.getElementById("delivery_time").textContent = po.delivery_time || "";
+    document.getElementById("signed_by").textContent = po.signed_by || "";
+    document.getElementById("signed_at").textContent = po.signed_at || "";
 
-/* ===== LOAD PO ===== */
-async function loadPO() {
-  const res = await fetch(`/api/po-view?id=${id}`,{
-    credentials:"include"
-  });
-  const data = await res.json();
-
-  if (!res.ok) {
-    alert(JSON.stringify(data));
-    return;
-  }
-
-  /* BASIC */
-  basic.innerHTML = `
-    <div class="row"><span class="label">PO No:</span> ${data.po_no}</div>
-    <div class="row"><span class="label">PO Date:</span> ${data.po_date}</div>
-    <div class="row"><span class="label">Supplier:</span> ${data.supplier_name}</div>
-    <div class="row"><span class="label">Issued By:</span> ${data.issued_by || "-"}</div>
-    <div class="row"><span class="status ${data.status}">${data.status}</span></div>
-  `;
-
-  /* DELIVERY */
-  delivery.innerHTML = `
-    <div class="row"><span class="label">Delivery Address:</span><br>${data.delivery_address || "-"}</div>
-    <div class="row"><span class="label">Delivery Date:</span> ${data.delivery_date || "-"}</div>
-    <div class="row"><span class="label">Delivery Time:</span> ${data.delivery_time || "-"}</div>
-  `;
-
-  /* ITEMS (暂时使用 notes 模拟，等你做 po_items 表再接) */
-  const tbody = document.querySelector("#itemsTable tbody");
-  tbody.innerHTML = "";
-
-  if (Array.isArray(data.items)) {
-    data.items.forEach(i=>{
+    const tbody = document.getElementById("items");
+    po.items.forEach((it, i) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${i.description}</td>
-        <td>${i.qty}</td>
-        <td>RM ${Number(i.price).toFixed(2)}</td>
-        <td class="right">RM ${(i.qty*i.price).toFixed(2)}</td>
+        <td>${i + 1}</td>
+        <td>${it.description}</td>
+        <td>${it.qty}</td>
+        <td>${Number(it.unit_price).toFixed(2)}</td>
+        <td>${Number(it.amount).toFixed(2)}</td>
       `;
       tbody.appendChild(tr);
     });
-  } else {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td colspan="4" style="text-align:center;color:#888;">
-        (Items table not implemented yet)
-      </td>
-    `;
-    tbody.appendChild(tr);
-  }
-
-  subtotal.innerText = Number(data.subtotal || 0).toFixed(2);
-  total.innerText = Number(data.total || 0).toFixed(2);
-
-  /* NOTES */
-  notesCard.innerHTML = `
-    <div class="row"><span class="label">Notes:</span><br>${data.notes || "-"}</div>
-  `;
-}
-
-loadPO();
+  });
 </script>
 
 </body>
