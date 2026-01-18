@@ -8,90 +8,80 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 16px;
+  background:#f4f6f8;
+  margin:0;
+  padding:16px;
 }
 
 h1 {
-  margin: 0;
+  margin:0 0 6px;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 16px;
+  font-size:14px;
+  color:#555;
+  margin-bottom:16px;
 }
 
 .card {
-  background: #fff;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  background:#fff;
+  padding:16px;
+  border-radius:8px;
+  margin-bottom:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
 }
 
 .row {
-  font-size: 14px;
-  margin-bottom: 6px;
+  font-size:14px;
+  margin-bottom:6px;
 }
 
 .label {
-  font-weight: bold;
-}
-
-.section-title {
-  font-size: 15px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 4px;
+  font-weight:bold;
 }
 
 .status {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:12px;
+  font-size:12px;
 }
 
-.status.OPEN {
-  background: #f39c12;
-  color: #000;
-}
-.status.SENT {
-  background: #2980b9;
-  color: #fff;
-}
-.status.DELIVERED {
-  background: #27ae60;
-  color: #fff;
+.status.OPEN { background:#f39c12;color:#000; }
+.status.SENT { background:#2980b9;color:#fff; }
+.status.DELIVERED { background:#27ae60;color:#fff; }
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
 }
 
-.btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  margin-top: 8px;
+th, td {
+  border-bottom:1px solid #ddd;
+  padding:6px;
 }
 
-.btn-primary {
-  background: #2c3e50;
-  color: #fff;
+th {
+  background:#f0f0f0;
 }
 
-.btn-secondary {
-  background: #7f8c8d;
-  color: #fff;
+.right {
+  text-align:right;
 }
 
-.btn-success {
-  background: #27ae60;
-  color: #fff;
+.actions button {
+  width:100%;
+  padding:12px;
+  margin-top:8px;
+  font-size:15px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
 }
+
+.btn-primary { background:#2c3e50;color:#fff; }
+.btn-secondary { background:#7f8c8d;color:#fff; }
 </style>
 </head>
 
@@ -100,21 +90,54 @@ h1 {
 <h1>Purchase Order</h1>
 <div class="subtitle">MMAC Construction</div>
 
-<div id="content"></div>
+<!-- ===== BASIC INFO ===== -->
+<div class="card" id="basic"></div>
+
+<!-- ===== DELIVERY ===== -->
+<div class="card" id="delivery"></div>
+
+<!-- ===== ITEMS ===== -->
+<div class="card">
+  <h3 style="margin-top:0;">Items</h3>
+  <table id="itemsTable">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th width="60">Qty</th>
+        <th width="80">Price</th>
+        <th width="90">Amount</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- ===== TOTAL ===== -->
+<div class="card">
+  <div class="right">Subtotal: RM <span id="subtotal">0.00</span></div>
+  <div class="right"><strong>Total: RM <span id="total">0.00</span></strong></div>
+</div>
+
+<!-- ===== NOTES ===== -->
+<div class="card" id="notesCard"></div>
+
+<!-- ===== ACTIONS ===== -->
+<div class="card actions">
+  <button class="btn-primary" onclick="history.back()">Back</button>
+</div>
 
 <script>
-/* ===== LOGIN CHECK ===== */
-fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
+/* ===== AUTH CHECK ===== */
+fetch("/api/auth-check",{credentials:"include"})
+  .then(r=>r.json())
+  .then(d=>{
+    if(!d.loggedIn) location.replace("/login.html");
   })
-  .catch(() => location.replace("/login.html"));
+  .catch(()=>location.replace("/login.html"));
 
 /* ===== GET ID ===== */
 const params = new URLSearchParams(location.search);
 const id = params.get("id");
-
 if (!id) {
   alert("Missing PO ID");
   history.back();
@@ -122,73 +145,67 @@ if (!id) {
 
 /* ===== LOAD PO ===== */
 async function loadPO() {
-  const res = await fetch(`/api/po-view?id=${id}`, {
-    credentials: "include"
+  const res = await fetch(`/api/po-view?id=${id}`,{
+    credentials:"include"
   });
   const data = await res.json();
 
-  if (!data.po) {
-    alert("PO not found");
-    history.back();
+  if (!res.ok) {
+    alert(JSON.stringify(data));
     return;
   }
 
-  const po = data.po;
-  const el = document.getElementById("content");
+  /* BASIC */
+  basic.innerHTML = `
+    <div class="row"><span class="label">PO No:</span> ${data.po_no}</div>
+    <div class="row"><span class="label">PO Date:</span> ${data.po_date}</div>
+    <div class="row"><span class="label">Supplier:</span> ${data.supplier_name}</div>
+    <div class="row"><span class="label">Issued By:</span> ${data.issued_by || "-"}</div>
+    <div class="row"><span class="status ${data.status}">${data.status}</span></div>
+  `;
 
-  el.innerHTML = `
-    <!-- BASIC INFO -->
-    <div class="card">
-      <div class="row"><span class="label">PO No:</span> ${po.po_no}</div>
-      <div class="row"><span class="label">PO Date:</span> ${po.po_date}</div>
-      <div class="row"><span class="label">Supplier:</span> ${po.supplier_name}</div>
-      <div class="row"><span class="label">Issued By:</span> ${po.issued_by || "-"}</div>
-      <div class="row">
-        <span class="status ${po.status}">${po.status}</span>
-      </div>
-    </div>
+  /* DELIVERY */
+  delivery.innerHTML = `
+    <div class="row"><span class="label">Delivery Address:</span><br>${data.delivery_address || "-"}</div>
+    <div class="row"><span class="label">Delivery Date:</span> ${data.delivery_date || "-"}</div>
+    <div class="row"><span class="label">Delivery Time:</span> ${data.delivery_time || "-"}</div>
+  `;
 
-    <!-- DELIVERY -->
-    <div class="card">
-      <div class="section-title">Delivery / Completion</div>
-      <div class="row"><span class="label">Address:</span> ${po.delivery_address || "-"}</div>
-      <div class="row"><span class="label">Date:</span> ${po.delivery_date || "-"}</div>
-      <div class="row"><span class="label">Time:</span> ${po.delivery_time || "-"}</div>
-    </div>
+  /* ITEMS (暂时使用 notes 模拟，等你做 po_items 表再接) */
+  const tbody = document.querySelector("#itemsTable tbody");
+  tbody.innerHTML = "";
 
-    <!-- NOTES -->
-    <div class="card">
-      <div class="section-title">Notes</div>
-      <div class="row">${po.notes || "-"}</div>
-    </div>
+  if (Array.isArray(data.items)) {
+    data.items.forEach(i=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${i.description}</td>
+        <td>${i.qty}</td>
+        <td>RM ${Number(i.price).toFixed(2)}</td>
+        <td class="right">RM ${(i.qty*i.price).toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } else {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td colspan="4" style="text-align:center;color:#888;">
+        (Items table not implemented yet)
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
 
-    <!-- TOTAL -->
-    <div class="card">
-      <div class="section-title">Amount</div>
-      <div class="row">
-        <span class="label">Subtotal:</span>
-        RM ${Number(po.subtotal || 0).toFixed(2)}
-      </div>
-      <div class="row">
-        <span class="label">Total:</span>
-        RM ${Number(po.total || 0).toFixed(2)}
-      </div>
-    </div>
+  subtotal.innerText = Number(data.subtotal || 0).toFixed(2);
+  total.innerText = Number(data.total || 0).toFixed(2);
 
-    <!-- ACTIONS -->
-    <div class="card">
-      <button class="btn btn-primary" onclick="history.back()">Back</button>
-      <button class="btn btn-secondary" onclick="printPO()">Print / PDF</button>
-    </div>
+  /* NOTES */
+  notesCard.innerHTML = `
+    <div class="row"><span class="label">Notes:</span><br>${data.notes || "-"}</div>
   `;
 }
 
 loadPO();
-
-/* ===== PRINT ===== */
-function printPO() {
-  window.print();
-}
 </script>
 
 </body>
