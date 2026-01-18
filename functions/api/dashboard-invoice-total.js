@@ -5,13 +5,10 @@ export async function onRequestGet({ request, env }) {
   });
   if (!auth.ok) return new Response("Unauthorized", { status: 401 });
 
-  const month = new Date().toISOString().slice(0,7);
-
   const row = await env.DB.prepare(`
     SELECT IFNULL(SUM(total), 0) AS total
     FROM invoices
-    WHERE substr(created_at, 1, 7) = ?
-  `).bind(month).first();
+  `).first();
 
   return new Response(
     JSON.stringify({ total: row.total }),
