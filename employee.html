@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Add Employee</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial; margin:12px; }
+label { display:block; margin-bottom:12px; }
+input, select, button {
+  width:100%; padding:12px; font-size:16px;
+}
+button {
+  background:#27ae60; color:#fff; border:0;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Add Employee</h2>
+
+<form id="f">
+  <label>Name
+    <input name="name" required>
+  </label>
+
+  <label>Role
+    <input name="role">
+  </label>
+
+  <label>Base Salary (RM)
+    <input type="number" name="base_salary" required>
+  </label>
+
+  <label>Status
+    <select name="status">
+      <option value="ACTIVE">ACTIVE</option>
+      <option value="INACTIVE">INACTIVE</option>
+    </select>
+  </label>
+
+  <button>Save</button>
+</form>
+
+<script>
+f.onsubmit = async e => {
+  e.preventDefault();
+
+  const data = {
+    name: f.name.value,
+    role: f.role.value,
+    base_salary: f.base_salary.value,
+    status: f.status.value
+  };
+
+  const r = await fetch("/api/employee-create", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(data)
+  });
+
+  if (r.ok) {
+    alert("Employee added");
+    location.href = "employees.html";
+  } else {
+    alert("Error");
+  }
+};
+</script>
+
+</body>
+</html>
