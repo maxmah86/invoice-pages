@@ -5,14 +5,11 @@ export async function onRequestGet({ request, env }) {
   });
   if (!auth.ok) return new Response("Unauthorized", { status: 401 });
 
-  const month = new Date().toISOString().slice(0,7);
-
   const row = await env.DB.prepare(`
     SELECT IFNULL(SUM(net_salary), 0) AS total
     FROM salaries
-    WHERE salary_month = ?
-      AND status = 'PAID'
-  `).bind(month).first();
+    WHERE status = 'PAID'
+  `).first();
 
   return new Response(
     JSON.stringify({ total: row.total }),
