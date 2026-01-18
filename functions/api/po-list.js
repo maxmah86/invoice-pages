@@ -1,24 +1,8 @@
 export async function onRequestGet({ request, env }) {
   try {
-    /* ===== AUTH CHECK ===== */
+    /* ===== BASIC AUTH CHECK ===== */
     const cookie = request.headers.get("Cookie") || "";
-    const token = cookie
-      .split(";")
-      .find(c => c.trim().startsWith("session="))
-      ?.split("=")[1];
-
-    if (!token) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401
-      });
-    }
-
-    const user = await env.DB
-      .prepare("SELECT id FROM users WHERE session_token = ?")
-      .bind(token)
-      .first();
-
-    if (!user) {
+    if (!cookie.includes("session=")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401
       });
@@ -33,7 +17,6 @@ export async function onRequestGet({ request, env }) {
         supplier_name,
         delivery_date,
         delivery_time,
-        subtotal,
         total,
         status,
         created_at
@@ -41,9 +24,7 @@ export async function onRequestGet({ request, env }) {
       ORDER BY created_at DESC
     `).all();
 
-    return new Response(JSON.stringify({
-      results
-    }), {
+    return new Response(JSON.stringify({ results }), {
       headers: { "Content-Type": "application/json" }
     });
 
