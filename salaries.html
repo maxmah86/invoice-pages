@@ -9,7 +9,7 @@ body { font-family: Arial; background:#f5f5f5; margin:12px; }
 h2 { text-align:center; }
 label { display:block; margin-bottom:10px; }
 input, button {
-  width:100%; padding:12px; font-size:16px;
+  width:100%; padding:12px; font-size:16px; box-sizing:border-box;
 }
 .card {
   background:#fff;
@@ -18,8 +18,8 @@ input, button {
   margin-bottom:10px;
 }
 .small { font-size:14px; color:#666; }
-.pay { background:#27ae60; color:#fff; border:0; }
 .gen { background:#3498db; color:#fff; border:0; margin-bottom:12px; }
+.pay { background:#27ae60; color:#fff; border:0; margin-top:6px; }
 .pdf { background:#555; color:#fff; border:0; margin-top:6px; }
 </style>
 </head>
@@ -37,7 +37,9 @@ input, button {
 <div id="list"></div>
 
 <script>
-/* LOGIN REQUIRE */
+/* ===============================
+   LOGIN REQUIRE
+   =============================== */
 (async () => {
   try {
     const r = await fetch("/api/auth-check");
@@ -47,13 +49,29 @@ input, button {
   }
 })();
 
+/* ===============================
+   INIT
+   =============================== */
 month.value = new Date().toISOString().slice(0,7);
 
+/* ===============================
+   LOAD SALARIES
+   =============================== */
 async function load() {
   const r = await fetch("/api/salaries?month=" + month.value);
-  const data = await r.json();
+  if (!r.ok) {
+    alert("Failed to load salaries");
+    return;
+  }
 
+  const data = await r.json();
   list.innerHTML = "";
+
+  if (data.length === 0) {
+    list.innerHTML = "<div class='small'>No salaries for this month.</div>";
+    return;
+  }
+
   data.forEach(s => {
     const div = document.createElement("div");
     div.className = "card";
@@ -68,41 +86,50 @@ async function load() {
       <span class="small">Status: ${s.status}</span>
       ${s.status === 'DRAFT'
         ? `<button class="pay" onclick="pay(${s.id})">Mark as PAID</button>`
-        : `<button class="pdf" onclick="viewPDF(${s.id})">View Payslip PDF</button>`
+        : `<button class="pdf" onclick="viewPayslip(${s.id})">View Payslip</button>`
       }
     `;
     list.appendChild(div);
   });
 }
 
+/* ===============================
+   GENERATE DRAFT
+   =============================== */
 async function generate() {
   if (!confirm("Generate DRAFT salaries for this month?")) return;
 
   const r = await fetch("/api/salary-create", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ salary_month: month.value })
   });
 
   if (r.ok) load();
-  else alert("Failed");
+  else alert("Failed to generate salaries");
 }
 
+/* ===============================
+   PAY SALARY
+   =============================== */
 async function pay(id) {
   if (!confirm("Confirm mark as PAID?")) return;
 
   const r = await fetch("/api/salary-pay", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id })
   });
 
   if (r.ok) load();
-  else alert("Failed");
+  else alert("Failed to update salary");
 }
 
-function viewPDF(id) {
-  window.open("/api/payslip?id=" + id);
+/* ===============================
+   VIEW PAYSLIP (HTML)
+   =============================== */
+function viewPayslip(id) {
+  window.open("payslip.html?id=" + id);
 }
 
 month.onchange = load;
