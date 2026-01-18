@@ -6,22 +6,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body { font-family: Arial; background:#f5f5f5; margin:12px; }
+h2 { text-align:center; }
+label { display:block; margin-bottom:10px; }
+input, button {
+  width:100%; padding:12px; font-size:16px;
+}
 .card {
   background:#fff;
   padding:12px;
   border-radius:6px;
   margin-bottom:10px;
 }
-b { font-size:16px; }
 .small { font-size:14px; color:#666; }
-button {
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  border:0;
-  margin-top:6px;
-}
-.pay { background:#27ae60; color:#fff; }
+.pay { background:#27ae60; color:#fff; border:0; }
+.gen { background:#3498db; color:#fff; border:0; margin-bottom:12px; }
+.pdf { background:#555; color:#fff; border:0; margin-top:6px; }
 </style>
 </head>
 
@@ -33,13 +32,16 @@ button {
   <input type="month" id="month">
 </label>
 
+<button class="gen" onclick="generate()">Generate DRAFT Salaries</button>
+
 <div id="list"></div>
 
 <script>
+/* LOGIN REQUIRE */
 (async () => {
   try {
-    const a = await fetch("/api/auth-check");
-    if (!a.ok) location.href = "login.html";
+    const r = await fetch("/api/auth-check");
+    if (!r.ok) location.href = "login.html";
   } catch {
     location.href = "login.html";
   }
@@ -57,30 +59,50 @@ async function load() {
     div.className = "card";
     div.innerHTML = `
       <b>${s.name}</b><br>
-      <span class="small">Base: RM ${s.base_salary}</span><br>
-      <span class="small">Allowance: RM ${s.allowance}</span><br>
-      <span class="small">Deduction: RM ${s.deduction}</span><br>
+      <span class="small">
+        Base: RM ${s.base_salary}<br>
+        Allowance: RM ${s.allowance}<br>
+        Deduction: RM ${s.deduction}
+      </span><br><br>
       <b>Net: RM ${s.net_salary}</b><br>
       <span class="small">Status: ${s.status}</span>
       ${s.status === 'DRAFT'
         ? `<button class="pay" onclick="pay(${s.id})">Mark as PAID</button>`
-        : ``}
+        : `<button class="pdf" onclick="viewPDF(${s.id})">View Payslip PDF</button>`
+      }
     `;
     list.appendChild(div);
   });
+}
+
+async function generate() {
+  if (!confirm("Generate DRAFT salaries for this month?")) return;
+
+  const r = await fetch("/api/salary-create", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ salary_month: month.value })
+  });
+
+  if (r.ok) load();
+  else alert("Failed");
 }
 
 async function pay(id) {
   if (!confirm("Confirm mark as PAID?")) return;
 
   const r = await fetch("/api/salary-pay", {
-    method: "POST",
-    headers: { "Content-Type":"application/json" },
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ id })
   });
 
   if (r.ok) load();
   else alert("Failed");
+}
+
+function viewPDF(id) {
+  window.open("/api/payslip?id=" + id);
 }
 
 month.onchange = load;
