@@ -48,6 +48,7 @@ h1 {
   color: #555;
 }
 
+/* ===== General Actions (unchanged) ===== */
 .actions {
   display: flex;
   gap: 10px;
@@ -65,6 +66,37 @@ h1 {
   color: #fff;
 }
 
+/* ===== Monthly Summary Grid (FIX) ===== */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.summary-item {
+  text-align: center;
+  padding: 14px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.summary-item.invoice {
+  background: #27ae60;
+}
+
+.summary-item.salary {
+  background: #6f42c1;
+}
+
+.summary-item.po {
+  background: #f39c12;
+  color: #000;
+  grid-column: span 2; /* 关键：整行 */
+}
+
+/* ===== Buttons ===== */
 .btn-primary { background: #2c3e50; }
 .btn-success { background: #27ae60; }
 .btn-warning { background: #f39c12; color:#000; }
@@ -101,10 +133,17 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
   <div class="card">
     <h2>This Month Summary</h2>
     <p>Overview of current month</p>
-    <div class="actions">
-      <a class="btn-success" id="invTotal">Invoice<br>RM 0.00</a>
-      <a class="btn-purple" id="salTotal">Salary<br>RM 0.00</a>
-      <a class="btn-warning" id="poTotal">PO<br>RM 0.00</a>
+
+    <div class="summary-grid">
+      <div class="summary-item invoice" id="invTotal">
+        Invoice<br>RM 0.00
+      </div>
+      <div class="summary-item salary" id="salTotal">
+        Salary<br>RM 0.00
+      </div>
+      <div class="summary-item po" id="poTotal">
+        PO<br>RM 0.00
+      </div>
     </div>
   </div>
 </div>
@@ -190,13 +229,9 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
   .then(d => {
-    if (!d.loggedIn) {
-      location.replace("/login.html");
-    }
+    if (!d.loggedIn) location.replace("/login.html");
   })
-  .catch(() => {
-    location.replace("/login.html");
-  });
+  .catch(() => location.replace("/login.html"));
 
 /* ===== Load Monthly Summary ===== */
 async function loadSummary() {
