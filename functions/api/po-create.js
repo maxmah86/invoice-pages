@@ -1,18 +1,36 @@
 export async function onRequestPost({ request, env }) {
   try {
+    /* ===== GET SESSION FROM COOKIE ===== */
     const cookie = request.headers.get("Cookie") || "";
-    const token = cookie.split(";").find(c=>c.trim().startsWith("session="))?.split("=")[1];
-    if (!token) return new Response(JSON.stringify({error:"Unauthorized"}),{status:401});
+    const session = cookie
+      .split(";")
+      .find(c => c.trim().startsWith("session="))
+      ?.split("=")[1];
 
+    if (!session) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
+
+    /* ===== AUTH CHECK (FIXED COLUMN) ===== */
     const user = await env.DB
-      .prepare("SELECT username FROM users WHERE session_token = ?")
-      .bind(token)
+      .prepare("SELECT username FROM users WHERE session = ?")
+      .bind(session)
       .first();
 
-    if (!user) return new Response(JSON.stringify({error:"Unauthorized"}),{status:401});
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    }
 
+    /* ===== READ BODY ===== */
     const body = await request.json();
-    const { supplier_name, delivery_address, delivery_date, delivery_time, notes, items } = body;
+    const {
+      supplier_name,
+      delivery_address,
+      delivery_date,
+      delivery_time,
+      notes,
+      items
+    } = body;
 
     if (!supplier_name) {
       return new Response(JSON.stringify({ error: "Supplier name required" }), { status: 400 });
@@ -22,6 +40,7 @@ export async function onRequestPost({ request, env }) {
       return new Response(JSON.stringify({ error: "No items" }), { status: 400 });
     }
 
+    /* ===== CALCULATE TOTAL ===== */
     let subtotal = 0;
     items.forEach(i => {
       subtotal += Number(i.qty || 0) * Number(i.price || 0);
@@ -29,6 +48,7 @@ export async function onRequestPost({ request, env }) {
 
     const total = subtotal;
 
+    /* ===== INSERT PO ===== */
     const r = await env.DB.prepare(`
       INSERT INTO purchase_orders (
         supplier_name,
@@ -52,14 +72,17 @@ export async function onRequestPost({ request, env }) {
       total
     ).run();
 
-    return new Response(JSON.stringify({ success:true, id:r.lastRowId }),{
-      headers:{ "Content-Type":"application/json" }
+    return new Response(JSON.stringify({
+      success: true,
+      id: r.lastRowId
+    }), {
+      headers: { "Content-Type": "application/json" }
     });
 
   } catch (err) {
     return new Response(JSON.stringify({
       error: "PO create failed",
       detail: String(err)
-    }), { status:500 });
+    }), { status: 500 });
   }
 }
