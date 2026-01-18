@@ -7,5 +7,4 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  // 不拦截请求，保持原网站行为
 });
