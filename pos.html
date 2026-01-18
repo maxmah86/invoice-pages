@@ -11,100 +11,67 @@ body {
   background: #f4f6f8;
   margin: 0;
   padding: 16px;
-  color: #000;
 }
 
 h1 {
-  margin-top: 0;
-  margin-bottom: 4px;
+  margin: 0 0 6px;
 }
 
 .subtitle {
+  font-size: 14px;
   color: #555;
   margin-bottom: 16px;
 }
 
 .card {
   background: #fff;
-  border-radius: 8px;
   padding: 14px;
+  border-radius: 8px;
   margin-bottom: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
 .row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  font-size: 14px;
+  margin-bottom: 6px;
 }
 
-.po-no {
+.label {
   font-weight: bold;
-  font-size: 16px;
 }
 
-.badge {
-  padding: 4px 8px;
-  font-size: 12px;
+.status {
+  display: inline-block;
+  padding: 3px 8px;
   border-radius: 12px;
+  font-size: 12px;
+}
+
+.status.OPEN {
+  background: #f39c12;
+  color: #000;
+}
+
+.status.SENT {
+  background: #2980b9;
   color: #fff;
 }
 
-.badge.OPEN { background: #2980b9; }
-.badge.APPROVED { background: #27ae60; }
-.badge.CLOSED { background: #7f8c8d; }
-.badge.VOID { background: #c0392b; }
-
-.po-meta {
-  font-size: 13px;
-  color: #555;
-  margin-top: 4px;
-}
-
-.po-total {
-  margin-top: 6px;
-  font-weight: bold;
+.status.DELIVERED {
+  background: #27ae60;
+  color: #fff;
 }
 
 .actions {
   margin-top: 10px;
-  display: flex;
-  gap: 8px;
 }
 
-.actions a,
-.actions button {
-  flex: 1;
-  text-align: center;
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  color: #fff;
+.actions a {
+  display: inline-block;
+  margin-right: 8px;
+  font-size: 13px;
   text-decoration: none;
-}
-
-.btn-view { background: #2980b9; }
-.btn-edit { background: #f39c12; color:#000; }
-.btn-approve { background: #27ae60; }
-
-.btn-create {
-  background: #27ae60;
-  display: block;
-  margin-bottom: 16px;
-  text-align: center;
-  padding: 12px;
-  text-decoration: none;
-  color: #fff;
-  border-radius: 8px;
-  font-size: 15px;
-}
-
-.empty {
-  text-align: center;
-  color: #777;
-  margin-top: 40px;
+  color: #2980b9;
 }
 </style>
 </head>
@@ -112,97 +79,67 @@ h1 {
 <body>
 
 <h1>Purchase Orders</h1>
-<div class="subtitle">Supplier purchase orders</div>
-
-<a class="btn-create" href="/po.html">+ Create Purchase Order</a>
+<div class="subtitle">MMAC Construction</div>
 
 <div id="list"></div>
 
-<div id="empty" class="empty" style="display:none;">
-  No purchase orders found.
-</div>
-
-<!-- LOGIN REQUIRE -->
 <script>
+/* ===== LOGIN CHECK ===== */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
   .then(d => {
     if (!d.loggedIn) location.replace("/login.html");
   })
   .catch(() => location.replace("/login.html"));
-</script>
 
-<script>
-async function approvePO(id) {
-  if (!confirm("Approve this Purchase Order?")) return;
-
-  const res = await fetch("/api/po-approve", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ id })
+/* ===== LOAD PO LIST ===== */
+async function loadPO() {
+  const res = await fetch("/api/po-list", {
+    credentials: "include"
   });
+  const data = await res.json();
 
-  if (!res.ok) {
-    alert("Failed to approve PO");
-    return;
-  }
-
-  loadPOs();
-}
-
-async function loadPOs() {
-  const r = await fetch("/api/pos", { credentials: "include" });
-  if (!r.ok) {
-    alert("Failed to load purchase orders");
-    return;
-  }
-
-  const data = await r.json();
   const list = document.getElementById("list");
-  const empty = document.getElementById("empty");
-
   list.innerHTML = "";
 
-  if (!data.length) {
-    empty.style.display = "block";
+  if (!data.results || data.results.length === 0) {
+    list.innerHTML = "<p>No purchase orders found.</p>";
     return;
   }
 
-  empty.style.display = "none";
+  data.results.forEach(po => {
+    const div = document.createElement("div");
+    div.className = "card";
 
-  data.forEach(po => {
-    const c = document.createElement("div");
-    c.className = "card";
-    c.innerHTML = `
+    div.innerHTML = `
       <div class="row">
-        <div class="po-no">${po.po_no}</div>
-        <div class="badge ${po.status}">${po.status}</div>
+        <span class="label">PO No:</span> ${po.po_no}
       </div>
-
-      <div class="po-meta">
-        ${po.po_date} · ${po.supplier_name}
+      <div class="row">
+        <span class="label">Supplier:</span> ${po.supplier_name}
       </div>
-
-      <div class="po-total">
-        Total: RM ${Number(po.total).toFixed(2)}
+      <div class="row">
+        <span class="label">Delivery:</span>
+        ${po.delivery_date || "-"} ${po.delivery_time || ""}
+      </div>
+      <div class="row">
+        <span class="label">Total:</span>
+        RM ${Number(po.total || 0).toFixed(2)}
+      </div>
+      <div class="row">
+        <span class="status ${po.status}">${po.status}</span>
       </div>
 
       <div class="actions">
-        <a class="btn-view" href="/po-view.html?id=${po.id}">View</a>
-        ${po.status === 'OPEN'
-          ? `
-            <a class="btn-edit" href="/po-edit.html?id=${po.id}">Edit</a>
-            <button class="btn-approve" onclick="approvePO(${po.id})">Approve</button>
-          `
-          : ``}
+        <a href="/po-view.html?id=${po.id}">View</a>
       </div>
     `;
-    list.appendChild(c);
+
+    list.appendChild(div);
   });
 }
 
-loadPOs();
+loadPO();
 </script>
 
 </body>
