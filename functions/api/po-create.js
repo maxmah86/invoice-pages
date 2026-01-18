@@ -8,8 +8,7 @@ export async function onRequestPost({ request, env }) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
-  const data = await request.json();
-
+  const body = await request.json();
   const {
     supplier_name,
     supplier_address,
@@ -19,20 +18,20 @@ export async function onRequestPost({ request, env }) {
     delivery_time,
     notes,
     items
-  } = data;
+  } = body;
 
-  if (!items || !items.length) {
-    return new Response(JSON.stringify({ error: "No items" }), { status: 400 });
+  if (!supplier_name || !Array.isArray(items) || items.length === 0) {
+    return new Response(JSON.stringify({ error: "Invalid data" }), { status: 400 });
   }
 
   /* ===== CALCULATE TOTAL ===== */
   let total = 0;
   items.forEach(it => {
-    total += Number(it.qty) * Number(it.unit_price);
+    total += Number(it.qty) * Number(it.price);
   });
 
   /* ===== INSERT PO HEADER ===== */
-  const result = await env.DB.prepare(`
+  const r = await env.DB.prepare(`
     INSERT INTO purchase_orders (
       supplier_name,
       supplier_address,
@@ -41,8 +40,9 @@ export async function onRequestPost({ request, env }) {
       delivery_date,
       delivery_time,
       notes,
-      total
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      total,
+      status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
   `).bind(
     supplier_name,
     supplier_address || "",
@@ -54,9 +54,9 @@ export async function onRequestPost({ request, env }) {
     total
   ).run();
 
-  const poId = result.meta.last_row_id;
+  const poId = r.meta.last_row_id;
 
-  /* ===== INSERT PO ITEMS ===== */
+  /* ===== INSERT ITEMS ===== */
   for (const it of items) {
     await env.DB.prepare(`
       INSERT INTO purchase_order_items (
@@ -69,7 +69,7 @@ export async function onRequestPost({ request, env }) {
       poId,
       it.description,
       Number(it.qty),
-      Number(it.unit_price)
+      Number(it.price)
     ).run();
   }
 
