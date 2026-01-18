@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Payslip</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  font-family: Arial;
+  margin: 20px;
+}
+.box {
+  border: 1px solid #000;
+  padding: 16px;
+}
+h2 {
+  text-align: center;
+}
+.row {
+  margin-bottom: 8px;
+}
+.bold {
+  font-weight: bold;
+}
+@media print {
+  button { display: none; }
+}
+</style>
+</head>
+
+<body>
+
+<button onclick="window.print()">Print / Save PDF</button>
+
+<div class="box" id="slip"></div>
+
+<script>
+(async () => {
+  const a = await fetch("/api/auth-check");
+  if (!a.ok) location.href = "login.html";
+})();
+
+const id = new URLSearchParams(location.search).get("id");
+
+(async () => {
+  const r = await fetch("/api/salary?id=" + id);
+  const s = await r.json();
+
+  slip.innerHTML = `
+    <h2>PAYSLIP</h2>
+    <div class="row"><span class="bold">Employee:</span> ${s.name}</div>
+    <div class="row"><span class="bold">Month:</span> ${s.salary_month}</div>
+    <hr>
+    <div class="row">Base Salary: RM ${s.base_salary}</div>
+    <div class="row">Allowance: RM ${s.allowance}</div>
+    <div class="row">Deduction: RM ${s.deduction}</div>
+    <hr>
+    <div class="row bold">Net Salary: RM ${s.net_salary}</div>
+    <br>
+    <div class="row">This is a computer generated payslip.</div>
+  `;
+})();
+</script>
+
+</body>
+</html>
