@@ -72,6 +72,15 @@ th { background:#f0f0f0; }
 .btn-add { background:#27ae60;color:#fff;margin-top:10px; }
 
 .right { text-align:right; }
+.errorBox {
+  background:#fee;
+  border:1px solid #e74c3c;
+  color:#c0392b;
+  padding:10px;
+  border-radius:6px;
+  font-size:13px;
+  white-space:pre-wrap;
+}
 </style>
 </head>
 
@@ -82,10 +91,7 @@ th { background:#f0f0f0; }
 
 <!-- ===== BASIC INFO ===== -->
 <div class="card">
-  <label>Issued By</label>
-  <input id="issued_by" placeholder="MMAC Construction">
-
-  <label>Supplier</label>
+  <label>Supplier Name *</label>
   <input id="supplier_name" placeholder="Supplier name">
 </div>
 
@@ -101,7 +107,7 @@ th { background:#f0f0f0; }
   <input type="time" id="delivery_time">
 </div>
 
-<!-- ===== PO ITEMS (原有核心功能) ===== -->
+<!-- ===== ITEMS ===== -->
 <div class="card">
   <label>Items</label>
 
@@ -110,7 +116,7 @@ th { background:#f0f0f0; }
       <tr>
         <th>Description</th>
         <th width="60">Qty</th>
-        <th width="80">Price</th>
+        <th width="90">Price</th>
         <th width="90">Amount</th>
       </tr>
     </thead>
@@ -134,6 +140,11 @@ Please supply the above items/services as per stated quantities and prices.
   </textarea>
 </div>
 
+<!-- ===== ERROR DISPLAY ===== -->
+<div class="card" id="errorCard" style="display:none;">
+  <div class="errorBox" id="errorBox"></div>
+</div>
+
 <!-- ===== ACTION ===== -->
 <div class="card">
   <button class="btn btn-primary" onclick="submitPO()">Create PO</button>
@@ -144,7 +155,8 @@ Please supply the above items/services as per stated quantities and prices.
 /* ===== LOGIN CHECK ===== */
 fetch("/api/auth-check",{credentials:"include"})
   .then(r=>r.json())
-  .then(d=>{ if(!d.loggedIn) location.replace("/login.html"); });
+  .then(d=>{ if(!d.loggedIn) location.replace("/login.html"); })
+  .catch(()=>location.replace("/login.html"));
 
 /* ===== ITEMS ===== */
 const tbody = document.querySelector("#itemsTable tbody");
@@ -153,7 +165,7 @@ function addItem() {
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td><input></td>
-    <td><input type="number" value="1" onchange="calc()"></td>
+    <td><input type="number" value="1" min="1" onchange="calc()"></td>
     <td><input type="number" step="0.01" value="0" onchange="calc()"></td>
     <td class="right">0.00</td>
   `;
@@ -165,18 +177,21 @@ function calc() {
   [...tbody.rows].forEach(r=>{
     const qty = Number(r.cells[1].children[0].value||0);
     const price = Number(r.cells[2].children[0].value||0);
-    const amt = qty*price;
+    const amt = qty * price;
     r.cells[3].innerText = amt.toFixed(2);
     subtotal += amt;
   });
-  document.getElementById("subtotal").innerText = subtotal.toFixed(2);
-  document.getElementById("total").innerText = subtotal.toFixed(2);
+  subtotalEl.innerText = subtotal.toFixed(2);
+  totalEl.innerText = subtotal.toFixed(2);
 }
 
 addItem();
 
 /* ===== SUBMIT ===== */
 async function submitPO() {
+  errorCard.style.display = "none";
+  errorBox.innerText = "";
+
   const items = [...tbody.rows].map(r=>({
     description: r.cells[0].children[0].value,
     qty: r.cells[1].children[0].value,
@@ -184,7 +199,6 @@ async function submitPO() {
   }));
 
   const payload = {
-    issued_by: issued_by.value,
     supplier_name: supplier_name.value,
     delivery_address: delivery_address.value,
     delivery_date: delivery_date.value,
@@ -193,19 +207,28 @@ async function submitPO() {
     items
   };
 
-  const res = await fetch("/api/po-create",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    credentials:"include",
-    body:JSON.stringify(payload)
-  });
+  try {
+    const res = await fetch("/api/po-create",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"include",
+      body:JSON.stringify(payload)
+    });
 
-  const data = await res.json();
-  if(data.success){
-    alert("PO created");
-    location.href="/pos.html";
-  }else{
-    alert(data.error||"Failed");
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorCard.style.display = "block";
+      errorBox.innerText = JSON.stringify(data, null, 2);
+      return;
+    }
+
+    alert("PO created successfully");
+    location.href = "/pos.html";
+
+  } catch (e) {
+    errorCard.style.display = "block";
+    errorBox.innerText = String(e);
   }
 }
 </script>
