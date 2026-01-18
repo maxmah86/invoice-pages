@@ -5,11 +5,6 @@
 <title>MMAC Management System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- ===== PWA REQUIRED ===== -->
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#2c3e50">
-<!-- ======================== -->
-
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -155,17 +150,72 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
   </div>
 </div>
 
+<!-- ===== Invoice ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Invoice</h2>
+    <p>Create, manage, edit and track invoices.</p>
+    <div class="actions">
+      <a class="btn-success" href="/invoice.html">Create Invoice</a>
+      <a class="btn-primary" href="/invoices.html">Invoice List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Quotation ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Quotation</h2>
+    <p>Create quotation and convert to invoice.</p>
+    <div class="actions">
+      <a class="btn-info" href="/quotation.html">Create Quotation</a>
+      <a class="btn-primary" href="/quotations.html">Quotation List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Purchase Order ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Purchase Order</h2>
+    <p>Create, manage and approve supplier purchase orders.</p>
+    <div class="actions">
+      <a class="btn-warning" href="/po.html">Create PO</a>
+      <a class="btn-primary" href="/pos.html">PO List</a>
+      <a class="btn-gray" href="/po-summary.html">PO Summary</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Employees ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Employees</h2>
+    <p>Manage staff information.</p>
+    <div class="actions">
+      <a class="btn-info" href="/employee.html">Add Employee</a>
+      <a class="btn-primary" href="/employees.html">Employee List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Salaries ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Salaries</h2>
+    <p>Generate monthly salaries and payslips.</p>
+    <div class="actions">
+      <a class="btn-success" href="/salaries.html">Salary Management</a>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Logout ===== -->
 <div class="logout">
   <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-/* ===== Service Worker (PWA) ===== */
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
-}
-
 /* ===== Login Check ===== */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
