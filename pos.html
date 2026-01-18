@@ -8,70 +8,59 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 16px;
+  background:#f4f6f8;
+  margin:0;
+  padding:16px;
 }
 
-h1 {
-  margin: 0 0 6px;
-}
-
+h1 { margin:0 0 6px; }
 .subtitle {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 16px;
+  font-size:14px;
+  color:#555;
+  margin-bottom:16px;
 }
 
 .card {
-  background: #fff;
-  padding: 14px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  background:#fff;
+  padding:14px;
+  border-radius:8px;
+  margin-bottom:12px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
 }
 
 .row {
-  font-size: 14px;
-  margin-bottom: 6px;
+  font-size:14px;
+  margin-bottom:6px;
 }
 
-.label {
-  font-weight: bold;
-}
+.label { font-weight:bold; }
 
 .status {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  display:inline-block;
+  padding:3px 10px;
+  border-radius:12px;
+  font-size:12px;
 }
 
-.status.OPEN {
-  background: #f39c12;
-  color: #000;
-}
-
-.status.SENT {
-  background: #2980b9;
-  color: #fff;
-}
-
-.status.DELIVERED {
-  background: #27ae60;
-  color: #fff;
-}
+.status.OPEN { background:#f39c12;color:#000; }
+.status.SENT { background:#2980b9;color:#fff; }
+.status.DELIVERED { background:#27ae60;color:#fff; }
 
 .actions {
-  margin-top: 10px;
+  margin-top:8px;
 }
 
 .actions a {
-  display: inline-block;
-  margin-right: 8px;
-  font-size: 13px;
-  text-decoration: none;
-  color: #2980b9;
+  font-size:13px;
+  text-decoration:none;
+  color:#2980b9;
+  margin-right:12px;
+}
+
+.empty {
+  text-align:center;
+  color:#888;
+  margin-top:40px;
 }
 </style>
 </head>
@@ -84,30 +73,28 @@ h1 {
 <div id="list"></div>
 
 <script>
-/* ===== LOGIN CHECK ===== */
-fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
+/* ===== AUTH CHECK ===== */
+fetch("/api/auth-check",{credentials:"include"})
+  .then(r=>r.json())
+  .then(d=>{
+    if(!d.loggedIn) location.replace("/login.html");
   })
-  .catch(() => location.replace("/login.html"));
+  .catch(()=>location.replace("/login.html"));
 
 /* ===== LOAD PO LIST ===== */
 async function loadPO() {
-  const res = await fetch("/api/po-list", {
-    credentials: "include"
-  });
+  const res = await fetch("/api/po-list",{credentials:"include"});
   const data = await res.json();
 
   const list = document.getElementById("list");
   list.innerHTML = "";
 
-  if (!data.results || data.results.length === 0) {
-    list.innerHTML = "<p>No purchase orders found.</p>";
+  if (!Array.isArray(data.results) || data.results.length === 0) {
+    list.innerHTML = `<div class="empty">No purchase orders found.</div>`;
     return;
   }
 
-  data.results.forEach(po => {
+  data.results.forEach(po=>{
     const div = document.createElement("div");
     div.className = "card";
 
@@ -115,17 +102,21 @@ async function loadPO() {
       <div class="row">
         <span class="label">PO No:</span> ${po.po_no}
       </div>
+
       <div class="row">
         <span class="label">Supplier:</span> ${po.supplier_name}
       </div>
+
       <div class="row">
         <span class="label">Delivery:</span>
         ${po.delivery_date || "-"} ${po.delivery_time || ""}
       </div>
+
       <div class="row">
         <span class="label">Total:</span>
         RM ${Number(po.total || 0).toFixed(2)}
       </div>
+
       <div class="row">
         <span class="status ${po.status}">${po.status}</span>
       </div>
