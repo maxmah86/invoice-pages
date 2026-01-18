@@ -22,6 +22,7 @@ h1 {
 .subtitle {
   color: #555;
   margin-bottom: 16px;
+  font-size: 14px;
 }
 
 .section {
@@ -70,12 +71,12 @@ h1 {
 .btn-info    { background: #2980b9; }
 .btn-purple  { background: #6f42c1; }
 .btn-gray    { background: #7f8c8d; }
+.btn-danger  { background: #c0392b; }
 
 .logout {
-  margin-top: 24px;
+  margin-top: 28px;
   text-align: center;
 }
-
 .logout button {
   background: #c0392b;
   color: #fff;
@@ -91,7 +92,9 @@ h1 {
 <body>
 
 <h1>MMAC CONSTRUCTION</h1>
-<div class="subtitle">Invoice • Quotation • Purchase Order • Statement</div>
+<div class="subtitle">
+Invoice • Quotation • Purchase Order • Statement • Employees • Salaries
+</div>
 
 <!-- ===== Invoice ===== -->
 <div class="section">
@@ -141,13 +144,36 @@ h1 {
   </div>
 </div>
 
+<!-- ===== Employees ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Employees</h2>
+    <p>Manage staff information.</p>
+    <div class="actions">
+      <a class="btn-info" href="/employee.html">Add Employee</a>
+      <a class="btn-primary" href="/employees.html">Employee List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Salaries ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Salaries</h2>
+    <p>Generate monthly salaries and payslips.</p>
+    <div class="actions">
+      <a class="btn-success" href="/salaries.html">Salary Management</a>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Logout ===== -->
 <div class="logout">
   <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-// ===== 登录检查 =====
+// ===== Login Check =====
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
   .then(d => {
