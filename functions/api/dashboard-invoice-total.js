@@ -1,32 +1,18 @@
 export async function onRequestGet({ request, env }) {
   try {
-    /* ===============================
-       AUTH
-       =============================== */
     const auth = await fetch(new URL("/api/auth-check", request.url), {
       headers: { cookie: request.headers.get("cookie") || "" }
     });
-    if (!auth.ok) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+    if (!auth.ok) return new Response("Unauthorized", { status: 401 });
 
-    /* ===============================
-       READ TABLE STRUCTURE
-       =============================== */
+    const url = new URL(request.url);
+    const month = url.searchParams.get("month")
+      || new Date().toISOString().slice(0,7);
+
     const columns = await env.DB.prepare(`
       PRAGMA table_info(invoices)
     `).all();
 
-    if (!columns.results || columns.results.length === 0) {
-      return new Response(
-        JSON.stringify({ total: 0, error: "invoices table not found" }),
-        { headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    /* ===============================
-       DETECT AMOUNT COLUMN
-       =============================== */
     const names = columns.results.map(c => c.name);
 
     let amountColumn = null;
@@ -37,21 +23,20 @@ export async function onRequestGet({ request, env }) {
 
     if (!amountColumn) {
       return new Response(
-        JSON.stringify({ total: 0, error: "no amount column found" }),
+        JSON.stringify({ month, total: 0, error: "no amount column found" }),
         { headers: { "Content-Type": "application/json" } }
       );
     }
 
-    /* ===============================
-       SUM AMOUNT (NO DATE FILTER)
-       =============================== */
     const row = await env.DB.prepare(`
       SELECT IFNULL(SUM(${amountColumn}), 0) AS total
       FROM invoices
-    `).first();
+      WHERE substr(created_at, 1, 7) = ?
+    `).bind(month).first();
 
     return new Response(
       JSON.stringify({
+        month,
         total: row.total,
         column_used: amountColumn
       }),
@@ -61,6 +46,7 @@ export async function onRequestGet({ request, env }) {
   } catch (err) {
     return new Response(
       JSON.stringify({
+        month: null,
         total: 0,
         error: "invoice dashboard error",
         detail: String(err)
