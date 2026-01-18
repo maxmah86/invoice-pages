@@ -2,46 +2,55 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Dashboard</title>
+<title>MMAC Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
 body {
-  font-family: Arial;
-  background:#f5f5f5;
-  margin:12px;
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  margin: 14px;
 }
+
 h2 {
-  text-align:center;
+  text-align: center;
+  margin-bottom: 18px;
 }
+
 .section {
-  margin-bottom:16px;
+  margin-bottom: 18px;
 }
+
 .card {
-  background:#fff;
-  padding:14px;
-  border-radius:8px;
-  margin-bottom:10px;
+  background: #ffffff;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
 }
+
 .card h3 {
-  margin:0 0 8px 0;
-  font-size:16px;
+  margin: 0 0 6px 0;
+  font-size: 16px;
 }
-button {
-  width:100%;
-  padding:14px;
-  font-size:16px;
-  border:0;
-  border-radius:6px;
-  margin-top:6px;
-}
-.income { background:#27ae60; color:#fff; }
-.cost { background:#e67e22; color:#fff; }
-.people { background:#3498db; color:#fff; }
-.system { background:#555; color:#fff; }
+
 .small {
-  font-size:14px;
-  color:#666;
+  font-size: 14px;
+  color: #666;
 }
+
+button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border: 0;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.income { background: #27ae60; color: #fff; }
+.cost { background: #e67e22; color: #fff; }
+.people { background: #3498db; color: #fff; }
+.system { background: #555; color: #fff; }
 </style>
 </head>
 
@@ -52,7 +61,7 @@ button {
 <div class="section">
   <div class="card">
     <h3>Income</h3>
-    <span class="small">Money coming in</span>
+    <div class="small">Customer billing</div>
     <button class="income" onclick="go('invoices.html')">Invoices</button>
     <button class="income" onclick="go('quotations.html')">Quotations</button>
   </div>
@@ -61,7 +70,7 @@ button {
 <div class="section">
   <div class="card">
     <h3>Cost</h3>
-    <span class="small">Money going out</span>
+    <div class="small">Company expenses</div>
     <button class="cost" onclick="go('pos.html')">Purchase Orders</button>
   </div>
 </div>
@@ -69,7 +78,7 @@ button {
 <div class="section">
   <div class="card">
     <h3>People</h3>
-    <span class="small">Staff & Salary</span>
+    <div class="small">Staff & Payroll</div>
     <button class="people" onclick="go('employees.html')">Employees</button>
     <button class="people" onclick="go('salaries.html')">Salaries</button>
   </div>
@@ -83,7 +92,9 @@ button {
 </div>
 
 <script>
-/* LOGIN REQUIRE */
+/* ===============================
+   LOGIN REQUIRE
+   =============================== */
 (async () => {
   try {
     const r = await fetch("/api/auth-check");
@@ -93,10 +104,16 @@ button {
   }
 })();
 
+/* ===============================
+   NAVIGATION
+   =============================== */
 function go(page) {
   location.href = page;
 }
 
+/* ===============================
+   LOGOUT
+   =============================== */
 async function logout() {
   await fetch("/api/logout");
   location.href = "login.html";
