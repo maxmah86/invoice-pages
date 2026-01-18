@@ -13,64 +13,65 @@ body {
   padding: 16px;
 }
 
-h1 {
-  margin: 0 0 6px;
-}
-
-.subtitle {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 16px;
-}
+h1 { margin: 0 0 6px; }
+.subtitle { font-size:14px;color:#555;margin-bottom:16px; }
 
 .card {
-  background: #fff;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  background:#fff;
+  padding:16px;
+  border-radius:8px;
+  margin-bottom:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
 }
 
 label {
-  display: block;
-  margin-top: 12px;
-  margin-bottom: 4px;
-  font-size: 14px;
-  font-weight: bold;
+  display:block;
+  margin-top:12px;
+  margin-bottom:4px;
+  font-size:14px;
+  font-weight:bold;
 }
 
 input, textarea {
-  width: 100%;
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  box-sizing: border-box;
+  width:100%;
+  padding:10px;
+  font-size:14px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
 }
 
-textarea {
-  resize: vertical;
+textarea { resize:vertical; }
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
 }
 
-button {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
+th, td {
+  border-bottom:1px solid #ddd;
+  padding:6px;
+  text-align:left;
 }
 
-.btn-primary {
-  background: #2c3e50;
-  color: #fff;
+th { background:#f0f0f0; }
+
+.btn {
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  border-radius:6px;
+  border:none;
+  cursor:pointer;
+  margin-top:10px;
 }
 
-.btn-secondary {
-  background: #7f8c8d;
-  color: #fff;
-  margin-top: 10px;
-}
+.btn-primary { background:#2c3e50;color:#fff; }
+.btn-secondary { background:#7f8c8d;color:#fff; }
+.btn-add { background:#27ae60;color:#fff;margin-top:10px; }
+
+.right { text-align:right; }
 </style>
 </head>
 
@@ -91,14 +92,38 @@ button {
 <!-- ===== DELIVERY INFO ===== -->
 <div class="card">
   <label>Delivery Address</label>
-  <textarea id="delivery_address" rows="3"
-    placeholder="Full delivery address"></textarea>
+  <textarea id="delivery_address" rows="3"></textarea>
 
   <label>Delivery Date</label>
   <input type="date" id="delivery_date">
 
   <label>Delivery Time</label>
   <input type="time" id="delivery_time">
+</div>
+
+<!-- ===== PO ITEMS (原有核心功能) ===== -->
+<div class="card">
+  <label>Items</label>
+
+  <table id="itemsTable">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th width="60">Qty</th>
+        <th width="80">Price</th>
+        <th width="90">Amount</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button class="btn btn-add" onclick="addItem()">+ Add Item</button>
+</div>
+
+<!-- ===== TOTAL ===== -->
+<div class="card">
+  <div class="right">Subtotal: RM <span id="subtotal">0.00</span></div>
+  <div class="right"><strong>Total: RM <span id="total">0.00</span></strong></div>
 </div>
 
 <!-- ===== NOTES ===== -->
@@ -111,49 +136,76 @@ Please supply the above items/services as per stated quantities and prices.
 
 <!-- ===== ACTION ===== -->
 <div class="card">
-  <button class="btn-primary" onclick="submitPO()">Create PO</button>
-  <button class="btn-secondary" onclick="history.back()">Cancel</button>
+  <button class="btn btn-primary" onclick="submitPO()">Create PO</button>
+  <button class="btn btn-secondary" onclick="history.back()">Cancel</button>
 </div>
 
 <script>
 /* ===== LOGIN CHECK ===== */
-fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
-  })
-  .catch(() => location.replace("/login.html"));
+fetch("/api/auth-check",{credentials:"include"})
+  .then(r=>r.json())
+  .then(d=>{ if(!d.loggedIn) location.replace("/login.html"); });
 
-/* ===== SUBMIT PO ===== */
+/* ===== ITEMS ===== */
+const tbody = document.querySelector("#itemsTable tbody");
+
+function addItem() {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input></td>
+    <td><input type="number" value="1" onchange="calc()"></td>
+    <td><input type="number" step="0.01" value="0" onchange="calc()"></td>
+    <td class="right">0.00</td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function calc() {
+  let subtotal = 0;
+  [...tbody.rows].forEach(r=>{
+    const qty = Number(r.cells[1].children[0].value||0);
+    const price = Number(r.cells[2].children[0].value||0);
+    const amt = qty*price;
+    r.cells[3].innerText = amt.toFixed(2);
+    subtotal += amt;
+  });
+  document.getElementById("subtotal").innerText = subtotal.toFixed(2);
+  document.getElementById("total").innerText = subtotal.toFixed(2);
+}
+
+addItem();
+
+/* ===== SUBMIT ===== */
 async function submitPO() {
+  const items = [...tbody.rows].map(r=>({
+    description: r.cells[0].children[0].value,
+    qty: r.cells[1].children[0].value,
+    price: r.cells[2].children[0].value
+  }));
+
   const payload = {
     issued_by: issued_by.value,
     supplier_name: supplier_name.value,
     delivery_address: delivery_address.value,
     delivery_date: delivery_date.value,
     delivery_time: delivery_time.value,
-    notes: notes.value
+    notes: notes.value,
+    items
   };
 
-  if (!payload.supplier_name) {
-    alert("Supplier is required");
-    return;
-  }
-
-  const res = await fetch("/api/po-create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload)
+  const res = await fetch("/api/po-create",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    credentials:"include",
+    body:JSON.stringify(payload)
   });
 
   const data = await res.json();
-
-  if (data.success) {
+  if(data.success){
     alert("PO created");
-    location.href = "/pos.html";
-  } else {
-    alert(data.error || "Failed to create PO");
+    location.href="/pos.html";
+  }else{
+    alert(data.error||"Failed");
   }
 }
 </script>
