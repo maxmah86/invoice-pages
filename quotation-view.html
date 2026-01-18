@@ -124,6 +124,9 @@ th {
     <div class="quote-title">QUOTATION</div>
 
     <div class="quote-actions">
+      <!-- ✅ 新增 Print -->
+      <button onclick="printQuotation()">PRINT / SAVE PDF</button>
+
       <button id="editBtn" style="display:none" onclick="editQuotation()">EDIT</button>
       <button id="convertBtn" style="display:none" onclick="convertQuotation()">CONVERT TO INVOICE</button>
     </div>
@@ -159,7 +162,6 @@ th {
   </div>
 </div>
 
-<!-- ===== TERMS & FOOTER ===== -->
 <div class="footer">
   <strong>TERMS:</strong><br>
   50% deposit upon confirmation and the balance 50% should be cleared by project completion.<br><br>
@@ -175,6 +177,10 @@ th {
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
+
+function printQuotation() {
+  window.print();
+}
 
 function editQuotation() {
   location.href = `/quotation-edit.html?id=${id}`;
@@ -213,11 +219,7 @@ fetch(`/api/quotation-view?id=${id}`, {
   const q = data.quotation;
 
   document.getElementById("quoteNo").textContent = q.quotation_no;
-
-  // ✅ 只显示日期（去掉时间）
-  const dateOnly = q.created_at.split(" ")[0];
-  document.getElementById("quoteDate").textContent = dateOnly;
-
+  document.getElementById("quoteDate").textContent = q.created_at.split(" ")[0];
   document.getElementById("customer").textContent = q.customer;
 
   const statusEl = document.getElementById("status");
