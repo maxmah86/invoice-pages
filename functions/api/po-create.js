@@ -2,12 +2,23 @@ export async function onRequestPost({ request, env }) {
   try {
     /* ===== AUTH CHECK ===== */
     const cookie = request.headers.get("Cookie") || "";
-    const session = await env.DB
+    const token = cookie
+      .split(";")
+      .find(c => c.trim().startsWith("session="))
+      ?.split("=")[1];
+
+    if (!token) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401
+      });
+    }
+
+    const user = await env.DB
       .prepare("SELECT id FROM users WHERE session_token = ?")
-      .bind(cookie.replace("session=", ""))
+      .bind(token)
       .first();
 
-    if (!session) {
+    if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401
       });
@@ -16,8 +27,10 @@ export async function onRequestPost({ request, env }) {
     /* ===== INPUT ===== */
     const body = await request.json();
 
-    const issued_by = body.issued_by || "";
     const supplier_name = body.supplier_name || "";
+    const supplier_address = body.supplier_address || "";
+
+    const issued_by = body.issued_by || "";
     const delivery_address = body.delivery_address || "";
     const delivery_date = body.delivery_date || "";
     const delivery_time = body.delivery_time || "";
@@ -29,45 +42,38 @@ export async function onRequestPost({ request, env }) {
       });
     }
 
-    /* ===== AUTO PO NO ===== */
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const rand = Math.floor(1000 + Math.random() * 9000);
-
-    const po_no = `PO${yyyy}${mm}${dd}${rand}`;
-    const po_date = now.toISOString().slice(0, 10);
-
     /* ===== INSERT ===== */
-    await env.DB.prepare(`
+    const result = await env.DB.prepare(`
       INSERT INTO purchase_orders (
-        po_no,
-        po_date,
-        issued_by,
         supplier_name,
+        supplier_address,
+        issued_by,
         delivery_address,
         delivery_date,
         delivery_time,
         notes,
-        status,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
     `).bind(
-      po_no,
-      po_date,
-      issued_by,
       supplier_name,
+      supplier_address,
+      issued_by,
       delivery_address,
       delivery_date,
       delivery_time,
-      notes,
-      "DRAFT"
+      notes
     ).run();
+
+    /* ===== RETURN CREATED PO ===== */
+    const po = await env.DB.prepare(`
+      SELECT po_no, po_date, status
+      FROM purchase_orders
+      WHERE id = ?
+    `).bind(result.meta.last_row_id).first();
 
     return new Response(JSON.stringify({
       success: true,
-      po_no
+      po
     }), { status: 200 });
 
   } catch (err) {
