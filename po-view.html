@@ -1,205 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Purchase Order</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<title>View Purchase Order</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  margin: 16px;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.row {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.status.OPEN {
+  background: #f39c12;
   color: #000;
 }
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+.status.SENT {
+  background: #2980b9;
+  color: #fff;
+}
+.status.DELIVERED {
+  background: #27ae60;
+  color: #fff;
 }
 
-.company h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: bold;
-}
-
-.company {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.invoice-box {
-  text-align: right;
-}
-
-.invoice-title {
-  font-size: 26px;
-  font-weight: bold;
-}
-
-.invoice-actions {
-  margin: 6px 0;
-}
-
-.invoice-actions button {
-  padding: 6px 12px;
-  font-size: 13px;
-  margin-left: 6px;
-  cursor: pointer;
-}
-
-.invoice-meta {
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.section {
-  margin-top: 20px;
-}
-
-table {
+.btn {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
 }
 
-th, td {
-  border: 1px solid #000;
-  padding: 6px;
-  font-size: 13px;
+.btn-primary {
+  background: #2c3e50;
+  color: #fff;
 }
 
-th {
-  background: #f0f0f0;
+.btn-secondary {
+  background: #7f8c8d;
+  color: #fff;
 }
 
-.text-right {
-  text-align: right;
-}
-
-.total {
-  font-size: 16px;
-  font-weight: bold;
-  text-align: right;
-  margin-top: 12px;
-}
-
-.footer {
-  margin-top: 20px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-@media print {
-  button { display: none; }
+.btn-success {
+  background: #27ae60;
+  color: #fff;
 }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div class="company">
-    <h1>MMAC CONSTRUCTION</h1>
-    201903134488 (002977225-A)<br>
-    52, Jalan Mahogani SD 1/3<br>
-    Sri Damansara<br>
-    52200 Kuala Lumpur, Malaysia<br>
-    Tel: 016-444-2128
-  </div>
+<h1>Purchase Order</h1>
+<div class="subtitle">MMAC Construction</div>
 
-  <div class="invoice-box">
-    <div class="invoice-title">PURCHASE ORDER</div>
-
-    <!-- ✅ 新增 EDIT 按钮 -->
-    <div class="invoice-actions">
-      <button onclick="editPO()">EDIT</button>
-      <button onclick="printPO()">PRINT</button>
-    </div>
-
-    <div class="invoice-meta">
-      <div><strong>PO No:</strong> <span id="poNo"></span></div>
-      <div><strong>Date:</strong> <span id="poDate"></span></div>
-      <div><strong>Status:</strong> <span id="status"></span></div>
-      <div><strong>Supplier:</strong> <span id="supplier"></span></div>
-    </div>
-  </div>
-</div>
-
-<div class="section">
-  <table>
-    <thead>
-      <tr>
-        <th style="width:5%">No</th>
-        <th>Description</th>
-        <th style="width:10%">Qty</th>
-        <th style="width:15%">Unit Price</th>
-        <th style="width:15%">Amount (RM)</th>
-      </tr>
-    </thead>
-    <tbody id="items"></tbody>
-  </table>
-
-  <div class="total">
-    TOTAL (RM): <span id="total"></span>
-  </div>
-</div>
-
-<div class="footer">
-  <strong>NOTES:</strong><br>
-  Please supply the above items/services as per stated quantities and prices.<br><br>
-  Thank you.
-</div>
+<div id="content"></div>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+/* ===== LOGIN CHECK ===== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) location.replace("/login.html");
+  })
+  .catch(() => location.replace("/login.html"));
 
-function editPO() {
-  location.href = `/po-edit.html?id=${id}`;
+/* ===== GET ID ===== */
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
+
+if (!id) {
+  alert("Missing PO ID");
+  history.back();
 }
 
+/* ===== LOAD PO ===== */
+async function loadPO() {
+  const res = await fetch(`/api/po-view?id=${id}`, {
+    credentials: "include"
+  });
+  const data = await res.json();
+
+  if (!data.po) {
+    alert("PO not found");
+    history.back();
+    return;
+  }
+
+  const po = data.po;
+  const el = document.getElementById("content");
+
+  el.innerHTML = `
+    <!-- BASIC INFO -->
+    <div class="card">
+      <div class="row"><span class="label">PO No:</span> ${po.po_no}</div>
+      <div class="row"><span class="label">PO Date:</span> ${po.po_date}</div>
+      <div class="row"><span class="label">Supplier:</span> ${po.supplier_name}</div>
+      <div class="row"><span class="label">Issued By:</span> ${po.issued_by || "-"}</div>
+      <div class="row">
+        <span class="status ${po.status}">${po.status}</span>
+      </div>
+    </div>
+
+    <!-- DELIVERY -->
+    <div class="card">
+      <div class="section-title">Delivery / Completion</div>
+      <div class="row"><span class="label">Address:</span> ${po.delivery_address || "-"}</div>
+      <div class="row"><span class="label">Date:</span> ${po.delivery_date || "-"}</div>
+      <div class="row"><span class="label">Time:</span> ${po.delivery_time || "-"}</div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="card">
+      <div class="section-title">Notes</div>
+      <div class="row">${po.notes || "-"}</div>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="card">
+      <div class="section-title">Amount</div>
+      <div class="row">
+        <span class="label">Subtotal:</span>
+        RM ${Number(po.subtotal || 0).toFixed(2)}
+      </div>
+      <div class="row">
+        <span class="label">Total:</span>
+        RM ${Number(po.total || 0).toFixed(2)}
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="card">
+      <button class="btn btn-primary" onclick="history.back()">Back</button>
+      <button class="btn btn-secondary" onclick="printPO()">Print / PDF</button>
+    </div>
+  `;
+}
+
+loadPO();
+
+/* ===== PRINT ===== */
 function printPO() {
   window.print();
 }
-
-fetch(`/api/po-view?id=${id}`, {
-  credentials: "include"
-})
-.then(res => {
-  if (res.status === 401) {
-    location.replace("/login.html");
-    throw new Error("Unauthorized");
-  }
-  return res.json();
-})
-.then(data => {
-  document.getElementById("poNo").textContent = data.po_no;
-  document.getElementById("poDate").textContent = data.po_date;
-  document.getElementById("status").textContent = data.status;
-  document.getElementById("supplier").textContent = data.supplier_name;
-
-  let total = 0;
-  const tbody = document.getElementById("items");
-  tbody.innerHTML = "";
-
-  data.items.forEach((item, i) => {
-    const amount = item.qty * item.unit_price;
-    total += amount;
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${item.description}</td>
-      <td class="text-right">${item.qty}</td>
-      <td class="text-right">${Number(item.unit_price).toFixed(2)}</td>
-      <td class="text-right">${amount.toFixed(2)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById("total").textContent = total.toFixed(2);
-});
 </script>
 
 </body>
