@@ -71,12 +71,12 @@ h1 {
 .btn-info    { background: #2980b9; }
 .btn-purple  { background: #6f42c1; }
 .btn-gray    { background: #7f8c8d; }
-.btn-danger  { background: #c0392b; }
 
 .logout {
   margin-top: 28px;
   text-align: center;
 }
+
 .logout button {
   background: #c0392b;
   color: #fff;
@@ -94,6 +94,19 @@ h1 {
 <h1>MMAC CONSTRUCTION</h1>
 <div class="subtitle">
 Invoice • Quotation • Purchase Order • Statement • Employees • Salaries
+</div>
+
+<!-- ===== Monthly Summary ===== -->
+<div class="section">
+  <div class="card">
+    <h2>This Month Summary</h2>
+    <p>Overview of current month</p>
+    <div class="actions">
+      <a class="btn-success" id="invTotal">Invoice<br>RM 0.00</a>
+      <a class="btn-purple" id="salTotal">Salary<br>RM 0.00</a>
+      <a class="btn-warning" id="poTotal">PO<br>RM 0.00</a>
+    </div>
+  </div>
 </div>
 
 <!-- ===== Invoice ===== -->
@@ -173,7 +186,7 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
 </div>
 
 <script>
-// ===== Login Check =====
+/* ===== Login Check ===== */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
   .then(d => {
@@ -185,7 +198,28 @@ fetch("/api/auth-check", { credentials: "include" })
     location.replace("/login.html");
   });
 
-// ===== Logout =====
+/* ===== Load Monthly Summary ===== */
+async function loadSummary() {
+  try {
+    const [i, s, p] = await Promise.all([
+      fetch("/api/dashboard-invoice-total").then(r => r.json()),
+      fetch("/api/dashboard-salary-total").then(r => r.json()),
+      fetch("/api/dashboard-po-total").then(r => r.json())
+    ]);
+
+    invTotal.innerHTML = `Invoice<br>RM ${Number(i.total).toFixed(2)}`;
+    salTotal.innerHTML = `Salary<br>RM ${Number(s.total).toFixed(2)}`;
+    poTotal.innerHTML  = `PO<br>RM ${Number(p.total).toFixed(2)}`;
+  } catch {
+    invTotal.innerHTML = "Invoice<br>RM 0.00";
+    salTotal.innerHTML = "Salary<br>RM 0.00";
+    poTotal.innerHTML  = "PO<br>RM 0.00";
+  }
+}
+
+loadSummary();
+
+/* ===== Logout ===== */
 async function logout() {
   await fetch("/api/logout", {
     method: "POST",
