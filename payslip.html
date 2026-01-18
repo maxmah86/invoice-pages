@@ -4,26 +4,62 @@
 <meta charset="UTF-8">
 <title>Payslip</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
 body {
-  font-family: Arial;
-  margin: 20px;
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  background: #f5f5f5;
 }
-.box {
+
+.container {
+  background: #fff;
   border: 1px solid #000;
   padding: 16px;
+  max-width: 420px;
+  margin: auto;
 }
+
 h2 {
   text-align: center;
+  margin-bottom: 16px;
 }
+
 .row {
   margin-bottom: 8px;
+  font-size: 15px;
 }
-.bold {
+
+.label {
   font-weight: bold;
 }
+
+hr {
+  border: none;
+  border-top: 1px solid #000;
+  margin: 12px 0;
+}
+
+.total {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
 @media print {
+  body { background: #fff; }
   button { display: none; }
+  .container {
+    border: none;
+    padding: 0;
+    max-width: none;
+  }
 }
 </style>
 </head>
@@ -32,34 +68,88 @@ h2 {
 
 <button onclick="window.print()">Print / Save PDF</button>
 
-<div class="box" id="slip"></div>
+<div class="container" id="slip">
+  Loading payslip...
+</div>
 
 <script>
+/* ===============================
+   LOGIN REQUIRE
+   =============================== */
 (async () => {
-  const a = await fetch("/api/auth-check");
-  if (!a.ok) location.href = "login.html";
+  try {
+    const r = await fetch("/api/auth-check");
+    if (!r.ok) location.href = "login.html";
+  } catch {
+    location.href = "login.html";
+  }
 })();
 
-const id = new URLSearchParams(location.search).get("id");
+/* ===============================
+   LOAD PAYSLIP DATA
+   =============================== */
+const params = new URLSearchParams(location.search);
+const id = params.get("id");
 
-(async () => {
+if (!id) {
+  slip.innerHTML = "Invalid payslip ID";
+} else {
+  loadPayslip();
+}
+
+async function loadPayslip() {
   const r = await fetch("/api/salary?id=" + id);
+  if (!r.ok) {
+    slip.innerHTML = "Failed to load payslip";
+    return;
+  }
+
   const s = await r.json();
 
   slip.innerHTML = `
     <h2>PAYSLIP</h2>
-    <div class="row"><span class="bold">Employee:</span> ${s.name}</div>
-    <div class="row"><span class="bold">Month:</span> ${s.salary_month}</div>
+
+    <div class="row">
+      <span class="label">Employee Name:</span><br>
+      ${s.name}
+    </div>
+
+    <div class="row">
+      <span class="label">Salary Month:</span><br>
+      ${s.salary_month}
+    </div>
+
     <hr>
-    <div class="row">Base Salary: RM ${s.base_salary}</div>
-    <div class="row">Allowance: RM ${s.allowance}</div>
-    <div class="row">Deduction: RM ${s.deduction}</div>
+
+    <div class="row">
+      <span class="label">Base Salary:</span>
+      RM ${Number(s.base_salary).toFixed(2)}
+    </div>
+
+    <div class="row">
+      <span class="label">Allowance:</span>
+      RM ${Number(s.allowance).toFixed(2)}
+    </div>
+
+    <div class="row">
+      <span class="label">Deduction:</span>
+      RM ${Number(s.deduction).toFixed(2)}
+    </div>
+
     <hr>
-    <div class="row bold">Net Salary: RM ${s.net_salary}</div>
-    <br>
-    <div class="row">This is a computer generated payslip.</div>
+
+    <div class="row total">
+      Net Salary: RM ${Number(s.net_salary).toFixed(2)}
+    </div>
+
+    <hr>
+
+    <div class="row">
+      This is a computer generated payslip.<br>
+      No signature is required.
+    </div>
   `;
-})();
+}
 </script>
 
 </body>
