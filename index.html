@@ -64,17 +64,15 @@ h1 {
   color: #fff;
 }
 
-.summary-item.invoice {
-  background: #27ae60;
-}
-.summary-item.salary {
-  background: #6f42c1;
-}
+.summary-item.invoice { background: #27ae60; }
+.summary-item.salary  { background: #6f42c1; }
 .summary-item.po {
   background: #f39c12;
   color: #000;
   grid-column: span 2;
 }
+.summary-item.profit { background: #2c3e50; }
+.summary-item.profit.negative { background: #c0392b; }
 
 /* ===== General Actions ===== */
 .actions {
@@ -144,6 +142,9 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
       </div>
       <div class="summary-item po" id="poTotal">
         PO<br>RM 0.00
+      </div>
+      <div class="summary-item profit" id="profitTotal">
+        Profit<br>RM 0.00
       </div>
     </div>
   </div>
@@ -232,20 +233,27 @@ async function loadSummary() {
   const month = monthInput.value;
 
   try {
-    const [i, s, p] = await Promise.all([
+    const [i, s, p, pr] = await Promise.all([
       fetch(`/api/dashboard-invoice-total?month=${month}`).then(r => r.json()),
       fetch(`/api/dashboard-salary-total?month=${month}`).then(r => r.json()),
-      fetch(`/api/dashboard-po-total?month=${month}`).then(r => r.json())
+      fetch(`/api/dashboard-po-total?month=${month}`).then(r => r.json()),
+      fetch(`/api/dashboard-profit?month=${month}`).then(r => r.json())
     ]);
 
     invTotal.innerHTML = `Invoice<br>RM ${Number(i.total).toFixed(2)}`;
     salTotal.innerHTML = `Salary<br>RM ${Number(s.total).toFixed(2)}`;
     poTotal.innerHTML  = `PO<br>RM ${Number(p.total).toFixed(2)}`;
 
+    const profit = Number(pr.profit || 0);
+    profitTotal.innerHTML = `Profit<br>RM ${profit.toFixed(2)}`;
+    profitTotal.classList.remove("negative");
+    if (profit < 0) profitTotal.classList.add("negative");
+
   } catch {
     invTotal.innerHTML = "Invoice<br>RM 0.00";
     salTotal.innerHTML = "Salary<br>RM 0.00";
     poTotal.innerHTML  = "PO<br>RM 0.00";
+    profitTotal.innerHTML = "Profit<br>RM 0.00";
   }
 }
 
