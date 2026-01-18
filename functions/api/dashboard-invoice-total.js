@@ -1,5 +1,8 @@
 export async function onRequestGet({ request, env }) {
   try {
+    /* ===============================
+       AUTH
+       =============================== */
     const auth = await fetch(new URL("/api/auth-check", request.url), {
       headers: { cookie: request.headers.get("cookie") || "" }
     });
@@ -8,14 +11,13 @@ export async function onRequestGet({ request, env }) {
     }
 
     /* ===============================
-       STEP 1: 确认表是否存在
+       READ TABLE STRUCTURE
        =============================== */
-    const tableCheck = await env.DB.prepare(`
-      SELECT name FROM sqlite_master
-      WHERE type='table' AND name='invoices'
-    `).first();
+    const columns = await env.DB.prepare(`
+      PRAGMA table_info(invoices)
+    `).all();
 
-    if (!tableCheck) {
+    if (!columns.results || columns.results.length === 0) {
       return new Response(
         JSON.stringify({ total: 0, error: "invoices table not found" }),
         { headers: { "Content-Type": "application/json" } }
@@ -23,22 +25,40 @@ export async function onRequestGet({ request, env }) {
     }
 
     /* ===============================
-       STEP 2: 安全 SUM（不加月份）
+       DETECT AMOUNT COLUMN
+       =============================== */
+    const names = columns.results.map(c => c.name);
+
+    let amountColumn = null;
+    if (names.includes("total")) amountColumn = "total";
+    else if (names.includes("grand_total")) amountColumn = "grand_total";
+    else if (names.includes("amount")) amountColumn = "amount";
+    else if (names.includes("sub_total")) amountColumn = "sub_total";
+
+    if (!amountColumn) {
+      return new Response(
+        JSON.stringify({ total: 0, error: "no amount column found" }),
+        { headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    /* ===============================
+       SUM AMOUNT (NO DATE FILTER)
        =============================== */
     const row = await env.DB.prepare(`
-      SELECT IFNULL(SUM(total), 0) AS total
+      SELECT IFNULL(SUM(${amountColumn}), 0) AS total
       FROM invoices
     `).first();
 
     return new Response(
-      JSON.stringify({ total: row.total }),
+      JSON.stringify({
+        total: row.total,
+        column_used: amountColumn
+      }),
       { headers: { "Content-Type": "application/json" } }
     );
 
   } catch (err) {
-    /* ===============================
-       FAIL SAFE
-       =============================== */
     return new Response(
       JSON.stringify({
         total: 0,
