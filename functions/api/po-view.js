@@ -1,5 +1,6 @@
-// /functions/api/po-view.js
 export async function onRequestGet({ request, env }) {
+
+  /* ===== AUTH ===== */
   const auth = await fetch(new URL("/api/auth-check", request.url), {
     headers: { cookie: request.headers.get("cookie") || "" }
   });
@@ -12,6 +13,7 @@ export async function onRequestGet({ request, env }) {
     return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
   }
 
+  /* ===== PO HEADER ===== */
   const po = await env.DB.prepare(`
     SELECT
       po_no,
@@ -30,29 +32,31 @@ export async function onRequestGet({ request, env }) {
     return new Response(JSON.stringify({ error: "PO not found" }), { status: 404 });
   }
 
+  /* ===== ITEMS (映射 unit_price → price) ===== */
   const items = await env.DB.prepare(`
     SELECT
       description,
       qty,
-      unit_price AS price   -- 🔥 关键：映射成 price
+      unit_price AS price
     FROM purchase_order_items
     WHERE purchase_order_id = ?
     ORDER BY id ASC
   `).bind(id).all();
 
-  return new Response(JSON.stringify({
-    po: {
-      po_no: po.po_no,
-      po_date: po.po_date,
-      supplier: po.supplier_name,
-      status: po.status,
-      notes: po.notes,
-      delivery_address: po.delivery_address,
-      delivery_date: po.delivery_date,
-      delivery_time: po.delivery_time
-    },
-    items: items.results
-  }), {
-    headers: { "Content-Type": "application/json" }
-  });
+  return new Response(
+    JSON.stringify({
+      po: {
+        po_no: po.po_no,
+        po_date: po.po_date,
+        supplier: po.supplier_name,
+        status: po.status,
+        notes: po.notes,
+        delivery_address: po.delivery_address,
+        delivery_date: po.delivery_date,
+        delivery_time: po.delivery_time
+      },
+      items: items.results
+    }),
+    { headers: { "Content-Type": "application/json" } }
+  );
 }
