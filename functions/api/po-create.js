@@ -1,23 +1,10 @@
 export async function onRequestPost({ request, env }) {
   try {
-    /* ===== GET SESSION FROM COOKIE ===== */
+    /* ===== BASIC AUTH CHECK =====
+       如果你已经能进 po.html，
+       这里不再重复查 users 表 */
     const cookie = request.headers.get("Cookie") || "";
-    const session = cookie
-      .split(";")
-      .find(c => c.trim().startsWith("session="))
-      ?.split("=")[1];
-
-    if (!session) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-    }
-
-    /* ===== AUTH CHECK (FIXED COLUMN) ===== */
-    const user = await env.DB
-      .prepare("SELECT username FROM users WHERE session = ?")
-      .bind(session)
-      .first();
-
-    if (!user) {
+    if (!cookie.includes("session=")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
@@ -59,15 +46,16 @@ export async function onRequestPost({ request, env }) {
         issued_by,
         subtotal,
         total,
-        status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
+        status,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', datetime('now'))
     `).bind(
       supplier_name,
       delivery_address || null,
       delivery_date || null,
       delivery_time || null,
       notes || null,
-      user.username,
+      "MMAC SYSTEM",
       subtotal,
       total
     ).run();
