@@ -1,95 +1,79 @@
 export async function onRequestPost({ request, env }) {
-
-  /* ===============================
-     AUTH CHECK
-     =============================== */
-  const authRes = await fetch(new URL("/api/auth-check", request.url), {
-    headers: {
-      cookie: request.headers.get("cookie") || ""
-    }
-  });
-
-  if (!authRes.ok) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
-    );
-  }
-
-  /* ===============================
-     PARSE BODY
-     =============================== */
-  let body;
   try {
-    body = await request.json();
-  } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON" }),
-      { status: 400 }
-    );
-  }
+    /* ===== AUTH CHECK ===== */
+    const cookie = request.headers.get("Cookie") || "";
+    const session = await env.DB
+      .prepare("SELECT id FROM users WHERE session_token = ?")
+      .bind(cookie.replace("session=", ""))
+      .first();
 
-  const {
-    supplier_name,
-    supplier_address,
-    subtotal,
-    total,
-    items
-  } = body;
+    if (!session) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401
+      });
+    }
 
-  if (!supplier_name || !Array.isArray(items) || items.length === 0) {
-    return new Response(
-      JSON.stringify({ error: "Missing required fields" }),
-      { status: 400 }
-    );
-  }
+    /* ===== INPUT ===== */
+    const body = await request.json();
 
-  /* ===============================
-     INSERT PO HEADER
-     (po_no & po_date from SQL DEFAULT)
-     =============================== */
-  const poResult = await env.DB.prepare(`
-    INSERT INTO purchase_orders
-      (supplier_name, supplier_address, subtotal, total, status)
-    VALUES
-      (?, ?, ?, ?, 'OPEN')
-  `).bind(
-    supplier_name,
-    supplier_address || "",
-    subtotal || 0,
-    total || 0
-  ).run();
+    const issued_by = body.issued_by || "";
+    const supplier_name = body.supplier_name || "";
+    const delivery_address = body.delivery_address || "";
+    const delivery_date = body.delivery_date || "";
+    const delivery_time = body.delivery_time || "";
+    const notes = body.notes || "";
 
-  const purchaseOrderId = poResult.meta.last_row_id;
+    if (!supplier_name) {
+      return new Response(JSON.stringify({ error: "Supplier required" }), {
+        status: 400
+      });
+    }
 
-  /* ===============================
-     INSERT PO ITEMS
-     =============================== */
-  const itemStmt = env.DB.prepare(`
-    INSERT INTO purchase_order_items
-      (purchase_order_id, description, qty, unit_price, line_total)
-    VALUES
-      (?, ?, ?, ?, ?)
-  `);
+    /* ===== AUTO PO NO ===== */
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const rand = Math.floor(1000 + Math.random() * 9000);
 
-  for (const item of items) {
-    await itemStmt.bind(
-      purchaseOrderId,
-      item.description || "",
-      item.qty || 0,
-      item.unit_price || 0,
-      item.line_total || 0
+    const po_no = `PO${yyyy}${mm}${dd}${rand}`;
+    const po_date = now.toISOString().slice(0, 10);
+
+    /* ===== INSERT ===== */
+    await env.DB.prepare(`
+      INSERT INTO purchase_orders (
+        po_no,
+        po_date,
+        issued_by,
+        supplier_name,
+        delivery_address,
+        delivery_date,
+        delivery_time,
+        notes,
+        status,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    `).bind(
+      po_no,
+      po_date,
+      issued_by,
+      supplier_name,
+      delivery_address,
+      delivery_date,
+      delivery_time,
+      notes,
+      "DRAFT"
     ).run();
-  }
 
-  /* ===============================
-     RESPONSE
-     =============================== */
-  return new Response(
-    JSON.stringify({
+    return new Response(JSON.stringify({
       success: true,
-      purchase_order_id: purchaseOrderId
-    }),
-    { status: 200 }
-  );
+      po_no
+    }), { status: 200 });
+
+  } catch (err) {
+    return new Response(JSON.stringify({
+      error: "PO create failed",
+      detail: String(err)
+    }), { status: 500 });
+  }
 }
