@@ -48,25 +48,7 @@ h1 {
   color: #555;
 }
 
-/* ===== General Actions (unchanged) ===== */
-.actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.actions a {
-  flex: 1;
-  min-width: 120px;
-  text-align: center;
-  padding: 10px;
-  text-decoration: none;
-  font-size: 14px;
-  border-radius: 6px;
-  color: #fff;
-}
-
-/* ===== Monthly Summary Grid (FIX) ===== */
+/* ===== Monthly Summary Grid ===== */
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -85,15 +67,31 @@ h1 {
 .summary-item.invoice {
   background: #27ae60;
 }
-
 .summary-item.salary {
   background: #6f42c1;
 }
-
 .summary-item.po {
   background: #f39c12;
   color: #000;
-  grid-column: span 2; /* 关键：整行 */
+  grid-column: span 2;
+}
+
+/* ===== General Actions ===== */
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions a {
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  padding: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: 6px;
+  color: #fff;
 }
 
 /* ===== Buttons ===== */
@@ -108,7 +106,6 @@ h1 {
   margin-top: 28px;
   text-align: center;
 }
-
 .logout button {
   background: #c0392b;
   color: #fff;
@@ -131,8 +128,12 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
 <!-- ===== Monthly Summary ===== -->
 <div class="section">
   <div class="card">
-    <h2>This Month Summary</h2>
-    <p>Overview of current month</p>
+    <h2>Monthly Summary</h2>
+
+    <label style="display:block;margin-bottom:10px;">
+      Month
+      <input type="month" id="monthPicker" style="width:100%;padding:10px;">
+    </label>
 
     <div class="summary-grid">
       <div class="summary-item invoice" id="invTotal">
@@ -185,17 +186,6 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
   </div>
 </div>
 
-<!-- ===== Statement ===== -->
-<div class="section">
-  <div class="card">
-    <h2>Statement</h2>
-    <p>View customer statement and outstanding balance.</p>
-    <div class="actions">
-      <a class="btn-purple" href="/statement.html">View Statement</a>
-    </div>
-  </div>
-</div>
-
 <!-- ===== Employees ===== -->
 <div class="section">
   <div class="card">
@@ -233,18 +223,25 @@ fetch("/api/auth-check", { credentials: "include" })
   })
   .catch(() => location.replace("/login.html"));
 
-/* ===== Load Monthly Summary ===== */
+/* ===== Month Picker ===== */
+const monthInput = document.getElementById("monthPicker");
+monthInput.value = new Date().toISOString().slice(0,7);
+
+/* ===== Load Dashboard Summary ===== */
 async function loadSummary() {
+  const month = monthInput.value;
+
   try {
     const [i, s, p] = await Promise.all([
-      fetch("/api/dashboard-invoice-total").then(r => r.json()),
-      fetch("/api/dashboard-salary-total").then(r => r.json()),
-      fetch("/api/dashboard-po-total").then(r => r.json())
+      fetch(`/api/dashboard-invoice-total?month=${month}`).then(r => r.json()),
+      fetch(`/api/dashboard-salary-total?month=${month}`).then(r => r.json()),
+      fetch(`/api/dashboard-po-total?month=${month}`).then(r => r.json())
     ]);
 
     invTotal.innerHTML = `Invoice<br>RM ${Number(i.total).toFixed(2)}`;
     salTotal.innerHTML = `Salary<br>RM ${Number(s.total).toFixed(2)}`;
     poTotal.innerHTML  = `PO<br>RM ${Number(p.total).toFixed(2)}`;
+
   } catch {
     invTotal.innerHTML = "Invoice<br>RM 0.00";
     salTotal.innerHTML = "Salary<br>RM 0.00";
@@ -252,14 +249,12 @@ async function loadSummary() {
   }
 }
 
+monthInput.onchange = loadSummary;
 loadSummary();
 
 /* ===== Logout ===== */
 async function logout() {
-  await fetch("/api/logout", {
-    method: "POST",
-    credentials: "include"
-  });
+  await fetch("/api/logout", { method:"POST", credentials:"include" });
   location.replace("/login.html");
 }
 </script>
