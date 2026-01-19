@@ -48,7 +48,7 @@ export async function onRequestGet({ request, env }) {
       po: {
         po_no: po.po_no,
         po_date: po.po_date,
-        supplier: po.supplier_name,
+        supplier_name: po.supplier_name,
         status: po.status,
         notes: po.notes,
         delivery_address: po.delivery_address,
