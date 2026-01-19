@@ -18,6 +18,18 @@ body {
   align-items: flex-start;
 }
 
+/* ===== NEW: logo + company block ===== */
+.company-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.company-logo {
+  width: 70px;
+  height: auto;
+}
+
 .company {
   font-size: 14px;
   line-height: 1.5;
@@ -74,12 +86,6 @@ th {
   margin-top: 12px;
 }
 
-.footer {
-  margin-top: 20px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 button {
   margin-top: 20px;
   padding: 8px 14px;
@@ -113,15 +119,27 @@ button {
 
 <!-- ================= HEADER ================= -->
 <div class="header">
-  <div class="company">
-    <h1>MMAC CONSTRUCTION</h1>
-    201903134488 (002977225-A)<br>
-    52, Jalan Mahogani SD 1/3<br>
-    Sri Damansara<br>
-    52200 Kuala Lumpur, Malaysia<br>
-    Tel: 016-444-2128
+
+  <!-- ===== LEFT: LOGO + COMPANY ===== -->
+  <div class="company-wrap">
+    <!-- NEW: Company Logo -->
+    <img
+      src="/mmac-logo.png"
+      alt="MMAC Logo"
+      class="company-logo"
+    />
+
+    <div class="company">
+      <h1>MMAC CONSTRUCTION</h1>
+      201903134488 (002977225-A)<br>
+      52, Jalan Mahogani SD 1/3<br>
+      Sri Damansara<br>
+      52200 Kuala Lumpur, Malaysia<br>
+      Tel: 016-444-2128
+    </div>
   </div>
 
+  <!-- ===== RIGHT: PO META ===== -->
   <div class="po-box">
     <div class="po-title">PURCHASE ORDER</div>
     <div class="po-meta">
@@ -131,6 +149,7 @@ button {
       <div><strong>Issued by:</strong> <span id="issuedBy"></span></div>
     </div>
   </div>
+
 </div>
 
 <!-- ================= ITEMS ================= -->
@@ -203,19 +222,16 @@ fetch(`/api/po-view?id=${id}`, {
 .then(data => {
   const po = data.po;
 
-  // ===== Header =====
   document.getElementById("poNo").textContent = po.po_no;
   document.getElementById("poDate").textContent = po.po_date;
   document.getElementById("supplier").textContent = po.supplier_name;
   document.getElementById("issuedBy").textContent =
     po.issued_by || "MMAC SYSTEM";
 
-  // ===== Notes =====
   if (po.notes) {
     document.getElementById("notes").textContent = po.notes;
   }
 
-  // ===== Delivery =====
   document.getElementById("deliveryAddress").textContent =
     po.delivery_address || "-";
   document.getElementById("deliveryDate").textContent =
@@ -223,7 +239,6 @@ fetch(`/api/po-view?id=${id}`, {
   document.getElementById("deliveryTime").textContent =
     po.delivery_time || "-";
 
-  // ===== Items =====
   let total = 0;
   const tbody = document.getElementById("items");
   tbody.innerHTML = "";
