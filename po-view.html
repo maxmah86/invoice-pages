@@ -74,16 +74,36 @@ th {
   margin-top: 12px;
 }
 
-.footer {
-  margin-top: 20px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 button {
   margin-top: 20px;
   padding: 8px 14px;
   font-size: 14px;
+}
+
+/* ===== DELIVERY LABEL BOLD ===== */
+.delivery-label {
+  font-weight: bold;
+}
+
+/* ===== COMPANY CHOP ===== */
+.chop-container {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chop-container img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 /* 打印时隐藏按钮 */
@@ -149,19 +169,28 @@ button {
 
 <!-- ================= DELIVERY ================= -->
 <div class="section">
- <!-- <strong>DELIVERY / COMPLETION:</strong><br> -->
-  Deliver Address: <span id="deliveryAddress">-</span><br>
-  Deliver Date: <span id="deliveryDate">-</span><br>
-  Deliver Time: <span id="deliveryTime">-</span>
+  <span class="delivery-label">Deliver Address:</span>
+  <span id="deliveryAddress">-</span><br>
+
+  <span class="delivery-label">Deliver Date:</span>
+  <span id="deliveryDate">-</span><br>
+
+  <span class="delivery-label">Deliver Time:</span>
+  <span id="deliveryTime">-</span>
 </div>
 
-<!-- ================= SIGN ================= -->
+<!-- ================= FOOTER ================= -->
 <div class="section">
-  Thank you.<br><br>
-
+  Thank you.
 </div>
 
 <button onclick="window.print()">Print / Save PDF</button>
+
+<!-- ================= COMPANY CHOP ================= -->
+<div class="chop-container">
+  <!-- 换成你的公司印章图片即可 -->
+  <img src="/assets/mmac-chop.png" alt="Company Chop">
+</div>
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
@@ -179,19 +208,16 @@ fetch(`/api/po-view?id=${id}`, {
 .then(data => {
   const po = data.po;
 
-  // ===== Header =====
   document.getElementById("poNo").textContent = po.po_no;
   document.getElementById("poDate").textContent = po.po_date;
   document.getElementById("supplier").textContent = po.supplier_name;
   document.getElementById("issuedBy").textContent =
     po.issued_by || "MMAC SYSTEM";
 
-  // ===== Notes =====
   if (po.notes) {
     document.getElementById("notes").textContent = po.notes;
   }
 
-  // ===== Delivery =====
   document.getElementById("deliveryAddress").textContent =
     po.delivery_address || "-";
   document.getElementById("deliveryDate").textContent =
@@ -199,7 +225,6 @@ fetch(`/api/po-view?id=${id}`, {
   document.getElementById("deliveryTime").textContent =
     po.delivery_time || "-";
 
-  // ===== Items =====
   let total = 0;
   const tbody = document.getElementById("items");
   tbody.innerHTML = "";
