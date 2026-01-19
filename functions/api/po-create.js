@@ -1,17 +1,36 @@
 export async function onRequestPost({ request, env }) {
 
-  /* ===== AUTH ===== */
+  /* ===============================
+     AUTH CHECK
+     =============================== */
   const auth = await fetch(new URL("/api/auth-check", request.url), {
-    headers: { cookie: request.headers.get("cookie") || "" }
+    headers: {
+      cookie: request.headers.get("cookie") || ""
+    }
   });
+
   if (!auth.ok) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401 }
+    );
   }
 
-  const body = await request.json();
+  /* ===============================
+     PARSE BODY
+     =============================== */
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON" }),
+      { status: 400 }
+    );
+  }
+
   const {
     supplier_name,
-    supplier_address,
     issued_by,
     delivery_address,
     delivery_date,
@@ -20,43 +39,61 @@ export async function onRequestPost({ request, env }) {
     items
   } = body;
 
-  if (!supplier_name || !Array.isArray(items) || items.length === 0) {
-    return new Response(JSON.stringify({ error: "Invalid data" }), { status: 400 });
+  if (
+    !supplier_name ||
+    !Array.isArray(items) ||
+    items.length === 0
+  ) {
+    return new Response(
+      JSON.stringify({ error: "Invalid data" }),
+      { status: 400 }
+    );
   }
 
-  /* ===== CALCULATE TOTAL ===== */
-  let total = 0;
-  items.forEach(it => {
-    total += Number(it.qty) * Number(it.price);
-  });
+  /* ===============================
+     CALCULATE SUBTOTAL & TOTAL
+     =============================== */
+  let subtotal = 0;
 
-  /* ===== INSERT PO HEADER ===== */
-  const r = await env.DB.prepare(`
+  for (const it of items) {
+    const qty = Number(it.qty) || 0;
+    const price = Number(it.price) || 0;
+    subtotal += qty * price;
+  }
+
+  const total = subtotal;
+
+  /* ===============================
+     INSERT PO HEADER
+     =============================== */
+  const insertPO = await env.DB.prepare(`
     INSERT INTO purchase_orders (
       supplier_name,
-      supplier_address,
       issued_by,
       delivery_address,
       delivery_date,
       delivery_time,
       notes,
+      subtotal,
       total,
       status
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
   `).bind(
     supplier_name,
-    supplier_address || "",
     issued_by || "MMAC SYSTEM",
     delivery_address || "",
     delivery_date || "",
     delivery_time || "",
     notes || "",
+    subtotal,
     total
   ).run();
 
-  const poId = r.meta.last_row_id;
+  const poId = insertPO.meta.last_row_id;
 
-  /* ===== INSERT ITEMS ===== */
+  /* ===============================
+     INSERT PO ITEMS
+     =============================== */
   for (const it of items) {
     await env.DB.prepare(`
       INSERT INTO purchase_order_items (
@@ -67,14 +104,22 @@ export async function onRequestPost({ request, env }) {
       ) VALUES (?, ?, ?, ?)
     `).bind(
       poId,
-      it.description,
-      Number(it.qty),
-      Number(it.price)
+      it.description || "",
+      Number(it.qty) || 0,
+      Number(it.price) || 0
     ).run();
   }
 
+  /* ===============================
+     RESPONSE
+     =============================== */
   return new Response(
-    JSON.stringify({ success: true, id: poId }),
-    { headers: { "Content-Type": "application/json" } }
+    JSON.stringify({
+      success: true,
+      id: poId
+    }),
+    {
+      headers: { "Content-Type": "application/json" }
+    }
   );
 }
