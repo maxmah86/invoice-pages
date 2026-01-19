@@ -72,6 +72,7 @@ th { background:#f0f0f0; }
 .btn-add { background:#27ae60;color:#fff;margin-top:10px; }
 
 .right { text-align:right; }
+
 .errorBox {
   background:#fee;
   border:1px solid #e74c3c;
@@ -93,6 +94,9 @@ th { background:#f0f0f0; }
 <div class="card">
   <label>Supplier Name *</label>
   <input id="supplier_name" placeholder="Supplier name">
+
+  <label>Issued By</label>
+  <input id="issued_by" value="MMAC SYSTEM">
 </div>
 
 <!-- ===== DELIVERY INFO ===== -->
@@ -140,7 +144,7 @@ Please supply the above items/services as per stated quantities and prices.
   </textarea>
 </div>
 
-<!-- ===== ERROR DISPLAY ===== -->
+<!-- ===== ERROR ===== -->
 <div class="card" id="errorCard" style="display:none;">
   <div class="errorBox" id="errorBox"></div>
 </div>
@@ -152,14 +156,14 @@ Please supply the above items/services as per stated quantities and prices.
 </div>
 
 <script>
-/* ===== LOGIN CHECK ===== */
 fetch("/api/auth-check",{credentials:"include"})
   .then(r=>r.json())
   .then(d=>{ if(!d.loggedIn) location.replace("/login.html"); })
   .catch(()=>location.replace("/login.html"));
 
-/* ===== ITEMS ===== */
 const tbody = document.querySelector("#itemsTable tbody");
+const subtotalEl = document.getElementById("subtotal");
+const totalEl = document.getElementById("total");
 
 function addItem() {
   const tr = document.createElement("tr");
@@ -187,7 +191,6 @@ function calc() {
 
 addItem();
 
-/* ===== SUBMIT ===== */
 async function submitPO() {
   errorCard.style.display = "none";
   errorBox.innerText = "";
@@ -200,6 +203,7 @@ async function submitPO() {
 
   const payload = {
     supplier_name: supplier_name.value,
+    issued_by: issued_by.value,
     delivery_address: delivery_address.value,
     delivery_date: delivery_date.value,
     delivery_time: delivery_time.value,
