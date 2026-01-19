@@ -12,23 +12,43 @@ body {
   color: #000;
 }
 
+/* ================= HEADER ================= */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
 }
 
-.company h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: bold;
-}
-
+/* ===== Company ===== */
 .company {
   font-size: 14px;
   line-height: 1.5;
 }
 
+.company-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.company-logo {
+  width: 48px;
+  height: auto;
+  margin-top: 4px;
+}
+
+.company-text h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.ssm-code {
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+/* ===== Invoice Box ===== */
 .invoice-box {
   text-align: right;
 }
@@ -54,6 +74,7 @@ body {
   line-height: 1.6;
 }
 
+/* ================= CONTENT ================= */
 .section {
   margin-top: 20px;
 }
@@ -91,18 +112,37 @@ th {
   line-height: 1.6;
 }
 
+/* ===== Company Chop (右下角) ===== */
+.company-chop {
+  position: fixed;
+  right: 30px;
+  bottom: 40px;
+  width: 120px;
+  opacity: 0.85;
+}
+
+/* ===== PRINT MODE ===== */
 @media print {
-  button { display: none; }
+  button {
+    display: none !important;
+  }
 }
 </style>
 </head>
 
 <body>
 
+<!-- ================= HEADER ================= -->
 <div class="header">
   <div class="company">
-    <h1>MMAC CONSTRUCTION</h1>
-    201903134488 (002977225-A)<br>
+    <div class="company-header">
+      <img src="/icon-512.png" alt="MMAC Logo" class="company-logo" />
+      <div class="company-text">
+        <h1>MMAC CONSTRUCTION</h1>
+        <div class="ssm-code">201903134488 (002977225-A)</div>
+      </div>
+    </div>
+
     52, Jalan Mahogani SD 1/3<br>
     Sri Damansara<br>
     52200 Kuala Lumpur, Malaysia<br>
@@ -113,6 +153,7 @@ th {
     <div class="invoice-title">INVOICE</div>
 
     <div class="invoice-actions">
+      <button onclick="printInvoice()">PRINT / SAVE PDF</button>
       <button onclick="editInvoice()">EDIT</button>
       <button onclick="voidInvoice()">VOID</button>
     </div>
@@ -125,6 +166,7 @@ th {
   </div>
 </div>
 
+<!-- ================= ITEMS ================= -->
 <div class="section">
   <table>
     <thead>
@@ -144,10 +186,8 @@ th {
   </div>
 </div>
 
+<!-- ================= FOOTER ================= -->
 <div class="footer">
-  <strong>TERMS:</strong><br>
-  50% deposit upon confirmation and the balance 50% should be cleared by project completion.<br><br>
-
   <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br>
   MMAC CONSTRUCTION<br><br>
 
@@ -157,8 +197,21 @@ th {
   Thank you.
 </div>
 
+<!-- ===== Company Chop ===== -->
+<img src="/mmac-chop.png" alt="MMAC Company Chop" class="company-chop" />
+
 <script>
 const id = new URLSearchParams(location.search).get("id");
+
+/* ===== PRINT FUNCTION ===== */
+function printInvoice() {
+  const originalTitle = document.title;
+  document.title = `invoice-${id}.pdf`;
+  window.print();
+  setTimeout(() => {
+    document.title = originalTitle;
+  }, 500);
+}
 
 function editInvoice() {
   location.href = `/invoice-edit.html?id=${id}`;
@@ -183,9 +236,7 @@ async function voidInvoice() {
   location.reload();
 }
 
-fetch(`/api/invoice-view?id=${id}`, {
-  credentials: "include"
-})
+fetch(`/api/invoice-view?id=${id}`, { credentials: "include" })
 .then(res => {
   if (res.status === 401) {
     location.replace("/login.html");
@@ -196,7 +247,6 @@ fetch(`/api/invoice-view?id=${id}`, {
 .then(data => {
   document.getElementById("invoiceNo").textContent = data.invoice.invoice_no;
 
-  // ✅ 只显示日期（去掉时间）
   const dateOnly = data.invoice.created_at.split(" ")[0];
   document.getElementById("invoiceDate").textContent = dateOnly;
 
