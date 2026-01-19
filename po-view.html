@@ -12,36 +12,42 @@ body {
   color: #000;
 }
 
-/* ================= HEADER ================= */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
 }
 
+/* ===== Company ===== */
 .company {
   font-size: 14px;
   line-height: 1.5;
 }
 
-/* logo + company name */
 .company-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
 }
 
 .company-logo {
-  width: 60px;
+  width: 48px;
   height: auto;
+  margin-top: 4px;
 }
 
-.company h1 {
+.company-text h1 {
   margin: 0;
   font-size: 26px;
   font-weight: bold;
 }
 
+.ssm-code {
+  font-size: 14px;
+  margin-top: 2px;
+}
+
+/* ===== PO Box ===== */
 .po-box {
   text-align: right;
 }
@@ -56,7 +62,7 @@ body {
   line-height: 1.6;
 }
 
-/* ================= CONTENT ================= */
+/* ===== Table ===== */
 .section {
   margin-top: 20px;
 }
@@ -88,12 +94,6 @@ th {
   margin-top: 12px;
 }
 
-button {
-  margin-top: 20px;
-  padding: 8px 14px;
-  font-size: 14px;
-}
-
 /* ===== Delivery Bold ===== */
 .delivery-label {
   font-weight: bold;
@@ -109,6 +109,12 @@ button {
 }
 
 /* ===== Print ===== */
+button {
+  margin-top: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
 @media print {
   button {
     display: none !important;
@@ -122,11 +128,18 @@ button {
 <!-- ================= HEADER ================= -->
 <div class="header">
   <div class="company">
+
     <div class="company-header">
-      <img src="/icon-512.png" alt="MMAC Logo" class="company-logo" />
-      <h1>MMAC CONSTRUCTION</h1>
+      <img src="/mmac-logo.png" alt="MMAC Logo" class="company-logo" />
+
+      <div class="company-text">
+        <h1>MMAC CONSTRUCTION</h1>
+        <div class="ssm-code">
+          201903134488 (002977225-A)
+        </div>
+      </div>
     </div>
-    201903134488 (002977225-A)<br>
+
     52, Jalan Mahogani SD 1/3<br>
     Sri Damansara<br>
     52200 Kuala Lumpur, Malaysia<br>
@@ -184,7 +197,7 @@ button {
   <span id="deliveryTime">-</span>
 </div>
 
-<!-- ================= FOOTER ================= -->
+<!-- ================= SIGN ================= -->
 <div class="section">
   Thank you.<br><br>
 </div>
