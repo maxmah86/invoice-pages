@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Quotation Terms</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:14px;
+}
+
+h2 { margin-top:0; }
+
+.card {
+  background:#fff;
+  padding:14px;
+  border-radius:8px;
+  margin-bottom:12px;
+}
+
+label {
+  font-size:14px;
+  font-weight:bold;
+  display:block;
+  margin-top:10px;
+}
+
+input, textarea {
+  width:100%;
+  padding:10px;
+  font-size:14px;
+  margin-top:6px;
+}
+
+textarea { resize:vertical; }
+
+.btn {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  font-size:15px;
+  border:none;
+  border-radius:6px;
+}
+
+.btn-primary { background:#2c3e50;color:#fff; }
+.btn-add { background:#27ae60;color:#fff; }
+.btn-gray { background:#7f8c8d;color:#fff; }
+
+.term {
+  border-bottom:1px solid #eee;
+  padding:10px 0;
+}
+
+.small {
+  font-size:13px;
+  color:#666;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Quotation Terms</h2>
+
+<!-- ===== CREATE / EDIT ===== -->
+<div class="card">
+  <input type="hidden" id="term_id">
+
+  <label>Title</label>
+  <input id="title">
+
+  <label>Content</label>
+  <textarea id="content" rows="5"></textarea>
+
+  <label>
+    <input type="checkbox" id="is_active" checked>
+    Active
+  </label>
+
+  <button class="btn btn-primary" onclick="save()">Save</button>
+</div>
+
+<!-- ===== LIST ===== -->
+<div class="card">
+  <button class="btn btn-add" onclick="resetForm()">+ New Term</button>
+  <div id="list"></div>
+</div>
+
+<script>
+/* ===== LOAD LIST ===== */
+async function load() {
+  const res = await fetch("/api/quotation-terms-list",{credentials:"include"});
+  const list = await res.json();
+
+  const div = document.getElementById("list");
+  div.innerHTML = "";
+
+  list.forEach(t => {
+    const el = document.createElement("div");
+    el.className = "term";
+    el.innerHTML = `
+      <strong>${t.title}</strong>
+      <div class="small">
+        <button onclick="edit(${t.id})">Edit</button>
+      </div>
+    `;
+    div.appendChild(el);
+  });
+}
+
+/* ===== SAVE ===== */
+async function save() {
+  await fetch("/api/quotation-terms-save",{
+    method:"POST",
+    credentials:"include",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      id: term_id.value || null,
+      title: title.value,
+      content: content.value,
+      is_active: is_active.checked
+    })
+  });
+
+  resetForm();
+  load();
+}
+
+/* ===== EDIT ===== */
+async function edit(id) {
+  const res = await fetch(`/api/quotation-terms-view?id=${id}`,{
+    credentials:"include"
+  });
+  const t = await res.json();
+
+  term_id.value = t.id;
+  title.value = t.title;
+  content.value = t.content;
+  is_active.checked = t.is_active == 1;
+}
+
+/* ===== RESET ===== */
+function resetForm() {
+  term_id.value = "";
+  title.value = "";
+  content.value = "";
+  is_active.checked = true;
+}
+
+load();
+</script>
+
+</body>
+</html>

@@ -30,7 +30,7 @@ label {
   margin-bottom: 4px;
 }
 
-input {
+input, select {
   width: 100%;
   padding: 8px;
   font-size: 14px;
@@ -93,11 +93,19 @@ button {
 
 <h1>Edit Quotation</h1>
 
+<!-- ===== CUSTOMER ===== -->
 <div class="card">
   <label>Customer</label>
   <input id="customer" placeholder="Customer name" />
 </div>
 
+<!-- ===== TERMS ===== -->
+<div class="card">
+  <label>Terms</label>
+  <select id="terms_id"></select>
+</div>
+
+<!-- ===== ITEMS ===== -->
 <div class="card">
   <label>Items</label>
   <div id="items"></div>
@@ -119,6 +127,27 @@ function q(name) {
 
 const id = q("id");
 let quotationStatus = "";
+let currentTermsId = null;
+
+/* ===== LOAD TERMS LIST ===== */
+async function loadTerms() {
+  const res = await fetch("/api/quotation-terms-list", { credentials: "include" });
+  const list = await res.json();
+
+  const sel = document.getElementById("terms_id");
+  sel.innerHTML = `<option value="">-- Select Terms --</option>`;
+
+  list.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.title;
+    sel.appendChild(opt);
+  });
+
+  if (currentTermsId) {
+    sel.value = currentTermsId;
+  }
+}
 
 function addItem(desc = "", qty = 1, price = 0) {
   const div = document.createElement("div");
@@ -168,6 +197,7 @@ async function save() {
     body: JSON.stringify({
       id,
       customer: document.getElementById("customer").value,
+      terms_id: document.getElementById("terms_id").value,
       items
     })
   });
@@ -180,6 +210,7 @@ async function save() {
   location.href = `/quotation-view.html?id=${id}`;
 }
 
+/* ===== LOAD QUOTATION ===== */
 fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
 .then(res => {
   if (res.status === 401) {
@@ -191,6 +222,7 @@ fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
 .then(data => {
   const q = data.quotation;
   quotationStatus = q.status;
+  currentTermsId = q.terms_id;
 
   document.getElementById("customer").value = q.customer;
 
@@ -202,6 +234,8 @@ fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
 
   data.items.forEach(i => addItem(i.description, i.qty, i.price));
   calc();
+
+  loadTerms();
 })
 .catch(() => {});
 </script>

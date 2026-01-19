@@ -31,7 +31,7 @@ label {
   margin-top: 10px;
 }
 
-input {
+input, select {
   width: 100%;
   padding: 12px;
   font-size: 16px;
@@ -111,11 +111,21 @@ input {
 
 <h2>Create Quotation</h2>
 
+<!-- ===== CUSTOMER ===== -->
 <div class="box">
   <label>Customer</label>
   <input id="customer" placeholder="Customer name">
 </div>
 
+<!-- ===== TERMS ===== -->
+<div class="box">
+  <label>Terms</label>
+  <select id="terms_id">
+    <option value="">Loading terms...</option>
+  </select>
+</div>
+
+<!-- ===== ITEMS ===== -->
 <div class="box">
   <h3>Items</h3>
   <div id="items"></div>
@@ -125,13 +135,34 @@ input {
   <div class="total" id="total">Total: RM 0.00</div>
 </div>
 
+<!-- ===== ACTIONS ===== -->
 <div class="actions">
   <button class="submit-btn" onclick="submitQuotation()">Save Quotation</button>
   <button class="cancel-btn" onclick="cancel()">Cancel</button>
 </div>
 
 <script>
-/* ===== 新增 item ===== */
+const items = document.getElementById("items");
+
+/* ===== LOAD TERMS ===== */
+fetch("/api/quotation-terms-list", { credentials: "include" })
+  .then(res => res.json())
+  .then(list => {
+    const sel = document.getElementById("terms_id");
+    sel.innerHTML = `<option value="">-- Select Terms --</option>`;
+    list.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = t.title;
+      sel.appendChild(opt);
+    });
+  })
+  .catch(() => {
+    document.getElementById("terms_id").innerHTML =
+      `<option value="">Failed to load terms</option>`;
+  });
+
+/* ===== ADD ITEM ===== */
 function addItem(desc = "", qty = 1, price = 0) {
   const div = document.createElement("div");
   div.className = "item";
@@ -165,10 +196,9 @@ function addItem(desc = "", qty = 1, price = 0) {
   updateTotal();
 }
 
-// 默认一行
 addItem();
 
-/* ===== 计算 total ===== */
+/* ===== UPDATE TOTAL ===== */
 function updateTotal() {
   let total = 0;
 
@@ -185,11 +215,18 @@ function updateTotal() {
     "Total: RM " + total.toFixed(2);
 }
 
-/* ===== 提交 quotation ===== */
+/* ===== SUBMIT ===== */
 async function submitQuotation() {
   const customer = document.getElementById("customer").value.trim();
+  const terms_id = document.getElementById("terms_id").value;
+
   if (!customer) {
     alert("Customer is required");
+    return;
+  }
+
+  if (!terms_id) {
+    alert("Please select Terms");
     return;
   }
 
@@ -215,6 +252,7 @@ async function submitQuotation() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       customer,
+      terms_id,
       items: itemsData
     })
   });
@@ -225,10 +263,9 @@ async function submitQuotation() {
   }
 
   alert("Quotation saved");
-  location.href = "/quotations.html"; // 下一步你会有这个
+  location.href = "/quotations.html";
 }
 
-/* ===== 取消 ===== */
 function cancel() {
   history.back();
 }

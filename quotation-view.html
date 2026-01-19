@@ -198,12 +198,12 @@ th {
   </div>
 </div>
 
-<!-- ================= FOOTER ================= -->
+<!-- ================= FOOTER / TERMS ================= -->
 <div class="footer">
   <strong>TERMS:</strong><br>
-  50% deposit upon confirmation and the balance 50% should be cleared by project completion.<br><br>
+  <div id="termsContent" style="white-space:pre-line;"></div>
 
-  <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br>
+  <br><strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br>
   MMAC CONSTRUCTION<br><br>
 
   <strong>COMPANY ACCOUNT NUMBER:</strong><br>
@@ -273,6 +273,10 @@ fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
     document.getElementById("editBtn").style.display = "inline-block";
     document.getElementById("convertBtn").style.display = "inline-block";
   }
+
+  /* ===== TERMS SNAPSHOT ===== */
+  document.getElementById("termsContent").textContent =
+    q.terms_snapshot || "—";
 
   let total = 0;
   const tbody = document.getElementById("items");
