@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Variation Order</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 16px;
+  color: #000;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.company {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.company-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.company-logo {
+  width: 48px;
+  margin-top: 4px;
+}
+
+.company-text h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.vo-box {
+  text-align: right;
+}
+
+.vo-title {
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.vo-meta {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 13px;
+}
+
+th {
+  background: #f0f0f0;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.total {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: right;
+  margin-top: 12px;
+}
+
+.footer {
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.company-chop {
+  position: fixed;
+  right: 30px;
+  bottom: 40px;
+  width: 120px;
+  opacity: 0.85;
+}
+
+button {
+  margin-top: 20px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+@media print {
+  button {
+    display: none !important;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <div class="company">
+    <div class="company-header">
+      <img src="/icon-512.png" class="company-logo">
+      <div class="company-text">
+        <h1>MMAC CONSTRUCTION</h1>
+        201903134488 (002977225-A)
+      </div>
+    </div>
+    52, Jalan Mahogani SD 1/3<br>
+    Sri Damansara<br>
+    52200 Kuala Lumpur, Malaysia<br>
+    Tel: 016-444-2128
+  </div>
+
+  <div class="vo-box">
+    <div class="vo-title">VARIATION ORDER</div>
+    <div class="vo-meta">
+      <div><strong>VO No:</strong> <span id="voNo"></span></div>
+      <div><strong>Date:</strong> <span id="voDate"></span></div>
+      <div><strong>Status:</strong> <span id="status"></span></div>
+      <div><strong>Quotation ID:</strong> <span id="quotationId"></span></div>
+      <div><strong>Invoice ID:</strong> <span id="invoiceId"></span></div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <strong>Title:</strong> <span id="title"></span><br>
+  <strong>Reason:</strong><br>
+  <span id="reason"></span>
+</div>
+
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:5%">No</th>
+        <th>Description</th>
+        <th style="width:10%">Qty</th>
+        <th style="width:15%">Unit Price</th>
+        <th style="width:15%">Amount (RM)</th>
+      </tr>
+    </thead>
+    <tbody id="items"></tbody>
+  </table>
+
+  <div class="total">
+    TOTAL (RM): <span id="total"></span>
+  </div>
+</div>
+
+<div class="footer">
+  <strong>Notes:</strong><br>
+  <span id="notes"></span>
+</div>
+
+<button onclick="printVO()">Print / Save PDF</button>
+
+<img src="/mmac-chop.png" class="company-chop">
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+function printVO() {
+  const t = document.title;
+  document.title = "vo-" + id + ".pdf";
+  window.print();
+  setTimeout(() => document.title = t, 500);
+}
+
+fetch(`/api/vo-view?id=${id}`, { credentials: "include" })
+.then(r => {
+  if (r.status === 401) {
+    location.replace("/login.html");
+    throw new Error();
+  }
+  return r.json();
+})
+.then(data => {
+  const vo = data.vo;
+
+  document.getElementById("voNo").innerText = vo.vo_no;
+  document.getElementById("voDate").innerText = vo.created_at.split(" ")[0];
+  document.getElementById("status").innerText = vo.status;
+  document.getElementById("quotationId").innerText = vo.quotation_id || "-";
+  document.getElementById("invoiceId").innerText = vo.invoice_id || "-";
+  document.getElementById("title").innerText = vo.title;
+  document.getElementById("reason").innerText = vo.reason;
+  document.getElementById("notes").innerText = vo.notes || "";
+
+  let total = 0;
+  const tbody = document.getElementById("items");
+  tbody.innerHTML = "";
+
+  data.items.forEach((i, idx) => {
+    total += Number(i.line_total);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${i.description}</td>
+      <td class="text-right">${i.qty}</td>
+      <td class="text-right">${Number(i.unit_price).toFixed(2)}</td>
+      <td class="text-right">${Number(i.line_total).toFixed(2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("total").innerText = total.toFixed(2);
+});
+</script>
+
+</body>
+</html>
