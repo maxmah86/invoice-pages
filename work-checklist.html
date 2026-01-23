@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Work Checklist</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 12px;
+}
+
+h1 {
+  margin: 0 0 10px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.item {
+  border-bottom: 1px solid #eee;
+  padding: 8px 0;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.desc {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.status {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.status.NOT_STARTED { color: #777; }
+.status.IN_PROGRESS { color: #f39c12; }
+.status.DONE { color: #27ae60; }
+
+.remarks {
+  font-size: 13px;
+  color: #555;
+  margin-top: 4px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Work Checklist</h1>
+
+<div class="card">
+  <div><strong>Checklist ID:</strong> <span id="cid"></span></div>
+  <div><strong>Quotation ID:</strong> <span id="qid"></span></div>
+  <div><strong>Status:</strong> <span id="cstatus"></span></div>
+</div>
+
+<div id="items"></div>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+fetch(`/api/work-checklist-view?id=${id}`, { credentials: "include" })
+.then(r => {
+  if (r.status === 401) location.replace("/login.html");
+  return r.json();
+})
+.then(data => {
+
+  document.getElementById("cid").textContent = data.checklist.id;
+  document.getElementById("qid").textContent = data.checklist.quotation_id;
+  document.getElementById("cstatus").textContent = data.checklist.status;
+
+  const wrap = document.getElementById("items");
+  wrap.innerHTML = "";
+
+  data.items.forEach(i => {
+    const div = document.createElement("div");
+    div.className = "card item";
+    div.innerHTML = `
+      <div class="desc">${i.description}</div>
+      <div class="status ${i.status}">${i.status}</div>
+      <div class="remarks">${i.remarks || ""}</div>
+    `;
+    wrap.appendChild(div);
+  });
+});
+</script>
+
+</body>
+</html>
