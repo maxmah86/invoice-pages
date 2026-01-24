@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Work Checklist</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 14px;
+}
+
+h1 {
+  margin: 0 0 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 14px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.item {
+  border-bottom: 1px solid #eee;
+  padding: 12px 0;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.desc {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.status-btn {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.NOT_STARTED {
+  background: #eee;
+  color: #555;
+}
+
+.IN_PROGRESS {
+  background: #f39c12;
+  color: #000;
+}
+
+.DONE {
+  background: #27ae60;
+  color: #fff;
+}
+
+.remarks {
+  margin-top: 8px;
+}
+
+textarea {
+  width: 100%;
+  padding: 8px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  resize: vertical;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-back {
+  background: #7f8c8d;
+  color: #fff;
+  margin-top: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Work Checklist</h1>
+<div class="subtitle" id="subtitle">Loading...</div>
+
+<div class="card" id="itemsBox">
+  Loading checklist...
+</div>
+
+<button class="btn-back" onclick="history.back()">Back</button>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+/* ===== LOAD CHECKLIST ===== */
+fetch(`/api/work-checklist-view?id=${id}`, { credentials: "include" })
+.then(res => {
+  if (res.status === 401) {
+    location.replace("/login.html");
+    throw new Error();
+  }
+  return res.json();
+})
+.then(data => {
+  document.getElementById("subtitle").textContent =
+    `Quotation ID: ${data.checklist.quotation_id}`;
+
+  const box = document.getElementById("itemsBox");
+  box.innerHTML = "";
+
+  data.items.forEach(it => {
+    const div = document.createElement("div");
+    div.className = "item";
+
+    div.innerHTML = `
+      <div class="desc">${it.description}</div>
+
+      <div
+        class="status-btn ${it.status}"
+        onclick="toggleStatus(${it.id}, '${it.status}', this)"
+      >
+        ${it.status}
+      </div>
+
+      <div class="remarks">
+        <textarea
+          placeholder="Remarks"
+          onblur="saveRemarks(${it.id}, this.value)"
+        >${it.remarks || ""}</textarea>
+      </div>
+    `;
+
+    box.appendChild(div);
+  });
+})
+.catch(() => {
+  document.getElementById("itemsBox").textContent =
+    "Failed to load checklist";
+});
+
+/* ===== TOGGLE STATUS ===== */
+async function toggleStatus(id, current, el) {
+  const next =
+    current === "NOT_STARTED"
+      ? "IN_PROGRESS"
+      : current === "IN_PROGRESS"
+      ? "DONE"
+      : "DONE";
+
+  const res = await fetch("/api/work-checklist-item-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id, status: next })
+  });
+
+  if (!res.ok) {
+    alert("Failed to update status");
+    return;
+  }
+
+  el.className = `status-btn ${next}`;
+  el.textContent = next;
+  el.setAttribute(
+    "onclick",
+    `toggleStatus(${id}, '${next}', this)`
+  );
+}
+
+/* ===== SAVE REMARKS ===== */
+async function saveRemarks(id, remarks) {
+  await fetch("/api/work-checklist-item-remarks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id, remarks })
+  });
+}
+</script>
+
+</body>
+</html>

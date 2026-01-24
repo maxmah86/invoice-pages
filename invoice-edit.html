@@ -44,6 +44,7 @@ input {
   padding: 10px;
   border-radius: 6px;
   margin-top: 10px;
+  position: relative;
 }
 
 .row {
@@ -59,6 +60,20 @@ input {
   text-align: right;
   font-size: 14px;
   margin-top: 6px;
+}
+
+/* ===== Remove Button ===== */
+.remove-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .actions {
@@ -133,7 +148,7 @@ input {
 <script>
 const id = new URLSearchParams(location.search).get("id");
 
-/* ===== 加载 invoice 数据 ===== */
+/* ===== Load invoice ===== */
 async function loadInvoice() {
   const res = await fetch(`/api/invoice-view?id=${id}`, {
     credentials: "include"
@@ -147,7 +162,6 @@ async function loadInvoice() {
   const data = await res.json();
   const inv = data.invoice;
 
-  // 只允许编辑 UNPAID（前端兜底）
   if (inv.status !== "UNPAID") {
     alert("This invoice cannot be edited.");
     location.href = "/invoice-view.html?id=" + id;
@@ -163,12 +177,14 @@ async function loadInvoice() {
   updateTotal();
 }
 
-/* ===== 新增 item ===== */
+/* ===== Add item ===== */
 function addItem(desc = "", qty = 1, price = 0) {
   const div = document.createElement("div");
   div.className = "item";
 
   div.innerHTML = `
+    <button class="remove-btn" onclick="removeItem(this)">✕</button>
+
     <label>Description</label>
     <input class="desc" value="${desc}">
 
@@ -188,14 +204,23 @@ function addItem(desc = "", qty = 1, price = 0) {
     </div>
   `;
 
-  items.appendChild(div);
+  document.getElementById("items").appendChild(div);
 
   div.querySelectorAll("input").forEach(i =>
     i.addEventListener("input", updateTotal)
   );
+
+  updateTotal();
 }
 
-/* ===== 计算 total ===== */
+/* ===== Remove item ===== */
+function removeItem(btn) {
+  if (!confirm("Remove this item?")) return;
+  btn.closest(".item").remove();
+  updateTotal();
+}
+
+/* ===== Update total ===== */
 function updateTotal() {
   let total = 0;
 
@@ -212,7 +237,7 @@ function updateTotal() {
     "Total: RM " + total.toFixed(2);
 }
 
-/* ===== 保存 ===== */
+/* ===== Save ===== */
 async function save() {
   const customer = document.getElementById("customer").value.trim();
   if (!customer) {
@@ -256,7 +281,7 @@ async function save() {
   location.href = "/invoice-view.html?id=" + id;
 }
 
-/* ===== 取消 ===== */
+/* ===== Cancel ===== */
 function cancel() {
   location.href = "/invoice-view.html?id=" + id;
 }

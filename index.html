@@ -5,10 +5,8 @@
 <title>MMAC Management System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- ===== PWA REQUIRED ===== -->
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2c3e50">
-<!-- ======================== -->
 
 <style>
 body {
@@ -53,7 +51,6 @@ h1 {
   color: #555;
 }
 
-/* ===== Monthly Summary Grid ===== */
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -79,7 +76,6 @@ h1 {
 .summary-item.profit { background: #2c3e50; }
 .summary-item.profit.negative { background: #c0392b; }
 
-/* ===== General Actions ===== */
 .actions {
   display: flex;
   gap: 10px;
@@ -97,7 +93,6 @@ h1 {
   color: #fff;
 }
 
-/* ===== Buttons ===== */
 .btn-primary { background: #2c3e50; }
 .btn-success { background: #27ae60; }
 .btn-warning { background: #f39c12; color:#000; }
@@ -125,7 +120,7 @@ h1 {
 
 <h1>MMAC CONSTRUCTION</h1>
 <div class="subtitle">
-Invoice • Quotation • Purchase Order • Statement • Employees • Salaries
+Invoice • Quotation • Statement • Projects • VO • Purchase Order • HR
 </div>
 
 <!-- ===== Monthly Summary ===== -->
@@ -139,18 +134,10 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
     </label>
 
     <div class="summary-grid">
-      <div class="summary-item invoice" id="invTotal">
-        Invoice<br>RM 0.00
-      </div>
-      <div class="summary-item salary" id="salTotal">
-        Salary<br>RM 0.00
-      </div>
-      <div class="summary-item po" id="poTotal">
-        PO<br>RM 0.00
-      </div>
-      <div class="summary-item profit" id="profitTotal">
-        Profit<br>RM 0.00
-      </div>
+      <div class="summary-item invoice" id="invTotal">Invoice<br>RM 0.00</div>
+      <div class="summary-item salary" id="salTotal">Salary<br>RM 0.00</div>
+      <div class="summary-item po" id="poTotal">PO<br>RM 0.00</div>
+      <div class="summary-item profit" id="profitTotal">Profit<br>RM 0.00</div>
     </div>
   </div>
 </div>
@@ -175,6 +162,41 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
     <div class="actions">
       <a class="btn-info" href="/quotation.html">Create Quotation</a>
       <a class="btn-primary" href="/quotations.html">Quotation List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Statement ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Statement</h2>
+    <p>Customer statement, outstanding balance and payment tracking.</p>
+    <div class="actions">
+      <a class="btn-purple" href="/statement.html">View Statements</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Projects / Work ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Projects & Work</h2>
+    <p>Manage site work progress and checklists.</p>
+    <div class="actions">
+      <a class="btn-success" href="/work-checklists.html">Work Checklists</a>
+      <a class="btn-primary" href="/create-checklist.html">Create Checklist</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Variation Orders ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Variation Orders (VO)</h2>
+    <p>Manage additional works and contract variations.</p>
+    <div class="actions">
+      <a class="btn-warning" href="/vo.html">Create VO</a>
+      <a class="btn-primary" href="/vos.html">VO List</a>
     </div>
   </div>
 </div>
@@ -215,39 +237,31 @@ Invoice • Quotation • Purchase Order • Statement • Employees • Salarie
   </div>
 </div>
 
-<!-- ===== Logout ===== -->
 <div class="logout">
   <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-/* ===== Service Worker (PWA) ===== */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
 }
 
-/* ===== Login Check ===== */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
-  })
+  .then(d => { if (!d.loggedIn) location.replace("/login.html"); })
   .catch(() => location.replace("/login.html"));
 
-/* ===== Month Picker ===== */
 const monthInput = document.getElementById("monthPicker");
 monthInput.value = new Date().toISOString().slice(0,7);
 
-/* ===== Load Dashboard Summary ===== */
 async function loadSummary() {
-  const month = monthInput.value;
-
+  const m = monthInput.value;
   try {
-    const [i, s, p, pr] = await Promise.all([
-      fetch(`/api/dashboard-invoice-total?month=${month}`).then(r => r.json()),
-      fetch(`/api/dashboard-salary-total?month=${month}`).then(r => r.json()),
-      fetch(`/api/dashboard-po-total?month=${month}`).then(r => r.json()),
-      fetch(`/api/dashboard-profit?month=${month}`).then(r => r.json())
+    const [i,s,p,pr] = await Promise.all([
+      fetch(`/api/dashboard-invoice-total?month=${m}`).then(r=>r.json()),
+      fetch(`/api/dashboard-salary-total?month=${m}`).then(r=>r.json()),
+      fetch(`/api/dashboard-po-total?month=${m}`).then(r=>r.json()),
+      fetch(`/api/dashboard-profit?month=${m}`).then(r=>r.json())
     ]);
 
     invTotal.innerHTML = `Invoice<br>RM ${Number(i.total).toFixed(2)}`;
@@ -256,21 +270,13 @@ async function loadSummary() {
 
     const profit = Number(pr.profit || 0);
     profitTotal.innerHTML = `Profit<br>RM ${profit.toFixed(2)}`;
-    profitTotal.classList.remove("negative");
-    if (profit < 0) profitTotal.classList.add("negative");
-
-  } catch {
-    invTotal.innerHTML = "Invoice<br>RM 0.00";
-    salTotal.innerHTML = "Salary<br>RM 0.00";
-    poTotal.innerHTML  = "PO<br>RM 0.00";
-    profitTotal.innerHTML = "Profit<br>RM 0.00";
-  }
+    profitTotal.classList.toggle("negative", profit < 0);
+  } catch {}
 }
 
 monthInput.onchange = loadSummary;
 loadSummary();
 
-/* ===== Logout ===== */
 async function logout() {
   await fetch("/api/logout", { method:"POST", credentials:"include" });
   location.replace("/login.html");

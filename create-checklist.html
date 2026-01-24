@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Create Work Checklist</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 14px;
+}
+
+h1 {
+  margin: 0 0 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+label {
+  font-size: 14px;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 6px;
+}
+
+select, textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.checklist-item {
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+}
+
+.checklist-item:last-child {
+  border-bottom: none;
+}
+
+.item-desc {
+  font-size: 14px;
+}
+
+.item-meta {
+  font-size: 12px;
+  color: #777;
+}
+
+.btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2c3e50;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #7f8c8d;
+  color: #fff;
+  margin-top: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Create Checklist</h1>
+<div class="subtitle">From Accepted Quotation</div>
+
+<!-- ===== SELECT QUOTATION ===== -->
+<div class="card">
+  <label>Select Quotation</label>
+  <select id="quotationSelect">
+    <option value="">Loading...</option>
+  </select>
+</div>
+
+<!-- ===== PREVIEW ITEMS ===== -->
+<div class="card">
+  <label>Checklist Preview</label>
+  <div id="itemsBox" style="font-size:14px;color:#777;">
+    Please select a quotation
+  </div>
+</div>
+
+<!-- ===== ACTION ===== -->
+<div class="card">
+  <button class="btn btn-primary" onclick="createChecklist()">
+    Create Checklist
+  </button>
+  <button class="btn btn-secondary" onclick="history.back()">
+    Cancel
+  </button>
+</div>
+
+<script>
+const quotationSelect = document.getElementById("quotationSelect");
+const itemsBox = document.getElementById("itemsBox");
+
+/* ===== LOAD ACCEPTED QUOTATIONS ===== */
+fetch("/api/quotation-list-for-checklist", { credentials: "include" })
+.then(r => r.json())
+.then(list => {
+  quotationSelect.innerHTML = `<option value="">-- Select quotation --</option>`;
+  list.forEach(q => {
+    const opt = document.createElement("option");
+    opt.value = q.id;
+    opt.textContent = `${q.quotation_no} - ${q.customer}`;
+    quotationSelect.appendChild(opt);
+  });
+})
+.catch(() => {
+  quotationSelect.innerHTML = `<option value="">Failed to load</option>`;
+});
+
+/* ===== LOAD QUOTATION ITEMS ===== */
+quotationSelect.onchange = async () => {
+  const id = quotationSelect.value;
+  itemsBox.innerHTML = "Loading items...";
+
+  if (!id) {
+    itemsBox.innerHTML = "Please select a quotation";
+    return;
+  }
+
+  const res = await fetch(`/api/quotation-view?id=${id}`, {
+    credentials: "include"
+  });
+
+  if (!res.ok) {
+    itemsBox.innerHTML = "Failed to load items";
+    return;
+  }
+
+  const data = await res.json();
+  const items = data.items;
+
+  if (!items.length) {
+    itemsBox.innerHTML = "No items found";
+    return;
+  }
+
+  itemsBox.innerHTML = "";
+  items.forEach((it, i) => {
+    const div = document.createElement("div");
+    div.className = "checklist-item";
+    div.innerHTML = `
+      <div class="item-desc">${i + 1}. ${it.description}</div>
+      <div class="item-meta">Default status: NOT_STARTED</div>
+    `;
+    itemsBox.appendChild(div);
+  });
+};
+
+/* ===== CREATE CHECKLIST ===== */
+async function createChecklist() {
+  const quotation_id = quotationSelect.value;
+  if (!quotation_id) {
+    alert("Please select a quotation");
+    return;
+  }
+
+  if (!confirm("Create checklist from this quotation?")) return;
+
+  const res = await fetch("/api/work-checklist-create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ quotation_id })
+  });
+
+  if (!res.ok) {
+    alert("Failed to create checklist");
+    return;
+  }
+
+  const data = await res.json();
+  location.href = `/work-checklist-view.html?id=${data.work_checklist_id}`;
+}
+</script>
+
+</body>
+</html>

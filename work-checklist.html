@@ -1,98 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Work Checklist</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<title>Work Checklists</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
 body {
   font-family: Arial, sans-serif;
   background: #f4f6f8;
   margin: 0;
-  padding: 12px;
+  padding: 14px;
 }
 
 h1 {
-  margin: 0 0 10px;
+  margin-bottom: 12px;
 }
 
 .card {
   background: #fff;
+  padding: 14px;
   border-radius: 8px;
-  padding: 12px;
   margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  cursor: pointer;
 }
 
-.item {
-  border-bottom: 1px solid #eee;
-  padding: 8px 0;
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.item:last-child {
-  border-bottom: none;
-}
-
-.desc {
-  font-size: 14px;
+.progress {
+  font-size: 13px;
   font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 12px;
 }
 
-.status {
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-.status.NOT_STARTED { color: #777; }
-.status.IN_PROGRESS { color: #f39c12; }
-.status.DONE { color: #27ae60; }
-
-.remarks {
-  font-size: 13px;
+.progress.zero {
+  background: #eee;
   color: #555;
+}
+
+.progress.mid {
+  background: #f39c12;
+  color: #000;
+}
+
+.progress.done {
+  background: #27ae60;
+  color: #fff;
+}
+
+.small {
+  font-size: 13px;
+  color: #666;
   margin-top: 4px;
+}
+
+button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: none;
+  background: #7f8c8d;
+  color: #fff;
 }
 </style>
 </head>
 
 <body>
 
-<h1>Work Checklist</h1>
+<h1>Work Checklists</h1>
 
-<div class="card">
-  <div><strong>Checklist ID:</strong> <span id="cid"></span></div>
-  <div><strong>Quotation ID:</strong> <span id="qid"></span></div>
-  <div><strong>Status:</strong> <span id="cstatus"></span></div>
-</div>
+<div id="list">Loading...</div>
 
-<div id="items"></div>
+<button onclick="history.back()">Back</button>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
-
-fetch(`/api/work-checklist-view?id=${id}`, { credentials: "include" })
-.then(r => {
-  if (r.status === 401) location.replace("/login.html");
-  return r.json();
+fetch("/api/work-checklist-list", { credentials: "include" })
+.then(res => {
+  if (res.status === 401) {
+    location.replace("/login.html");
+    throw new Error();
+  }
+  return res.json();
 })
 .then(data => {
+  const box = document.getElementById("list");
+  box.innerHTML = "";
 
-  document.getElementById("cid").textContent = data.checklist.id;
-  document.getElementById("qid").textContent = data.checklist.quotation_id;
-  document.getElementById("cstatus").textContent = data.checklist.status;
+  if (data.items.length === 0) {
+    box.textContent = "No checklist found.";
+    return;
+  }
 
-  const wrap = document.getElementById("items");
-  wrap.innerHTML = "";
+  data.items.forEach(it => {
+    const percent = it.total_items === 0
+      ? 0
+      : Math.round((it.done_items / it.total_items) * 100);
 
-  data.items.forEach(i => {
+    let cls = "zero";
+    let label = `${percent}%`;
+
+    if (percent === 100) {
+      cls = "done";
+      label = "100% DONE";
+    } else if (percent > 0) {
+      cls = "mid";
+    }
+
     const div = document.createElement("div");
-    div.className = "card item";
+    div.className = "card";
+    div.onclick = () => {
+      location.href = `/work-checklist-view.html?id=${it.id}`;
+    };
+
     div.innerHTML = `
-      <div class="desc">${i.description}</div>
-      <div class="status ${i.status}">${i.status}</div>
-      <div class="remarks">${i.remarks || ""}</div>
+      <div class="row">
+        <div>
+          <strong>Checklist #${it.id}</strong>
+          <div class="small">Quotation ID: ${it.quotation_id}</div>
+        </div>
+        <div class="progress ${cls}">${label}</div>
+      </div>
+      <div class="small">
+        ${it.done_items} / ${it.total_items} items done<br>
+        Created: ${it.created_at}
+      </div>
     `;
-    wrap.appendChild(div);
+
+    box.appendChild(div);
   });
 });
 </script>
