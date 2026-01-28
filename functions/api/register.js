@@ -9,98 +9,88 @@ async function sha256(message) {
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
-     REGISTRATION SWITCH
-     =============================== */
-  if (!env.REGISTER_INVITE_CODE) {
-    return new Response(
-      JSON.stringify({ error: "Registration disabled" }),
-      { status: 403 }
-    );
-  }
-
-  /* ===============================
      PARSE BODY
      =============================== */
   let body;
   try {
     body = await request.json();
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON" }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
   }
 
   const { username, password, invite_code } = body || {};
 
   if (!username || !password || !invite_code) {
-    return new Response(
-      JSON.stringify({ error: "Missing required fields" }),
-      { status: 400 }
-    );
-  }
-
-  /* ===============================
-     INVITE CODE CHECK
-     =============================== */
-  if (invite_code !== env.REGISTER_INVITE_CODE) {
-    return new Response(
-      JSON.stringify({ error: "Invalid invite code" }),
-      { status: 403 }
-    );
+    return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400 });
   }
 
   if (password.length < 6) {
-    return new Response(
-      JSON.stringify({ error: "Password too short" }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "Password too short" }), { status: 400 });
+  }
+
+  /* ===============================
+     CHECK INVITE CODE
+     =============================== */
+  const invite = await env.DB.prepare(`
+    SELECT *
+    FROM invite_codes
+    WHERE code = ?
+  `).bind(invite_code).first();
+
+  if (!invite) {
+    return new Response(JSON.stringify({ error: "Invalid invite code" }), { status: 403 });
+  }
+
+  if (invite.is_used) {
+    return new Response(JSON.stringify({ error: "Invite code already used" }), { status: 403 });
+  }
+
+  if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
+    return new Response(JSON.stringify({ error: "Invite code expired" }), { status: 403 });
   }
 
   /* ===============================
      DUPLICATE USER CHECK
      =============================== */
   const exists = await env.DB.prepare(`
-    SELECT id
-    FROM users
-    WHERE username = ?
+    SELECT id FROM users WHERE username = ?
   `).bind(username).first();
 
   if (exists) {
-    return new Response(
-      JSON.stringify({ error: "Username already exists" }),
-      { status: 409 }
-    );
+    return new Response(JSON.stringify({ error: "Username already exists" }), { status: 409 });
   }
 
   /* ===============================
-     HASH PASSWORD
+     CREATE USER
      =============================== */
   const password_hash = await sha256(password);
 
-  /* ===============================
-     INSERT USER (ROLE FIXED = user)
-     =============================== */
   await env.DB.prepare(`
     INSERT INTO users (
       username,
       password_hash,
       role,
       created_at
-    ) VALUES (?, ?, 'user', datetime('now'))
+    ) VALUES (?, ?, ?, datetime('now'))
   `).bind(
     username,
-    password_hash
+    password_hash,
+    invite.role || "user"
   ).run();
 
   /* ===============================
-     RESPONSE
+     MARK INVITE AS USED
      =============================== */
-  return new Response(
-    JSON.stringify({
-      success: true,
-      username
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  await env.DB.prepare(`
+    UPDATE invite_codes
+    SET is_used = 1,
+        used_at = datetime('now')
+    WHERE id = ?
+  `).bind(invite.id).run();
+
+  return Response.json({
+    success: true,
+    username,
+    role: invite.role || "user"
+  });
 }
