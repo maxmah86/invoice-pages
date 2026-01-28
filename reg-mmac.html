@@ -13,62 +13,60 @@ body {
   padding: 16px;
 }
 
-.card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  max-width: 420px;
-  margin: 40px auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
 h2 {
   margin-top: 0;
-  margin-bottom: 12px;
   text-align: center;
+}
+
+.box {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
 label {
   display: block;
-  margin-top: 14px;
   font-size: 14px;
   font-weight: bold;
+  margin-top: 12px;
 }
 
 input {
   width: 100%;
   padding: 12px;
+  font-size: 16px;
   margin-top: 6px;
-  font-size: 15px;
+  box-sizing: border-box;
   border-radius: 6px;
   border: 1px solid #ccc;
-  box-sizing: border-box;
 }
 
 button {
   width: 100%;
-  margin-top: 20px;
   padding: 14px;
   font-size: 16px;
-  border: none;
+  margin-top: 18px;
   border-radius: 6px;
+  border: none;
   cursor: pointer;
 }
 
-.btn-primary {
+.submit-btn {
   background: #2c3e50;
   color: #fff;
 }
 
-.btn-secondary {
+.back-btn {
   background: #7f8c8d;
   color: #fff;
   margin-top: 10px;
 }
 
-.msg {
-  margin-top: 12px;
-  font-size: 14px;
+.note {
+  font-size: 13px;
+  color: #666;
+  margin-top: 10px;
   text-align: center;
 }
 </style>
@@ -76,64 +74,56 @@ button {
 
 <body>
 
-<div class="card">
-  <h2>Create Account</h2>
+<h2>User Registration</h2>
 
+<div class="box">
   <label>Username</label>
   <input id="username" placeholder="Enter username">
 
   <label>Password</label>
-  <input id="password" type="password" placeholder="Enter password">
+  <input id="password" type="password" placeholder="Min 6 characters">
 
-  <label>Confirm Password</label>
-  <input id="password2" type="password" placeholder="Confirm password">
+  <label>Invitation Code</label>
+  <input id="invite" placeholder="Invitation code">
 
-  <button class="btn-primary" onclick="register()">Register</button>
-  <button class="btn-secondary" onclick="location.href='/login.html'">
-    Back to Login
-  </button>
+  <button class="submit-btn" onclick="register()">Register</button>
+  <button class="back-btn" onclick="location.href='/login.html'">Back to Login</button>
 
-  <div class="msg" id="msg"></div>
+  <div class="note">
+    Registration requires a valid invitation code.
+  </div>
 </div>
 
 <script>
 async function register() {
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
-  const password2 = document.getElementById("password2").value;
-  const msg = document.getElementById("msg");
+  const invite_code = document.getElementById("invite").value.trim();
 
-  msg.textContent = "";
-
-  if (!username || !password) {
-    msg.textContent = "Username and password are required";
-    return;
-  }
-
-  if (password !== password2) {
-    msg.textContent = "Passwords do not match";
+  if (!username || !password || !invite_code) {
+    alert("All fields are required");
     return;
   }
 
   const res = await fetch("/api/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({
+      username,
+      password,
+      invite_code
+    })
   });
 
   const text = await res.text();
 
   if (!res.ok) {
-    msg.textContent = text || "Registration failed";
+    alert("Failed:\n" + text);
     return;
   }
 
-  msg.style.color = "green";
-  msg.textContent = "Registration successful. Please login.";
-
-  setTimeout(() => {
-    location.href = "/login.html";
-  }, 1200);
+  alert("Registration successful. You can now login.");
+  location.href = "/login.html";
 }
 </script>
 
