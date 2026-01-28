@@ -2,105 +2,118 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Users Management</title>
+<title>Users Management (Admin)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
   font-family: Arial, sans-serif;
   background: #f4f6f8;
-  margin: 0;
-  padding: 12px;
+  padding: 14px;
 }
 
 h2 {
-  margin: 0 0 12px;
+  margin-top: 0;
 }
 
 .card {
   background: #fff;
+  padding: 14px;
   border-radius: 8px;
-  padding: 12px;
   margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
-.user {
-  border-bottom: 1px solid #eee;
-  padding: 10px 0;
+table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.user:last-child {
-  border-bottom: none;
-}
-
-.row {
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
   font-size: 14px;
-  margin-bottom: 6px;
 }
 
-.role {
-  font-weight: bold;
-}
-
-.admin { color: #c92a2a; }
-.user-role { color: #1c7ed6; }
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-select, input {
-  padding: 6px;
-  font-size: 14px;
+th {
+  background: #f0f0f0;
 }
 
 button {
-  padding: 8px 10px;
-  font-size: 14px;
-  border: none;
-  border-radius: 6px;
+  padding: 6px 10px;
+  margin-right: 4px;
+  font-size: 13px;
   cursor: pointer;
 }
 
-.btn-role {
-  background: #1c7ed6;
-  color: #fff;
+.admin {
+  color: #27ae60;
+  font-weight: bold;
 }
 
-.btn-reset {
-  background: #e8590c;
-  color: #fff;
+.user {
+  color: #555;
 }
 
-.back {
-  background: #7f8c8d;
-  color: #fff;
-  width: 100%;
+.debug {
+  background: #111;
+  color: #0f0;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 10px;
+  margin-top: 10px;
+  white-space: pre-wrap;
 }
 </style>
 </head>
 
 <body>
 
-<h2>User Management</h2>
+<h2>Users Management (Admin)</h2>
 
-<div class="card" id="usersBox">
-  Loading users...
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Role</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="usersBody">
+      <tr><td colspan="4">Loading...</td></tr>
+    </tbody>
+  </table>
 </div>
 
-<button class="back" onclick="history.back()">Back</button>
+<div class="card">
+  <strong>DEBUG OUTPUT</strong>
+  <div id="debug" class="debug">waiting...</div>
+</div>
 
 <script>
+const debugBox = document.getElementById("debug");
+
+/* ===============================
+   DEBUG HELPER
+   =============================== */
+function debug(title, res, text) {
+  debugBox.textContent =
+    "▶ " + title + "\n" +
+    "STATUS: " + res.status + "\n\n" +
+    text;
+}
+
 /* ===============================
    AUTH CHECK (ADMIN ONLY)
    =============================== */
 fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) throw new Error("Unauthorized");
+    return r.json();
+  })
   .then(d => {
-    if (!d.loggedIn || d.role !== "admin") {
+    if (d.role !== "admin") {
       alert("Admin only");
       location.replace("/index.html");
     } else {
@@ -113,111 +126,70 @@ fetch("/api/auth-check", { credentials: "include" })
    LOAD USERS
    =============================== */
 async function loadUsers() {
-  const res = await fetch("/api/users-list", {
-    credentials: "include"
-  });
+  const res = await fetch("/api/users-list", { credentials: "include" });
+  const text = await res.text();
+  debug("GET /api/users-list", res, text);
 
-  if (!res.ok) {
-    document.getElementById("usersBox").textContent = "Failed to load users";
-    return;
-  }
+  if (!res.ok) return;
 
-  const users = await res.json();
-  const box = document.getElementById("usersBox");
-  box.innerHTML = "";
+  const users = JSON.parse(text);
+  const tbody = document.getElementById("usersBody");
+  tbody.innerHTML = "";
 
   users.forEach(u => {
-    const div = document.createElement("div");
-    div.className = "user";
-
-    div.innerHTML = `
-      <div class="row"><strong>${u.username}</strong></div>
-      <div class="row">
-        Role:
-        <span class="role ${u.role === "admin" ? "admin" : "user-role"}">
-          ${u.role}
-        </span>
-      </div>
-      <div class="row">Created: ${u.created_at}</div>
-
-      <div class="actions">
-        <select id="role-${u.id}">
-          <option value="user" ${u.role === "user" ? "selected" : ""}>user</option>
-          <option value="admin" ${u.role === "admin" ? "selected" : ""}>admin</option>
-        </select>
-        <button class="btn-role"
-          onclick="updateRole(${u.id})">
-          Update Role
-        </button>
-      </div>
-
-      <div class="actions">
-        <input
-          type="password"
-          id="pw-${u.id}"
-          placeholder="New password">
-        <button class="btn-reset"
-          onclick="resetPassword(${u.id})">
-          Reset Password
-        </button>
-      </div>
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.id}</td>
+      <td>${u.username}</td>
+      <td class="${u.role}">${u.role}</td>
+      <td>
+        <button onclick="changeRole(${u.id}, '${u.role}')">Change Role</button>
+        <button onclick="resetPassword(${u.id})">Reset Password</button>
+      </td>
     `;
-
-    box.appendChild(div);
+    tbody.appendChild(tr);
   });
 }
 
 /* ===============================
-   UPDATE ROLE
+   CHANGE ROLE
    =============================== */
-async function updateRole(userId) {
-  const role = document.getElementById(`role-${userId}`).value;
-
-  if (!confirm(`Change role to "${role}"?`)) return;
+async function changeRole(id, currentRole) {
+  const role = currentRole === "admin" ? "user" : "admin";
+  if (!confirm(`Change role to ${role}?`)) return;
 
   const res = await fetch("/api/user-role-update", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, role })
+    body: JSON.stringify({ user_id: id, role })
   });
 
-  if (!res.ok) {
-    alert("Failed to update role");
-    return;
-  }
+  const text = await res.text();
+  debug("POST /api/user-role-update", res, text);
 
-  alert("Role updated");
-  loadUsers();
+  if (res.ok) loadUsers();
 }
 
 /* ===============================
    RESET PASSWORD
    =============================== */
-async function resetPassword(userId) {
-  const pw = document.getElementById(`pw-${userId}`).value;
+async function resetPassword(id) {
+  const pw = prompt("Enter new password (min 6 chars)");
+  if (!pw) return;
 
-  if (!pw || pw.length < 6) {
-    alert("Password must be at least 6 characters");
-    return;
-  }
-
-  if (!confirm("Reset this user's password?")) return;
-
-  const res = await fetch("/api/user-reset-password", {
+  const res = await fetch("/api/user-password-reset", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId, password: pw })
+    body: JSON.stringify({
+      user_id: id,
+      new_password: pw
+    })
   });
 
-  if (!res.ok) {
-    alert("Failed to reset password");
-    return;
-  }
-
-  alert("Password reset successful");
-  document.getElementById(`pw-${userId}`).value = "";
+  const text = await res.text();
+  debug("POST /api/user-password-reset", res, text);
 }
 </script>
 
