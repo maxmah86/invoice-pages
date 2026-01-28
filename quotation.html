@@ -12,25 +12,19 @@ body {
   margin: 0;
   padding: 12px;
 }
-
-h2 {
-  margin-top: 0;
-}
-
+h2 { margin-top: 0; }
 .box {
   background: #fff;
   padding: 14px;
   border-radius: 8px;
   margin-bottom: 12px;
 }
-
 label {
   display: block;
   font-size: 14px;
   font-weight: bold;
   margin-top: 10px;
 }
-
 input, select {
   width: 100%;
   padding: 12px;
@@ -38,29 +32,22 @@ input, select {
   margin-top: 6px;
   box-sizing: border-box;
 }
-
 .item {
   border: 1px solid #ddd;
   padding: 10px;
   border-radius: 6px;
   margin-top: 10px;
 }
-
 .row {
   display: flex;
   gap: 8px;
 }
-
-.row > div {
-  flex: 1;
-}
-
+.row > div { flex: 1; }
 .subtotal {
   text-align: right;
   font-size: 14px;
   margin-top: 6px;
 }
-
 .add-btn {
   width: 100%;
   padding: 12px;
@@ -72,20 +59,17 @@ input, select {
   border-radius: 6px;
   cursor: pointer;
 }
-
 .total {
   text-align: right;
   font-size: 18px;
   font-weight: bold;
   margin-top: 10px;
 }
-
 .actions {
   display: flex;
   gap: 8px;
   margin-top: 12px;
 }
-
 .actions button {
   flex: 1;
   padding: 14px;
@@ -94,16 +78,8 @@ input, select {
   border-radius: 6px;
   cursor: pointer;
 }
-
-.submit-btn {
-  background: #27ae60;
-  color: #fff;
-}
-
-.cancel-btn {
-  background: #7f8c8d;
-  color: #fff;
-}
+.submit-btn { background: #27ae60; color: #fff; }
+.cancel-btn { background: #7f8c8d; color: #fff; }
 </style>
 </head>
 
@@ -111,13 +87,11 @@ input, select {
 
 <h2>Create Quotation</h2>
 
-<!-- ===== CUSTOMER ===== -->
 <div class="box">
   <label>Customer</label>
   <input id="customer" placeholder="Customer name">
 </div>
 
-<!-- ===== TERMS ===== -->
 <div class="box">
   <label>Terms</label>
   <select id="terms_id">
@@ -125,23 +99,30 @@ input, select {
   </select>
 </div>
 
-<!-- ===== ITEMS ===== -->
 <div class="box">
   <h3>Items</h3>
   <div id="items"></div>
-
   <button class="add-btn" onclick="addItem()">+ Add Item</button>
-
   <div class="total" id="total">Total: RM 0.00</div>
 </div>
 
-<!-- ===== ACTIONS ===== -->
 <div class="actions">
   <button class="submit-btn" onclick="submitQuotation()">Save Quotation</button>
   <button class="cancel-btn" onclick="cancel()">Cancel</button>
 </div>
 
 <script>
+/* ===== AUTH CHECK (ADMIN ONLY) ===== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(d => {
+    if (d.role !== "admin") {
+      alert("Admin only");
+      location.replace("/index.html");
+    }
+  })
+  .catch(() => location.replace("/login.html"));
+
 const items = document.getElementById("items");
 
 /* ===== LOAD TERMS ===== */
@@ -156,21 +137,14 @@ fetch("/api/quotation-terms-list", { credentials: "include" })
       opt.textContent = t.title;
       sel.appendChild(opt);
     });
-  })
-  .catch(() => {
-    document.getElementById("terms_id").innerHTML =
-      `<option value="">Failed to load terms</option>`;
   });
 
-/* ===== ADD ITEM ===== */
 function addItem(desc = "", qty = 1, price = 0) {
   const div = document.createElement("div");
   div.className = "item";
-
   div.innerHTML = `
     <label>Description</label>
     <input class="desc" value="${desc}">
-
     <div class="row">
       <div>
         <label>Qty</label>
@@ -181,80 +155,51 @@ function addItem(desc = "", qty = 1, price = 0) {
         <input type="number" class="price" value="${price}">
       </div>
     </div>
-
-    <div class="subtotal">
-      Subtotal: RM <span>0.00</span>
-    </div>
+    <div class="subtotal">Subtotal: RM <span>0.00</span></div>
   `;
-
   items.appendChild(div);
-
   div.querySelectorAll("input").forEach(i =>
     i.addEventListener("input", updateTotal)
   );
-
   updateTotal();
 }
-
 addItem();
 
-/* ===== UPDATE TOTAL ===== */
 function updateTotal() {
   let total = 0;
-
   document.querySelectorAll(".item").forEach(item => {
     const qty = Number(item.querySelector(".qty").value) || 0;
     const price = Number(item.querySelector(".price").value) || 0;
     const sub = qty * price;
-
     item.querySelector(".subtotal span").innerText = sub.toFixed(2);
     total += sub;
   });
-
   document.getElementById("total").innerText =
     "Total: RM " + total.toFixed(2);
 }
 
-/* ===== SUBMIT ===== */
 async function submitQuotation() {
   const customer = document.getElementById("customer").value.trim();
   const terms_id = document.getElementById("terms_id").value;
 
-  if (!customer) {
-    alert("Customer is required");
-    return;
-  }
-
-  if (!terms_id) {
-    alert("Please select Terms");
-    return;
-  }
+  if (!customer) return alert("Customer is required");
+  if (!terms_id) return alert("Please select Terms");
 
   const itemsData = [];
   document.querySelectorAll(".item").forEach(item => {
     const desc = item.querySelector(".desc").value.trim();
     const qty = Number(item.querySelector(".qty").value);
     const price = Number(item.querySelector(".price").value);
-
-    if (desc && qty > 0) {
-      itemsData.push({ description: desc, qty, price });
-    }
+    if (desc && qty > 0) itemsData.push({ description: desc, qty, price });
   });
 
-  if (itemsData.length === 0) {
-    alert("At least one item is required");
-    return;
-  }
+  if (!itemsData.length) return alert("At least one item is required");
 
   const res = await fetch("/api/quotation-create", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      customer,
-      terms_id,
-      items: itemsData
-    })
+    body: JSON.stringify({ customer, terms_id, items: itemsData })
   });
 
   if (!res.ok) {

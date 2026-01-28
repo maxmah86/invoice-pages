@@ -1,156 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <title>Login</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    margin: 0;
-    padding: 0;
-  }
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 16px;
+}
 
-  .container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-  }
+h2 {
+  text-align: center;
+}
 
-  .box {
-    background: #fff;
-    width: 100%;
-    max-width: 360px;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
+.box {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 360px;
+  margin: 80px auto;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
 
-  h2 {
-    text-align: center;
-    margin: 0 0 20px;
-  }
+label {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+}
 
-  label {
-    font-size: 14px;
-    font-weight: bold;
-    display: block;
-    margin-top: 12px;
-  }
+input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
 
-  input {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    margin-top: 6px;
-    box-sizing: border-box;
-  }
+button {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  font-size: 16px;
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
-  button {
-    width: 100%;
-    margin-top: 20px;
-    padding: 14px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    background: #2c3e50;
-    color: #fff;
-    cursor: pointer;
-  }
-
-  button:active {
-    opacity: 0.9;
-  }
-
-  .msg {
-    margin-top: 12px;
-    font-size: 14px;
-    color: red;
-    text-align: center;
-  }
-
-  .footer {
-    margin-top: 20px;
-    text-align: center;
-    font-size: 12px;
-    color: #888;
-  }
+.error {
+  margin-top: 12px;
+  color: #c0392b;
+  font-size: 14px;
+  text-align: center;
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <div class="box">
-    <h2>Login</h2>
+<div class="box">
+  <h2>MMAC Login</h2>
 
-    <label for="username">Username</label>
-    <input
-      id="username"
-      placeholder="Enter username"
-      autocomplete="username"
-    >
+  <label>Username</label>
+  <input id="username" autocomplete="username">
 
-    <label for="password">Password</label>
-    <input
-      id="password"
-      type="password"
-      placeholder="Enter password"
-      autocomplete="current-password"
-    >
+  <label>Password</label>
+  <input id="password" type="password" autocomplete="current-password">
 
-    <button onclick="login()">Login</button>
+  <button onclick="login()">Login</button>
 
-    <div class="msg" id="msg"></div>
-
-    <div class="footer">
-      MMAC Invoice System
-    </div>
-  </div>
+  <div class="error" id="error"></div>
 </div>
 
 <script>
 async function login() {
-  const msg = document.getElementById("msg");
-  msg.textContent = "";
-
   const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value;
+  const password = document.getElementById("password").value.trim();
+  const errorBox = document.getElementById("error");
+
+  errorBox.textContent = "";
 
   if (!username || !password) {
-    msg.textContent = "Please enter username and password";
+    errorBox.textContent = "Username and password required";
     return;
   }
 
-  try {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
-    });
+  const res = await fetch("/api/login", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
 
-    if (!res.ok) {
-      msg.textContent = "Invalid username or password";
-      return;
-    }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    errorBox.textContent = e.error || "Login failed";
+    return;
+  }
 
-    // 登录成功
-    location.href = "/index.html";
+  // 🔑 登录成功后 → 再查一次 auth-check 拿 role
+  const auth = await fetch("/api/auth-check", {
+    credentials: "include"
+  }).then(r => r.json());
 
-  } catch (e) {
-    msg.textContent = "Network error. Please try again.";
+  if (!auth.loggedIn) {
+    errorBox.textContent = "Session error, please login again";
+    return;
+  }
+
+  // ✅ 按角色跳转
+  if (auth.role === "admin") {
+    location.replace("/index.html");
+  } else {
+    location.replace("/work-checklist.html");
   }
 }
-
-// 回车直接登录（手机外接键盘也适用）
-document.addEventListener("keydown", e => {
-  if (e.key === "Enter") login();
-});
 </script>
 
 </body>

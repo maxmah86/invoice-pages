@@ -47,7 +47,6 @@ h1 {
 .item {
   border-bottom: 1px solid #eee;
   padding: 12px;
-  cursor: pointer;
 }
 
 .item:last-child {
@@ -67,7 +66,23 @@ h1 {
 .ACCEPTED { color: #2f9e44; }
 .VOID { color: #c92a2a; }
 
-/* ===== 打印时隐藏过滤 ===== */
+.actions {
+  margin-top: 8px;
+}
+
+.btn {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2c3e50;
+  color: #fff;
+}
+
 @media print {
   .filter-box { display: none; }
 }
@@ -95,12 +110,21 @@ h1 {
   <input id="filterCustomer" placeholder="Search customer" oninput="applyFilter()">
 </div>
 
-<!-- ===== Quotation List ===== -->
 <div class="list" id="list"></div>
 
 <script>
 let quotations = [];
+let currentUserRole = "user";
 
+/* ===== LOAD USER ROLE ===== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) location.replace("/login.html");
+    currentUserRole = d.role;
+  });
+
+/* ===== LOAD QUOTATIONS ===== */
 fetch("/api/quotations", { credentials: "include" })
 .then(res => {
   if (res.status === 401) {
@@ -142,9 +166,6 @@ function render(list) {
   list.forEach(q => {
     const div = document.createElement("div");
     div.className = "item";
-    div.onclick = () => {
-      location.href = `/quotation-view.html?id=${q.id}`;
-    };
 
     div.innerHTML = `
       <div class="row"><strong>${q.quotation_no}</strong></div>
@@ -152,6 +173,30 @@ function render(list) {
       <div class="row">Total: RM ${q.amount.toFixed(2)}</div>
       <div class="row status ${q.status}">${q.status}</div>
     `;
+
+    /* ===== ACTIONS ===== */
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    if (
+      q.status === "ACCEPTED" &&
+      currentUserRole === "admin" &&
+      !q.has_checklist
+    ) {
+      const btn = document.createElement("button");
+      btn.className = "btn btn-primary";
+      btn.textContent = "Create Checklist";
+      btn.onclick = () => {
+        location.href = `/create-checklist.html?quotation_id=${q.id}`;
+      };
+      actions.appendChild(btn);
+    }
+
+    div.onclick = () => {
+      location.href = `/quotation-view.html?id=${q.id}`;
+    };
+
+    div.appendChild(actions);
     container.appendChild(div);
   });
 }

@@ -21,7 +21,7 @@ h1 {
   background: #fff;
   padding: 14px;
   border-radius: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   cursor: pointer;
 }
@@ -32,26 +32,9 @@ h1 {
   align-items: center;
 }
 
-.progress {
-  font-size: 13px;
+.title {
   font-weight: bold;
-  padding: 4px 10px;
-  border-radius: 12px;
-}
-
-.progress.zero {
-  background: #eee;
-  color: #555;
-}
-
-.progress.mid {
-  background: #f39c12;
-  color: #000;
-}
-
-.progress.done {
-  background: #27ae60;
-  color: #fff;
+  font-size: 16px;
 }
 
 .small {
@@ -59,6 +42,19 @@ h1 {
   color: #666;
   margin-top: 4px;
 }
+
+/* Progress badge */
+.progress {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  background: #eee;
+}
+
+.progress.low { background: #eee; color:#555; }
+.progress.mid { background: #f39c12; color:#000; }
+.progress.done { background: #27ae60; color:#fff; }
 
 button {
   width: 100%;
@@ -86,7 +82,7 @@ fetch("/api/work-checklist-list", { credentials: "include" })
 .then(res => {
   if (res.status === 401) {
     location.replace("/login.html");
-    throw new Error();
+    throw new Error("Unauthorized");
   }
   return res.json();
 })
@@ -94,25 +90,19 @@ fetch("/api/work-checklist-list", { credentials: "include" })
   const box = document.getElementById("list");
   box.innerHTML = "";
 
-  if (data.items.length === 0) {
+  if (!data.items || data.items.length === 0) {
     box.textContent = "No checklist found.";
     return;
   }
 
   data.items.forEach(it => {
-    const percent = it.total_items === 0
-      ? 0
-      : Math.round((it.done_items / it.total_items) * 100);
+    const done = Number(it.done_items || 0);
+    const total = Number(it.total_items || 0);
+    const percent = Number(it.progress_percent || 0);
 
-    let cls = "zero";
-    let label = `${percent}%`;
-
-    if (percent === 100) {
-      cls = "done";
-      label = "100% DONE";
-    } else if (percent > 0) {
-      cls = "mid";
-    }
+    let cls = "low";
+    if (percent === 100) cls = "done";
+    else if (percent > 0) cls = "mid";
 
     const div = document.createElement("div");
     div.className = "card";
@@ -123,19 +113,25 @@ fetch("/api/work-checklist-list", { credentials: "include" })
     div.innerHTML = `
       <div class="row">
         <div>
-          <strong>Checklist #${it.id}</strong>
-          <div class="small">Quotation ID: ${it.quotation_id}</div>
+          <div class="title">Checklist #${it.id}</div>
+          <div class="small">Quotation: ${it.quotation_no || it.quotation_id}</div>
+          <div class="small">
+            Progress: ${done} / ${total} (${percent}%)
+          </div>
         </div>
-        <div class="progress ${cls}">${label}</div>
+        <div class="progress ${cls}">
+          ${percent}%
+        </div>
       </div>
-      <div class="small">
-        ${it.done_items} / ${it.total_items} items done<br>
-        Created: ${it.created_at}
-      </div>
+      <div class="small">Created: ${it.created_at}</div>
     `;
 
     box.appendChild(div);
   });
+})
+.catch(err => {
+  document.getElementById("list").textContent = "Failed to load checklist";
+  console.error(err);
 });
 </script>
 

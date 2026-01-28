@@ -42,16 +42,17 @@ h1 {
 
 .desc {
   font-size: 15px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .status-btn {
   display: inline-block;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 14px;
   font-size: 12px;
   font-weight: bold;
   cursor: pointer;
+  user-select: none;
 }
 
 .NOT_STARTED {
@@ -75,11 +76,11 @@ h1 {
 
 textarea {
   width: 100%;
+  margin-top: 6px;
   padding: 8px;
   font-size: 13px;
   border-radius: 6px;
   border: 1px solid #ccc;
-  resize: vertical;
 }
 
 button {
@@ -111,20 +112,29 @@ button {
 <button class="btn-back" onclick="history.back()">Back</button>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+/* ===== Auth check：只要登录即可（user & admin 都允许） ===== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) {
+      location.replace("/login.html");
+    }
+  })
+  .catch(() => location.replace("/login.html"));
 
-/* ===== LOAD CHECKLIST ===== */
-fetch(`/api/work-checklist-view?id=${id}`, { credentials: "include" })
+/* ===== Load checklist ===== */
+const checklistId = new URLSearchParams(location.search).get("id");
+
+fetch(`/api/work-checklist-view?id=${checklistId}`, {
+  credentials: "include"
+})
 .then(res => {
-  if (res.status === 401) {
-    location.replace("/login.html");
-    throw new Error();
-  }
+  if (!res.ok) throw new Error();
   return res.json();
 })
 .then(data => {
   document.getElementById("subtitle").textContent =
-    `Quotation ID: ${data.checklist.quotation_id}`;
+    `Checklist #${data.checklist.id} (Quotation ${data.checklist.quotation_id})`;
 
   const box = document.getElementById("itemsBox");
   box.innerHTML = "";
@@ -159,20 +169,24 @@ fetch(`/api/work-checklist-view?id=${id}`, { credentials: "include" })
     "Failed to load checklist";
 });
 
-/* ===== TOGGLE STATUS ===== */
-async function toggleStatus(id, current, el) {
-  const next =
-    current === "NOT_STARTED"
-      ? "IN_PROGRESS"
-      : current === "IN_PROGRESS"
-      ? "DONE"
-      : "DONE";
+/* ===== Status toggle（DONE 也可切回 IN_PROGRESS） ===== */
+function nextStatus(current) {
+  if (current === "NOT_STARTED") return "IN_PROGRESS";
+  if (current === "IN_PROGRESS") return "DONE";
+  return "IN_PROGRESS"; // DONE → IN_PROGRESS
+}
 
-  const res = await fetch("/api/work-checklist-item-status", {
+async function toggleStatus(id, current, el) {
+  const status = nextStatus(current);
+
+  const res = await fetch("/api/work-checklist-item-update", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ id, status: next })
+    body: JSON.stringify({
+      item_id: id,
+      status
+    })
   });
 
   if (!res.ok) {
@@ -180,21 +194,24 @@ async function toggleStatus(id, current, el) {
     return;
   }
 
-  el.className = `status-btn ${next}`;
-  el.textContent = next;
+  el.className = `status-btn ${status}`;
+  el.textContent = status;
   el.setAttribute(
     "onclick",
-    `toggleStatus(${id}, '${next}', this)`
+    `toggleStatus(${id}, '${status}', this)`
   );
 }
 
-/* ===== SAVE REMARKS ===== */
+/* ===== Save remarks ===== */
 async function saveRemarks(id, remarks) {
   await fetch("/api/work-checklist-item-remarks", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ id, remarks })
+    body: JSON.stringify({
+      id,
+      remarks
+    })
   });
 }
 </script>

@@ -51,6 +51,7 @@ h1 {
   color: #555;
 }
 
+/* ===== Monthly Summary ===== */
 .summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -76,6 +77,7 @@ h1 {
 .summary-item.profit { background: #2c3e50; }
 .summary-item.profit.negative { background: #c0392b; }
 
+/* ===== Actions ===== */
 .actions {
   display: flex;
   gap: 10px;
@@ -93,6 +95,7 @@ h1 {
   color: #fff;
 }
 
+/* ===== Buttons ===== */
 .btn-primary { background: #2c3e50; }
 .btn-success { background: #27ae60; }
 .btn-warning { background: #f39c12; color:#000; }
@@ -237,23 +240,35 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
   </div>
 </div>
 
+<!-- ===== Logout ===== -->
 <div class="logout">
   <button onclick="logout()">Logout</button>
 </div>
 
 <script>
+/* ===== PWA ===== */
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
 }
 
+/* ===== Auth Check (ADMIN ONLY) ===== */
 fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.json())
-  .then(d => { if (!d.loggedIn) location.replace("/login.html"); })
+  .then(r => {
+    if (!r.ok) location.replace("/login.html");
+    return r.json();
+  })
+  .then(d => {
+    if (d.role !== "admin") {
+      location.replace("/work-checklist.html");
+    }
+  })
   .catch(() => location.replace("/login.html"));
 
+/* ===== Month Picker ===== */
 const monthInput = document.getElementById("monthPicker");
 monthInput.value = new Date().toISOString().slice(0,7);
 
+/* ===== Load Summary ===== */
 async function loadSummary() {
   const m = monthInput.value;
   try {
@@ -277,6 +292,7 @@ async function loadSummary() {
 monthInput.onchange = loadSummary;
 loadSummary();
 
+/* ===== Logout ===== */
 async function logout() {
   await fetch("/api/logout", { method:"POST", credentials:"include" });
   location.replace("/login.html");
