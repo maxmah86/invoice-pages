@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width">
+<title>Invite Codes</title>
+<style>
+body { font-family: Arial; padding: 12px; }
+button { padding: 10px; width: 100%; margin-top: 8px; }
+.card { border:1px solid #ddd; padding:10px; margin:8px 0; }
+.used { color: red; }
+</style>
+</head>
+<body>
+
+<h2>Invite Codes</h2>
+
+<button onclick="create()">➕ Create Invite</button>
+
+<div id="list"></div>
+
+<script>
+async function create() {
+  const res = await fetch("/api/invite-create", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role: "user", days: 7 })
+  });
+
+  const data = await res.json();
+  alert("Invite code:\n" + data.code);
+  load();
+}
+
+async function load() {
+  const res = await fetch("/api/invite-list", { credentials: "include" });
+  const list = await res.json();
+
+  document.getElementById("list").innerHTML = list.map(i => `
+    <div class="card">
+      <b>${i.code}</b><br>
+      Role: ${i.role}<br>
+      Expires: ${i.expires_at || "Never"}<br>
+      Status: <span class="${i.is_used ? "used" : ""}">
+        ${i.is_used ? "USED" : "AVAILABLE"}
+      </span>
+    </div>
+  `).join("");
+}
+
+load();
+</script>
+</body>
+</html>
