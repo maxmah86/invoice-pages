@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Users Management (Admin)</title>
+<title>Users Management</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -20,7 +20,6 @@ h2 {
   background: #fff;
   padding: 14px;
   border-radius: 8px;
-  margin-bottom: 12px;
 }
 
 table {
@@ -53,22 +52,12 @@ button {
 .user {
   color: #555;
 }
-
-.debug {
-  background: #111;
-  color: #0f0;
-  font-family: monospace;
-  font-size: 12px;
-  padding: 10px;
-  margin-top: 10px;
-  white-space: pre-wrap;
-}
 </style>
 </head>
 
 <body>
 
-<h2>Users Management (Admin)</h2>
+<h2>Users Management</h2>
 
 <div class="card">
   <table>
@@ -86,30 +75,13 @@ button {
   </table>
 </div>
 
-<div class="card">
-  <strong>DEBUG OUTPUT</strong>
-  <div id="debug" class="debug">waiting...</div>
-</div>
-
 <script>
-const debugBox = document.getElementById("debug");
-
-/* ===============================
-   DEBUG HELPER
-   =============================== */
-function debug(title, res, text) {
-  debugBox.textContent =
-    "▶ " + title + "\n" +
-    "STATUS: " + res.status + "\n\n" +
-    text;
-}
-
 /* ===============================
    AUTH CHECK (ADMIN ONLY)
    =============================== */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => {
-    if (!r.ok) throw new Error("Unauthorized");
+    if (!r.ok) throw new Error();
     return r.json();
   })
   .then(d => {
@@ -127,12 +99,9 @@ fetch("/api/auth-check", { credentials: "include" })
    =============================== */
 async function loadUsers() {
   const res = await fetch("/api/users-list", { credentials: "include" });
-  const text = await res.text();
-  debug("GET /api/users-list", res, text);
-
   if (!res.ok) return;
 
-  const users = JSON.parse(text);
+  const users = await res.json();
   const tbody = document.getElementById("usersBody");
   tbody.innerHTML = "";
 
@@ -143,8 +112,12 @@ async function loadUsers() {
       <td>${u.username}</td>
       <td class="${u.role}">${u.role}</td>
       <td>
-        <button onclick="changeRole(${u.id}, '${u.role}')">Change Role</button>
-        <button onclick="resetPassword(${u.id})">Reset Password</button>
+        <button onclick="changeRole(${u.id}, '${u.role}')">
+          Change Role
+        </button>
+        <button onclick="resetPassword(${u.id})">
+          Reset Password
+        </button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -165,10 +138,8 @@ async function changeRole(id, currentRole) {
     body: JSON.stringify({ user_id: id, role })
   });
 
-  const text = await res.text();
-  debug("POST /api/user-role-update", res, text);
-
   if (res.ok) loadUsers();
+  else alert("Failed to update role");
 }
 
 /* ===============================
@@ -176,7 +147,10 @@ async function changeRole(id, currentRole) {
    =============================== */
 async function resetPassword(id) {
   const pw = prompt("Enter new password (min 6 chars)");
-  if (!pw) return;
+  if (!pw || pw.length < 6) {
+    alert("Password too short");
+    return;
+  }
 
   const res = await fetch("/api/user-password-reset", {
     method: "POST",
@@ -188,8 +162,8 @@ async function resetPassword(id) {
     })
   });
 
-  const text = await res.text();
-  debug("POST /api/user-password-reset", res, text);
+  if (res.ok) alert("Password updated");
+  else alert("Failed to reset password");
 }
 </script>
 
