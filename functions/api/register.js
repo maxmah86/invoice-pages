@@ -9,31 +9,56 @@ async function sha256(message) {
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
+     REGISTRATION SWITCH
+     =============================== */
+  if (!env.REGISTER_INVITE_CODE) {
+    return new Response(
+      JSON.stringify({ error: "Registration disabled" }),
+      { status: 403 }
+    );
+  }
+
+  /* ===============================
      PARSE BODY
      =============================== */
   let body;
   try {
     body = await request.json();
   } catch {
-    return new Response("Invalid JSON", { status: 400 });
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON" }),
+      { status: 400 }
+    );
   }
 
-  const { username, password } = body || {};
+  const { username, password, invite_code } = body || {};
 
-  if (!username || !password) {
-    return new Response("Missing username or password", { status: 400 });
-  }
-
-  if (username.length < 3) {
-    return new Response("Username too short", { status: 400 });
-  }
-
-  if (password.length < 6) {
-    return new Response("Password too short", { status: 400 });
+  if (!username || !password || !invite_code) {
+    return new Response(
+      JSON.stringify({ error: "Missing required fields" }),
+      { status: 400 }
+    );
   }
 
   /* ===============================
-     CHECK DUPLICATE USERNAME
+     INVITE CODE CHECK
+     =============================== */
+  if (invite_code !== env.REGISTER_INVITE_CODE) {
+    return new Response(
+      JSON.stringify({ error: "Invalid invite code" }),
+      { status: 403 }
+    );
+  }
+
+  if (password.length < 6) {
+    return new Response(
+      JSON.stringify({ error: "Password too short" }),
+      { status: 400 }
+    );
+  }
+
+  /* ===============================
+     DUPLICATE USER CHECK
      =============================== */
   const exists = await env.DB.prepare(`
     SELECT id
@@ -42,7 +67,10 @@ export async function onRequestPost({ request, env }) {
   `).bind(username).first();
 
   if (exists) {
-    return new Response("Username already exists", { status: 409 });
+    return new Response(
+      JSON.stringify({ error: "Username already exists" }),
+      { status: 409 }
+    );
   }
 
   /* ===============================
@@ -51,15 +79,15 @@ export async function onRequestPost({ request, env }) {
   const password_hash = await sha256(password);
 
   /* ===============================
-     INSERT USER
-     role 默认 user
+     INSERT USER (ROLE FIXED = user)
      =============================== */
   await env.DB.prepare(`
     INSERT INTO users (
       username,
       password_hash,
+      role,
       created_at
-    ) VALUES (?, ?, datetime('now'))
+    ) VALUES (?, ?, 'user', datetime('now'))
   `).bind(
     username,
     password_hash
@@ -69,7 +97,10 @@ export async function onRequestPost({ request, env }) {
      RESPONSE
      =============================== */
   return new Response(
-    JSON.stringify({ success: true }),
+    JSON.stringify({
+      success: true,
+      username
+    }),
     { headers: { "Content-Type": "application/json" } }
   );
 }
