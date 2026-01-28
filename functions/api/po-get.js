@@ -1,23 +1,47 @@
 export async function onRequestGet({ request, env }) {
 
-  /* ===== AUTH CHECK ===== */
-  const authRes = await fetch(new URL("/api/auth-check", request.url), {
-    headers: { cookie: request.headers.get("cookie") || "" }
-  });
+  /* ===============================
+     AUTH CHECK (session_token)
+     =============================== */
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!authRes.ok) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  if (!token) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
   }
 
-  /* ===== GET ID ===== */
+  const user = await env.DB.prepare(`
+    SELECT id, username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  /* ===============================
+     GET ID
+     =============================== */
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 
   if (!id) {
-    return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
+    return new Response(
+      JSON.stringify({ error: "Missing id" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
   }
 
-  /* ===== PO HEADER ===== */
+  /* ===============================
+     PO HEADER
+     =============================== */
   const po = await env.DB.prepare(`
     SELECT
       id,
@@ -39,10 +63,15 @@ export async function onRequestGet({ request, env }) {
   `).bind(id).first();
 
   if (!po) {
-    return new Response(JSON.stringify({ error: "PO not found" }), { status: 404 });
+    return new Response(
+      JSON.stringify({ error: "PO not found" }),
+      { status: 404, headers: { "Content-Type": "application/json" } }
+    );
   }
 
-  /* ===== PO ITEMS ===== */
+  /* ===============================
+     PO ITEMS
+     =============================== */
   const itemsResult = await env.DB.prepare(`
     SELECT
       description,
@@ -53,11 +82,17 @@ export async function onRequestGet({ request, env }) {
     ORDER BY id ASC
   `).bind(id).all();
 
-  /* ===== RESPONSE ===== */
+  /* ===============================
+     RESPONSE
+     =============================== */
   return new Response(
     JSON.stringify({
-      ...po,
-      items: itemsResult.results
+      po,
+      items: itemsResult.results,
+      viewer: {
+        username: user.username,
+        role: user.role
+      }
     }),
     { headers: { "Content-Type": "application/json" } }
   );

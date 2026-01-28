@@ -1,13 +1,32 @@
 export async function onRequestGet({ request, env }) {
-  try {
-    const auth = await fetch(new URL("/api/auth-check", request.url), {
-      headers: { cookie: request.headers.get("cookie") || "" }
-    });
-    if (!auth.ok) return new Response("Unauthorized", { status: 401 });
 
+  /* ===== Auth (session_token) ===== */
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
+
+  if (!token) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (user.role !== "admin") {
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  try {
     const url = new URL(request.url);
-    const month = url.searchParams.get("month")
-      || new Date().toISOString().slice(0,7);
+    const month =
+      url.searchParams.get("month") ||
+      new Date().toISOString().slice(0, 7);
 
     /* ===== Salary (PAID only) ===== */
     const salaryRow = await env.DB.prepare(`
@@ -46,29 +65,28 @@ export async function onRequestGet({ request, env }) {
         WHERE substr(created_at,1,7)=?
       `).bind(month).first();
 
-      invoiceTotal = invRow.total;
+      invoiceTotal = Number(invRow.total || 0);
     }
 
-    const profit = invoiceTotal - salaryRow.total - poRow.total;
+    const salaryTotal = Number(salaryRow.total || 0);
+    const poTotal = Number(poRow.total || 0);
+    const profit = invoiceTotal - salaryTotal - poTotal;
 
-    return new Response(
-      JSON.stringify({
-        month,
-        invoice: invoiceTotal,
-        salary: salaryRow.total,
-        po: poRow.total,
-        profit
-      }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    return Response.json({
+      month,
+      invoice: invoiceTotal,
+      salary: salaryTotal,
+      po: poTotal,
+      profit
+    });
 
   } catch (err) {
-    return new Response(
-      JSON.stringify({
+    return Response.json(
+      {
         error: "profit calculation error",
         detail: String(err)
-      }),
-      { headers: { "Content-Type": "application/json" } }
+      },
+      { status: 500 }
     );
   }
 }

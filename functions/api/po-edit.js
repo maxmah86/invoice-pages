@@ -1,18 +1,38 @@
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
-     AUTH CHECK
+     AUTH CHECK (session_token)
      =============================== */
-  const authRes = await fetch(new URL("/api/auth-check", request.url), {
-    headers: {
-      cookie: request.headers.get("cookie") || ""
-    }
-  });
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!authRes.ok) {
+  if (!token) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  /* ===============================
+     ROLE CHECK (ADMIN ONLY)
+     =============================== */
+  if (user.role !== "admin") {
+    return new Response(
+      JSON.stringify({ error: "Forbidden" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -25,7 +45,7 @@ export async function onRequestPost({ request, env }) {
   } catch {
     return new Response(
       JSON.stringify({ error: "Invalid JSON" }),
-      { status: 400 }
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -34,13 +54,12 @@ export async function onRequestPost({ request, env }) {
   if (!id || !supplier_name || !Array.isArray(items)) {
     return new Response(
       JSON.stringify({ error: "Missing required fields" }),
-      { status: 400 }
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
   /* ===============================
      LOAD EXISTING PO
-     (optional: block edit if not OPEN)
      =============================== */
   const po = await env.DB.prepare(`
     SELECT status
@@ -51,15 +70,14 @@ export async function onRequestPost({ request, env }) {
   if (!po) {
     return new Response(
       JSON.stringify({ error: "PO not found" }),
-      { status: 404 }
+      { status: 404, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // 可选：只允许 OPEN 状态编辑
   if (po.status !== "OPEN") {
     return new Response(
       JSON.stringify({ error: "PO not editable" }),
-      { status: 403 }
+      { status: 403, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -130,7 +148,10 @@ export async function onRequestPost({ request, env }) {
      RESPONSE
      =============================== */
   return new Response(
-    JSON.stringify({ success: true }),
-    { status: 200 }
+    JSON.stringify({
+      success: true,
+      updated_by: user.username
+    }),
+    { status: 200, headers: { "Content-Type": "application/json" } }
   );
 }

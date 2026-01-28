@@ -1,18 +1,38 @@
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
-     AUTH CHECK
+     AUTH CHECK (session_token)
      =============================== */
-  const auth = await fetch(new URL("/api/auth-check", request.url), {
-    headers: {
-      cookie: request.headers.get("cookie") || ""
-    }
-  });
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!auth.ok) {
+  if (!token) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  /* ===============================
+     ROLE CHECK (ADMIN ONLY)
+     =============================== */
+  if (user.role !== "admin") {
+    return new Response(
+      JSON.stringify({ error: "Forbidden" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -25,7 +45,7 @@ export async function onRequestPost({ request, env }) {
   } catch {
     return new Response(
       JSON.stringify({ error: "Invalid JSON" }),
-      { status: 400 }
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -39,14 +59,10 @@ export async function onRequestPost({ request, env }) {
     items
   } = body;
 
-  if (
-    !supplier_name ||
-    !Array.isArray(items) ||
-    items.length === 0
-  ) {
+  if (!supplier_name || !Array.isArray(items) || items.length === 0) {
     return new Response(
       JSON.stringify({ error: "Invalid data" }),
-      { status: 400 }
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -54,7 +70,6 @@ export async function onRequestPost({ request, env }) {
      CALCULATE SUBTOTAL & TOTAL
      =============================== */
   let subtotal = 0;
-
   for (const it of items) {
     const qty = Number(it.qty) || 0;
     const price = Number(it.price) || 0;
@@ -80,7 +95,7 @@ export async function onRequestPost({ request, env }) {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
   `).bind(
     supplier_name,
-    issued_by || "MMAC SYSTEM",
+    issued_by || user.username,
     delivery_address || "",
     delivery_date || "",
     delivery_time || "",
@@ -116,10 +131,9 @@ export async function onRequestPost({ request, env }) {
   return new Response(
     JSON.stringify({
       success: true,
-      id: poId
+      id: poId,
+      created_by: user.username
     }),
-    {
-      headers: { "Content-Type": "application/json" }
-    }
+    { headers: { "Content-Type": "application/json" } }
   );
 }

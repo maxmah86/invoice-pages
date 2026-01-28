@@ -1,15 +1,25 @@
-export async function onRequest({ request }) {
-  const cookie = request.headers.get("Cookie") || "";
+export async function onRequest({ request, env }) {
 
-  if (!cookie.includes("session=ok")) {
-    return new Response(
-      JSON.stringify({ loggedIn: false }),
-      { status: 401 }
-    );
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
+
+  if (!token) {
+    return Response.json({ loggedIn: false });
   }
 
-  return new Response(
-    JSON.stringify({ loggedIn: true }),
-    { status: 200 }
-  );
+  const user = await env.DB.prepare(`
+    SELECT username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return Response.json({ loggedIn: false });
+  }
+
+  return Response.json({
+    loggedIn: true,
+    username: user.username,
+    role: user.role
+  });
 }

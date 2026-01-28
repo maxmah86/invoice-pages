@@ -1,14 +1,34 @@
 export async function onRequestGet({ request, env }) {
   try {
-    /* ===== BASIC AUTH CHECK ===== */
+    /* ===============================
+       AUTH CHECK (session_token)
+       =============================== */
     const cookie = request.headers.get("Cookie") || "";
-    if (!cookie.includes("session=")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401
-      });
+    const token = cookie.match(/session=([^;]+)/)?.[1];
+
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    /* ===== QUERY PO LIST ===== */
+    const user = await env.DB.prepare(`
+      SELECT id, username, role
+      FROM users
+      WHERE session_token = ?
+    `).bind(token).first();
+
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    /* ===============================
+       QUERY PO LIST
+       =============================== */
     const { results } = await env.DB.prepare(`
       SELECT
         id,
@@ -24,16 +44,27 @@ export async function onRequestGet({ request, env }) {
       ORDER BY created_at DESC
     `).all();
 
-    return new Response(JSON.stringify({ results }), {
-      headers: { "Content-Type": "application/json" }
-    });
+    /* ===============================
+       RESPONSE
+       =============================== */
+    return new Response(
+      JSON.stringify({
+        items: results,
+        viewer: {
+          username: user.username,
+          role: user.role
+        }
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
 
   } catch (err) {
-    return new Response(JSON.stringify({
-      error: "PO list failed",
-      detail: String(err)
-    }), {
-      status: 500
-    });
+    return new Response(
+      JSON.stringify({
+        error: "PO list failed",
+        detail: String(err)
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 }

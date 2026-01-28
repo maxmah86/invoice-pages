@@ -1,14 +1,44 @@
 export async function onRequest({ request, env }) {
+  /* ===============================
+     AUTH CHECK (session_token)
+     =============================== */
   const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!cookie.includes("session=ok")) {
+  if (!token) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
+      { status: 401, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  const result = await env.DB.prepare(`
+  const user = await env.DB.prepare(`
+    SELECT id, username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  /* ===============================
+     ROLE CHECK (ADMIN ONLY)
+     =============================== */
+  if (user.role !== "admin") {
+    return new Response(
+      JSON.stringify({ error: "Forbidden" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  /* ===============================
+     QUERY INVOICES
+     =============================== */
+  const { results } = await env.DB.prepare(`
     SELECT
       id,
       invoice_no,
@@ -21,9 +51,13 @@ export async function onRequest({ request, env }) {
   `).all();
 
   return new Response(
-    JSON.stringify(result.results),
+    JSON.stringify(results),
     {
-      headers: { "Content-Type": "application/json" }
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store"
+      }
     }
   );
 }

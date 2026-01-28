@@ -1,41 +1,48 @@
 export async function onRequest({ request, env }) {
-  // ===== 登录检查 =====
-  const cookie = request.headers.get("Cookie") || "";
-  const loggedIn = cookie
-    .split(";")
-    .map(c => c.trim())
-    .includes("session=ok");
 
-  if (!loggedIn) {
+  /* ===============================
+     AUTH CHECK (session_token)
+     =============================== */
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
+
+  if (!token) {
     return new Response(
-      JSON.stringify({ error: "Unauthorized", loggedIn: false }),
-      {
-        status: 401,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": "no-store"
-        }
-      }
+      JSON.stringify({ loggedIn: false, error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // ===== 读取 invoice id =====
+  const user = await env.DB.prepare(`
+    SELECT id, username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ loggedIn: false, error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  /* ===============================
+     READ invoice id
+     =============================== */
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
 
   if (!id) {
     return new Response(
       JSON.stringify({ error: "Missing invoice id" }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      }
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // ===== 读取 invoice 主表 =====
-  const invoice = await env.DB.prepare(
-    `
+  /* ===============================
+     FETCH invoice
+     =============================== */
+  const invoice = await env.DB.prepare(`
     SELECT
       id,
       invoice_no,
@@ -45,22 +52,19 @@ export async function onRequest({ request, env }) {
       created_at
     FROM invoices
     WHERE id = ?
-    `
-  ).bind(id).first();
+  `).bind(id).first();
 
   if (!invoice) {
     return new Response(
       JSON.stringify({ error: "Invoice not found" }),
-      {
-        status: 404,
-        headers: { "Content-Type": "application/json" }
-      }
+      { status: 404, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // ===== 读取 invoice_items =====
-  const itemsResult = await env.DB.prepare(
-    `
+  /* ===============================
+     FETCH items
+     =============================== */
+  const items = await env.DB.prepare(`
     SELECT
       description,
       qty,
@@ -68,14 +72,20 @@ export async function onRequest({ request, env }) {
     FROM invoice_items
     WHERE invoice_id = ?
     ORDER BY id ASC
-    `
-  ).bind(id).all();
+  `).bind(id).all();
 
-  // ===== 正常返回 =====
+  /* ===============================
+     RESPONSE
+     =============================== */
   return new Response(
     JSON.stringify({
       invoice,
-      items: itemsResult.results || []
+      items: items.results || [],
+      viewer: {
+        id: user.id,
+        username: user.username,
+        role: user.role
+      }
     }),
     {
       status: 200,

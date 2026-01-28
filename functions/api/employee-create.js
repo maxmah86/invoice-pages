@@ -1,14 +1,27 @@
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
-     AUTH CHECK
+     AUTH (session_token + role)
      =============================== */
-  const auth = await fetch(new URL("/api/auth-check", request.url), {
-    headers: { cookie: request.headers.get("cookie") || "" }
-  });
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!auth.ok) {
+  if (!token) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (user.role !== "admin") {
+    return new Response("Forbidden", { status: 403 });
   }
 
   /* ===============================
@@ -42,8 +55,5 @@ export async function onRequestPost({ request, env }) {
     status || "ACTIVE"
   ).run();
 
-  return new Response(
-    JSON.stringify({ success: true }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  return Response.json({ success: true });
 }

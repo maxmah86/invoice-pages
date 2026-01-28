@@ -1,7 +1,7 @@
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
-     AUTH CHECK (ADMIN ONLY)
+     AUTH CHECK
      =============================== */
   const cookie = request.headers.get("Cookie") || "";
   const token = cookie.match(/session=([^;]+)/)?.[1];
@@ -16,7 +16,12 @@ export async function onRequestPost({ request, env }) {
     WHERE session_token = ?
   `).bind(token).first();
 
-  if (!user || user.role !== "admin") {
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  /* ===== ADMIN ONLY ===== */
+  if (user.role !== "admin") {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -30,49 +35,48 @@ export async function onRequestPost({ request, env }) {
     return new Response("Invalid JSON", { status: 400 });
   }
 
-  const { id, action } = body;
+  const { quotation_id, reason } = body;
 
-  if (!id || !["APPROVE", "REJECT"].includes(action)) {
-    return new Response("Invalid data", { status: 400 });
+  if (!quotation_id) {
+    return new Response("Missing quotation_id", { status: 400 });
   }
 
   /* ===============================
-     LOAD VO
+     LOAD QUOTATION
      =============================== */
-  const vo = await env.DB.prepare(`
+  const q = await env.DB.prepare(`
     SELECT status
-    FROM variation_orders
+    FROM quotations
     WHERE id = ?
-  `).bind(id).first();
+  `).bind(quotation_id).first();
 
-  if (!vo || vo.status !== "DRAFT") {
-    return new Response("VO not editable", { status: 400 });
+  if (!q) {
+    return new Response("Quotation not found", { status: 404 });
+  }
+
+  if (q.status !== "OPEN") {
+    return new Response(
+      JSON.stringify({ error: "Only OPEN quotation can be rejected" }),
+      { status: 400 }
+    );
   }
 
   /* ===============================
-     UPDATE STATUS
+     REJECT (SAFE UPDATE)
      =============================== */
-  const status = action === "APPROVE" ? "APPROVED" : "REJECTED";
-
   await env.DB.prepare(`
-    UPDATE variation_orders
-    SET
-      status = ?,
-      approved_at = datetime('now'),
-      approved_by = ?
+    UPDATE quotations
+    SET status = 'VOID'
     WHERE id = ?
-  `).bind(
-    status,
-    user.username,   // ✅ 自动记录是谁批的
-    id
-  ).run();
+  `).bind(quotation_id).run();
 
   /* ===============================
      RESPONSE
      =============================== */
   return Response.json({
     success: true,
-    status,
-    approved_by: user.username
+    quotation_id,
+    rejected_by: user.username,
+    note: reason || ""
   });
 }

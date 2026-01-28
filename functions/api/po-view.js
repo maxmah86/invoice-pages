@@ -1,30 +1,40 @@
 export async function onRequestGet({ request, env }) {
 
   /* ===============================
-     AUTH CHECK
+     AUTH CHECK (session_token)
      =============================== */
-  const auth = await fetch(new URL("/api/auth-check", request.url), {
-    headers: {
-      cookie: request.headers.get("cookie") || ""
-    }
-  });
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!auth.ok) {
+  if (!token) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
+      { status: 401, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { "Content-Type": "application/json" } }
     );
   }
 
   /* ===============================
-     GET ID
+     GET PO ID
      =============================== */
   const id = new URL(request.url).searchParams.get("id");
 
   if (!id) {
     return new Response(
       JSON.stringify({ error: "Missing id" }),
-      { status: 400 }
+      { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
@@ -51,13 +61,13 @@ export async function onRequestGet({ request, env }) {
   if (!po) {
     return new Response(
       JSON.stringify({ error: "PO not found" }),
-      { status: 404 }
+      { status: 404, headers: { "Content-Type": "application/json" } }
     );
   }
 
   /* ===============================
      QUERY PO ITEMS
-     (map unit_price -> price)
+     (unit_price → price)
      =============================== */
   const itemsResult = await env.DB.prepare(`
     SELECT
@@ -74,6 +84,10 @@ export async function onRequestGet({ request, env }) {
      =============================== */
   return new Response(
     JSON.stringify({
+      viewer: {
+        username: user.username,
+        role: user.role
+      },
       po: {
         po_no: po.po_no,
         po_date: po.po_date,
@@ -90,9 +104,7 @@ export async function onRequestGet({ request, env }) {
       items: itemsResult.results
     }),
     {
-      headers: {
-        "Content-Type": "application/json"
-      }
+      headers: { "Content-Type": "application/json" }
     }
   );
 }

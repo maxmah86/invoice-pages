@@ -1,18 +1,34 @@
 export async function onRequestGet({ request, env }) {
 
   /* ===============================
-     AUTH CHECK
+     AUTH CHECK (session_token)
      =============================== */
-  const authRes = await fetch(new URL("/api/auth-check", request.url), {
-    headers: {
-      cookie: request.headers.get("cookie") || ""
-    }
-  });
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!authRes.ok) {
+  if (!token) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      }
+    );
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      }
     );
   }
 
@@ -36,7 +52,16 @@ export async function onRequestGet({ request, env }) {
      RESPONSE
      =============================== */
   return new Response(
-    JSON.stringify(result.results),
-    { status: 200 }
+    JSON.stringify({
+      viewer: {
+        username: user.username,
+        role: user.role
+      },
+      items: result.results
+    }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    }
   );
 }

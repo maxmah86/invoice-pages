@@ -1,23 +1,42 @@
 export async function onRequest({ request, env }) {
-  /* ===== 登录检查 ===== */
+
+  /* ===============================
+     AUTH CHECK (ADMIN ONLY)
+     =============================== */
   const cookie = request.headers.get("Cookie") || "";
-  if (!cookie.includes("session=ok")) {
+  const token = cookie.match(/session=([^;]+)/)?.[1];
+
+  if (!token) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
-      {
-        status: 401,
-        headers: { "Content-Type": "application/json" }
-      }
+      { status: 401 }
     );
   }
 
-  /* ===== 读取参数 ===== */
+  const user = await env.DB.prepare(`
+    SELECT id, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user || user.role !== "admin") {
+    return new Response(
+      JSON.stringify({ error: "Forbidden" }),
+      { status: 403 }
+    );
+  }
+
+  /* ===============================
+     READ PARAMS
+     =============================== */
   const url = new URL(request.url);
-  const customer = url.searchParams.get("customer"); // 可为空
+  const customer = url.searchParams.get("customer"); // optional
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
 
-  /* ===== 动态 SQL ===== */
+  /* ===============================
+     BUILD SQL
+     =============================== */
   let sql = `
     SELECT
       id,
@@ -48,10 +67,14 @@ export async function onRequest({ request, env }) {
 
   sql += " ORDER BY customer ASC, created_at ASC";
 
-  /* ===== 查询 D1 ===== */
+  /* ===============================
+     QUERY DB
+     =============================== */
   const result = await env.DB.prepare(sql).bind(...binds).all();
 
-  /* ===== 统一返回 ===== */
+  /* ===============================
+     RESPONSE
+     =============================== */
   return new Response(
     JSON.stringify({
       invoices: result.results || []

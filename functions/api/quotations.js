@@ -1,14 +1,28 @@
 export async function onRequest({ request, env }) {
-  // ===== 登录检查 =====
+
   const cookie = request.headers.get("Cookie") || "";
-  if (!cookie.includes("session=ok")) {
+  const token = cookie.match(/session=([^;]+)/)?.[1];
+
+  if (!token) {
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
       { status: 401 }
     );
   }
 
-  // ===== 查询 quotations =====
+  const user = await env.DB.prepare(`
+    SELECT id, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401 }
+    );
+  }
+
   const result = await env.DB.prepare(`
     SELECT
       id,
@@ -22,6 +36,8 @@ export async function onRequest({ request, env }) {
 
   return new Response(
     JSON.stringify(result.results),
-    { headers: { "Content-Type": "application/json" } }
+    {
+      headers: { "Content-Type": "application/json" }
+    }
   );
 }

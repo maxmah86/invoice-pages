@@ -2,9 +2,16 @@ export async function onRequestPost({ request, env }) {
 
   /* ===== AUTH ===== */
   const cookie = request.headers.get("Cookie") || "";
-  if (!cookie.includes("session=ok")) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const token = cookie.match(/session=([^;]+)/)?.[1];
+  if (!token) return new Response("Unauthorized", { status: 401 });
+
+  const user = await env.DB.prepare(`
+    SELECT username, role
+    FROM users
+    WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) return new Response("Unauthorized", { status: 401 });
 
   /* ===== BODY ===== */
   const { customer, items, terms_id } = await request.json();
@@ -13,13 +20,13 @@ export async function onRequestPost({ request, env }) {
     return new Response("Invalid data", { status: 400 });
   }
 
-  /* ===== CALCULATE TOTAL ===== */
+  /* ===== TOTAL ===== */
   const total = items.reduce(
-    (sum, i) => sum + Number(i.qty) * Number(i.price),
+    (s, i) => s + Number(i.qty) * Number(i.price),
     0
   );
 
-  /* ===== GENERATE QUOTATION NO ===== */
+  /* ===== QUOTATION NO ===== */
   const d = new Date();
   const date = d.toISOString().slice(0, 10).replace(/-/g, "");
 
@@ -31,9 +38,8 @@ export async function onRequestPost({ request, env }) {
 
   const quotation_no = `QT-${date}-${String(cnt.c + 1).padStart(4, "0")}`;
 
-  /* ===== LOAD TERMS SNAPSHOT ===== */
+  /* ===== TERMS ===== */
   let terms_snapshot = "";
-
   if (terms_id) {
     const term = await env.DB.prepare(`
       SELECT content
@@ -41,9 +47,7 @@ export async function onRequestPost({ request, env }) {
       WHERE id = ? AND is_active = 1
     `).bind(terms_id).first();
 
-    if (term) {
-      terms_snapshot = term.content;
-    }
+    if (term) terms_snapshot = term.content;
   }
 
   /* ===== INSERT QUOTATION ===== */
@@ -53,8 +57,10 @@ export async function onRequestPost({ request, env }) {
       customer,
       amount,
       terms_id,
-      terms_snapshot
-    ) VALUES (?, ?, ?, ?, ?)
+      terms_snapshot,
+      status,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, 'OPEN', datetime('now'))
   `).bind(
     quotation_no,
     customer,
@@ -82,7 +88,6 @@ export async function onRequestPost({ request, env }) {
     ).run();
   }
 
-  /* ===== RESPONSE ===== */
   return Response.json({
     success: true,
     quotation_id,
