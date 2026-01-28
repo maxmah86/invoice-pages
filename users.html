@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Users Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 12px;
+}
+
+h2 {
+  margin: 0 0 12px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.user {
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+}
+
+.user:last-child {
+  border-bottom: none;
+}
+
+.row {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.role {
+  font-weight: bold;
+}
+
+.admin { color: #c92a2a; }
+.user-role { color: #1c7ed6; }
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+select, input {
+  padding: 6px;
+  font-size: 14px;
+}
+
+button {
+  padding: 8px 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-role {
+  background: #1c7ed6;
+  color: #fff;
+}
+
+.btn-reset {
+  background: #e8590c;
+  color: #fff;
+}
+
+.back {
+  background: #7f8c8d;
+  color: #fff;
+  width: 100%;
+}
+</style>
+</head>
+
+<body>
+
+<h2>User Management</h2>
+
+<div class="card" id="usersBox">
+  Loading users...
+</div>
+
+<button class="back" onclick="history.back()">Back</button>
+
+<script>
+/* ===============================
+   AUTH CHECK (ADMIN ONLY)
+   =============================== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn || d.role !== "admin") {
+      alert("Admin only");
+      location.replace("/index.html");
+    } else {
+      loadUsers();
+    }
+  })
+  .catch(() => location.replace("/login.html"));
+
+/* ===============================
+   LOAD USERS
+   =============================== */
+async function loadUsers() {
+  const res = await fetch("/api/users-list", {
+    credentials: "include"
+  });
+
+  if (!res.ok) {
+    document.getElementById("usersBox").textContent = "Failed to load users";
+    return;
+  }
+
+  const users = await res.json();
+  const box = document.getElementById("usersBox");
+  box.innerHTML = "";
+
+  users.forEach(u => {
+    const div = document.createElement("div");
+    div.className = "user";
+
+    div.innerHTML = `
+      <div class="row"><strong>${u.username}</strong></div>
+      <div class="row">
+        Role:
+        <span class="role ${u.role === "admin" ? "admin" : "user-role"}">
+          ${u.role}
+        </span>
+      </div>
+      <div class="row">Created: ${u.created_at}</div>
+
+      <div class="actions">
+        <select id="role-${u.id}">
+          <option value="user" ${u.role === "user" ? "selected" : ""}>user</option>
+          <option value="admin" ${u.role === "admin" ? "selected" : ""}>admin</option>
+        </select>
+        <button class="btn-role"
+          onclick="updateRole(${u.id})">
+          Update Role
+        </button>
+      </div>
+
+      <div class="actions">
+        <input
+          type="password"
+          id="pw-${u.id}"
+          placeholder="New password">
+        <button class="btn-reset"
+          onclick="resetPassword(${u.id})">
+          Reset Password
+        </button>
+      </div>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+/* ===============================
+   UPDATE ROLE
+   =============================== */
+async function updateRole(userId) {
+  const role = document.getElementById(`role-${userId}`).value;
+
+  if (!confirm(`Change role to "${role}"?`)) return;
+
+  const res = await fetch("/api/user-role-update", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, role })
+  });
+
+  if (!res.ok) {
+    alert("Failed to update role");
+    return;
+  }
+
+  alert("Role updated");
+  loadUsers();
+}
+
+/* ===============================
+   RESET PASSWORD
+   =============================== */
+async function resetPassword(userId) {
+  const pw = document.getElementById(`pw-${userId}`).value;
+
+  if (!pw || pw.length < 6) {
+    alert("Password must be at least 6 characters");
+    return;
+  }
+
+  if (!confirm("Reset this user's password?")) return;
+
+  const res = await fetch("/api/user-reset-password", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, password: pw })
+  });
+
+  if (!res.ok) {
+    alert("Failed to reset password");
+    return;
+  }
+
+  alert("Password reset successful");
+  document.getElementById(`pw-${userId}`).value = "";
+}
+</script>
+
+</body>
+</html>
