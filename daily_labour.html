@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Daily Labour</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 14px;
+}
+
+h1 {
+  margin: 0 0 10px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+label {
+  font-size: 13px;
+  font-weight: bold;
+  display: block;
+  margin-top: 10px;
+}
+
+input, textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  margin-top: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-add {
+  background: #2c3e50;
+  color: #fff;
+  margin-top: 12px;
+}
+
+.labour-item {
+  border-bottom: 1px solid #eee;
+  padding: 12px 0;
+}
+
+.labour-item:last-child {
+  border-bottom: none;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.amount {
+  font-weight: bold;
+}
+
+.status {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+}
+
+.PAID {
+  background: #27ae60;
+  color: #fff;
+}
+
+.UNPAID {
+  background: #f39c12;
+  color: #000;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.actions button {
+  flex: 1;
+  font-size: 13px;
+  padding: 8px;
+}
+
+.btn-paid {
+  background: #27ae60;
+  color: #fff;
+}
+
+.btn-invoice {
+  background: #2980b9;
+  color: #fff;
+}
+
+.small {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Daily Labour</h1>
+
+<!-- ===== ADD LABOUR ===== -->
+<div class="card">
+  <label>Worker Name</label>
+  <input id="worker_name" placeholder="e.g. Ahmad">
+
+  <label>Work Date</label>
+  <input type="date" id="work_date">
+
+  <label>Description</label>
+  <textarea id="description" placeholder="Work description"></textarea>
+
+  <label>Amount (RM)</label>
+  <input type="number" id="amount" placeholder="0.00">
+
+  <button class="btn-add" onclick="addLabour()">Add Labour</button>
+</div>
+
+<!-- ===== LIST ===== -->
+<div class="card" id="listBox">
+  Loading...
+</div>
+
+<script>
+/* ===== DEFAULT DATE ===== */
+document.getElementById("work_date").value =
+  new Date().toISOString().slice(0,10);
+
+/* ===== LOAD LIST ===== */
+async function loadLabour() {
+  const box = document.getElementById("listBox");
+  box.textContent = "Loading...";
+
+  const res = await fetch("/api/daily-labour-list", {
+    credentials: "include"
+  });
+
+  if (!res.ok) {
+    box.textContent = "Failed to load";
+    return;
+  }
+
+  const data = await res.json();
+  box.innerHTML = "";
+
+  if (!data.length) {
+    box.textContent = "No records";
+    return;
+  }
+
+  data.forEach(l => {
+    const div = document.createElement("div");
+    div.className = "labour-item";
+
+    div.innerHTML = `
+      <div class="row">
+        <div class="name">${l.worker_name}</div>
+        <div class="amount">RM ${Number(l.amount).toFixed(2)}</div>
+      </div>
+
+      <div class="small">
+        ${l.work_date} · ${l.description || "-"}
+      </div>
+
+      <div class="row" style="margin-top:6px;">
+        <div class="status ${l.payment_status}">
+          ${l.payment_status}
+        </div>
+      </div>
+
+      <div class="actions">
+        ${l.payment_status === "UNPAID"
+          ? `<button class="btn-paid"
+               onclick="markPaid(${l.id})">Mark Paid</button>`
+          : ""}
+        <button class="btn-invoice"
+          onclick="createInvoice(${l.id})">
+          Create Invoice
+        </button>
+      </div>
+    `;
+
+    box.appendChild(div);
+  });
+}
+
+/* ===== ADD ===== */
+async function addLabour() {
+  const worker_name = worker_nameEl.value.trim();
+  const work_date = work_dateEl.value;
+  const description = descriptionEl.value.trim();
+  const amount = Number(amountEl.value);
+
+  if (!worker_name || !work_date || !amount) {
+    alert("Missing required fields");
+    return;
+  }
+
+  const res = await fetch("/api/daily-labour-create", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      worker_name,
+      work_date,
+      description,
+      amount
+    })
+  });
+
+  if (!res.ok) {
+    alert("Failed to add");
+    return;
+  }
+
+  worker_nameEl.value = "";
+  descriptionEl.value = "";
+  amountEl.value = "";
+
+  loadLabour();
+}
+
+/* ===== MARK PAID ===== */
+async function markPaid(id) {
+  if (!confirm("Mark this labour as PAID?")) return;
+
+  const res = await fetch("/api/daily-labour-paid", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  });
+
+  if (!res.ok) {
+    alert("Failed");
+    return;
+  }
+
+  loadLabour();
+}
+
+/* ===== INVOICE (Phase 2) ===== */
+function createInvoice(id) {
+  location.href = `/daily-labour-invoice.html?id=${id}`;
+}
+
+/* ===== INIT ===== */
+const worker_nameEl = document.getElementById("worker_name");
+const work_dateEl = document.getElementById("work_date");
+const descriptionEl = document.getElementById("description");
+const amountEl = document.getElementById("amount");
+
+loadLabour();
+</script>
+
+</body>
+</html>
