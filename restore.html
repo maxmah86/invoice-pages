@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>System Restore</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial;
+  background: #fff3f3;
+  padding: 16px;
+}
+
+textarea {
+  width: 100%;
+  height: 240px;
+  font-family: monospace;
+  padding: 10px;
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  margin-top: 12px;
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+}
+
+.warning {
+  color: #c0392b;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>⚠ SYSTEM RESTORE</h2>
+
+<div class="warning">
+  This action is irreversible.<br>
+  Admin only.
+</div>
+
+<textarea id="sql" placeholder="Paste backup SQL here"></textarea>
+
+<button onclick="restore()">RESTORE DATABASE</button>
+
+<script>
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn || d.role !== "admin") {
+      alert("Admin only");
+      location.replace("/index.html");
+    }
+  });
+
+async function restore() {
+  if (!confirm("THIS WILL MODIFY DATABASE. CONTINUE?")) return;
+
+  const sql = document.getElementById("sql").value;
+
+  const res = await fetch("/api/restore", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sql,
+      confirm: true
+    })
+  });
+
+  const text = await res.text();
+  alert(text);
+}
+</script>
+
+</body>
+</html>
