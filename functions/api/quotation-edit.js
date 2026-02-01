@@ -1,33 +1,21 @@
 export async function onRequestPost({ request, env }) {
 
-  /* ===============================
-     AUTH CHECK (session_token)
-     =============================== */
+  /* ===== AUTH ===== */
   const cookie = request.headers.get("Cookie") || "";
   const token = cookie.match(/session=([^;]+)/)?.[1];
-
-  if (!token) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  if (!token) return new Response("Unauthorized", { status: 401 });
 
   const user = await env.DB.prepare(`
-    SELECT id, username, role
+    SELECT username, role
     FROM users
     WHERE session_token = ?
   `).bind(token).first();
 
-  if (!user) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  /* ===== ADMIN ONLY ===== */
-  if (user.role !== "admin") {
+  if (!user || user.role !== "admin") {
     return new Response("Forbidden", { status: 403 });
   }
 
-  /* ===============================
-     PARSE BODY
-     =============================== */
+  /* ===== BODY ===== */
   let body;
   try {
     body = await request.json();
@@ -41,9 +29,7 @@ export async function onRequestPost({ request, env }) {
     return new Response("Invalid data", { status: 400 });
   }
 
-  /* ===============================
-     CHECK QUOTATION STATUS
-     =============================== */
+  /* ===== CHECK STATUS ===== */
   const quotation = await env.DB.prepare(`
     SELECT status
     FROM quotations
@@ -54,20 +40,14 @@ export async function onRequestPost({ request, env }) {
     return new Response("Quotation not editable", { status: 400 });
   }
 
-  /* ===============================
-     CALCULATE TOTAL
-     =============================== */
+  /* ===== CALCULATE TOTAL ===== */
   const total = items.reduce(
-    (sum, it) =>
-      sum + (Number(it.qty) || 0) * (Number(it.price) || 0),
+    (sum, it) => sum + (Number(it.qty) || 0) * (Number(it.price) || 0),
     0
   );
 
-  /* ===============================
-     LOAD TERMS SNAPSHOT
-     =============================== */
+  /* ===== TERMS SNAPSHOT ===== */
   let terms_snapshot = "";
-
   if (terms_id) {
     const term = await env.DB.prepare(`
       SELECT content
@@ -78,35 +58,27 @@ export async function onRequestPost({ request, env }) {
     if (!term) {
       return new Response("Invalid terms", { status: 400 });
     }
-
     terms_snapshot = term.content;
   }
 
-  /* ===============================
-     UPDATE QUOTATION
-     =============================== */
+  /* ===== UPDATE QUOTATION (✅ ONLY EXISTING COLUMNS) ===== */
   await env.DB.prepare(`
     UPDATE quotations
     SET
       customer = ?,
       amount = ?,
       terms_id = ?,
-      terms_snapshot = ?,
-      updated_at = datetime('now'),
-      updated_by = ?
+      terms_snapshot = ?
     WHERE id = ?
   `).bind(
     customer,
     total,
     terms_id || null,
     terms_snapshot,
-    user.username,
     id
   ).run();
 
-  /* ===============================
-     REPLACE ITEMS
-     =============================== */
+  /* ===== REPLACE ITEMS ===== */
   await env.DB.prepare(`
     DELETE FROM quotation_items
     WHERE quotation_id = ?
@@ -130,11 +102,5 @@ export async function onRequestPost({ request, env }) {
     ).run();
   }
 
-  /* ===============================
-     RESPONSE
-     =============================== */
-  return Response.json({
-    success: true,
-    updated_by: user.username
-  });
+  return Response.json({ success: true });
 }
