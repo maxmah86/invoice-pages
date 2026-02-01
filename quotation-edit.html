@@ -86,6 +86,24 @@ button {
   font-weight: bold;
   margin-top: 10px;
 }
+
+/* ===== DEBUG ===== */
+.debug {
+  margin-top: 20px;
+  background: #111;
+  color: #0f0;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.debug h3 {
+  margin: 6px 0;
+  color: #f39c12;
+}
+.debug pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
 </style>
 </head>
 
@@ -120,6 +138,18 @@ button {
 <button class="btn-save" onclick="save()">Save Changes</button>
 <button class="btn-cancel" onclick="cancel()">Cancel</button>
 
+<!-- ===== DEBUG PANEL ===== -->
+<div class="debug">
+  <h3>DEBUG – State</h3>
+  <pre id="debug_state">-</pre>
+
+  <h3>DEBUG – Payload</h3>
+  <pre id="debug_payload">-</pre>
+
+  <h3>DEBUG – API Response</h3>
+  <pre id="debug_response">-</pre>
+</div>
+
 <script>
 function q(name) {
   return new URLSearchParams(location.search).get(name);
@@ -128,6 +158,10 @@ function q(name) {
 const id = q("id");
 let quotationStatus = "";
 let currentTermsId = null;
+
+const debugState = document.getElementById("debug_state");
+const debugPayload = document.getElementById("debug_payload");
+const debugResponse = document.getElementById("debug_response");
 
 /* ===== LOAD TERMS LIST ===== */
 async function loadTerms() {
@@ -190,22 +224,26 @@ async function save() {
     });
   });
 
+  const payload = {
+    id,
+    customer: document.getElementById("customer").value,
+    terms_id: document.getElementById("terms_id").value,
+    items
+  };
+
+  debugPayload.textContent = JSON.stringify(payload, null, 2);
+
   const res = await fetch("/api/quotation-edit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({
-      id,
-      customer: document.getElementById("customer").value,
-      terms_id: document.getElementById("terms_id").value,
-      items
-    })
+    body: JSON.stringify(payload)
   });
 
-  if (!res.ok) {
-    alert("Failed to save quotation");
-    return;
-  }
+  const text = await res.text();
+  debugResponse.textContent = `HTTP ${res.status}\n\n${text}`;
+
+  if (!res.ok) return;
 
   location.href = `/quotation-view.html?id=${id}`;
 }
@@ -223,6 +261,12 @@ fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
   const q = data.quotation;
   quotationStatus = q.status;
   currentTermsId = q.terms_id;
+
+  debugState.textContent = JSON.stringify({
+    quotation_id: id,
+    status: quotationStatus,
+    terms_id: currentTermsId
+  }, null, 2);
 
   document.getElementById("customer").value = q.customer;
 
