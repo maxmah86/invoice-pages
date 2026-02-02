@@ -1,15 +1,15 @@
 // js/company-settings.js
 const COMPANY_CONFIG = {
-    name: "Demo Sdn Bhd",
-    regNo: "DemoK",
-    address: "Demo Address ",
-    phone: "011-Demo",
-    email: "Demo@gmail.com",
+    name: "MMAC Construction",
+    regNo: 002972725-A",
+    address: "52, Jalan Mahogani SD 1/3, Sri Damansara, 52200 Kuala Lumpur.",
+    phone: "0164442128",
+    email: "support@mmaclimousine4u.com",
     logoUrl: "/icon-512.png",
 
     // --- 新增银行信息 ---
-    bankName: "demoBANK",
-    bankAcc: "Demo123",
+    bankName: "Maybank",
+    bankAcc: "5142 0863 6636",
 
     // --- 新增公司盖章（CHOP） ---
     chopUrl: "/chop.png",          // 公司盖章图片
