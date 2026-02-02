@@ -1,7 +1,7 @@
 // js/company-settings.js
 const COMPANY_CONFIG = {
     name: "MMAC Construction",
-    regNo: 002972725-A",
+    regNo: "002972725-A",
     address: "52, Jalan Mahogani SD 1/3, Sri Damansara, 52200 Kuala Lumpur.",
     phone: "0164442128",
     email: "support@mmaclimousine4u.com",
