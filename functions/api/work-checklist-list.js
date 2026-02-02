@@ -1,6 +1,6 @@
 export async function onRequestGet({ request, env }) {
 
-  /* ===== Auth (session_token) ===== */
+  /* ===== 身份验证 ===== */
   const cookie = request.headers.get("Cookie") || "";
   const token = cookie.match(/session=([^;]+)/)?.[1];
 
@@ -18,14 +18,15 @@ export async function onRequestGet({ request, env }) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  /* ===== Load checklist summary ===== */
+  /* ===== 加载清单摘要 (核心修正点) ===== */
   const rows = await env.DB.prepare(`
     SELECT
       wc.id,
       wc.quotation_id,
       wc.created_at,
       q.quotation_no,
-      COUNT(wci.id) AS total_items,
+      -- 核心修复：统计总数时，排除掉作为标题使用的 SECTION 行
+      COUNT(CASE WHEN wci.status != 'SECTION' THEN wci.id END) AS total_items,
       SUM(CASE WHEN wci.status = 'DONE' THEN 1 ELSE 0 END) AS done_items
     FROM work_checklists wc
     LEFT JOIN work_checklist_items wci
@@ -40,6 +41,7 @@ export async function onRequestGet({ request, env }) {
     items: rows.results.map(r => {
       const total = r.total_items || 0;
       const done = r.done_items || 0;
+      // 计算百分比
       const percent = total === 0 ? 0 : Math.round((done / total) * 100);
 
       return {

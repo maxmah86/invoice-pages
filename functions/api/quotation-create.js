@@ -1,96 +1,84 @@
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  const db = env.DB;
 
-  /* ===== AUTH ===== */
-  const cookie = request.headers.get("Cookie") || "";
-  const token = cookie.match(/session=([^;]+)/)?.[1];
-  if (!token) return new Response("Unauthorized", { status: 401 });
-
-  const user = await env.DB.prepare(`
-    SELECT username, role
-    FROM users
-    WHERE session_token = ?
-  `).bind(token).first();
-
-  if (!user) return new Response("Unauthorized", { status: 401 });
-
-  /* ===== BODY ===== */
-  const { customer, items, terms_id } = await request.json();
-
-  if (!customer || !Array.isArray(items) || items.length === 0) {
-    return new Response("Invalid data", { status: 400 });
-  }
-
-  /* ===== TOTAL ===== */
-  const total = items.reduce(
-    (s, i) => s + Number(i.qty) * Number(i.price),
-    0
-  );
-
-  /* ===== QUOTATION NO ===== */
-  const d = new Date();
-  const date = d.toISOString().slice(0, 10).replace(/-/g, "");
-
-  const cnt = await env.DB.prepare(`
-    SELECT COUNT(*) AS c
-    FROM quotations
-    WHERE date(created_at) = date('now')
-  `).first();
-
-  const quotation_no = `QT-${date}-${String(cnt.c + 1).padStart(4, "0")}`;
-
-  /* ===== TERMS ===== */
-  let terms_snapshot = "";
-  if (terms_id) {
-    const term = await env.DB.prepare(`
-      SELECT content
-      FROM quotation_terms
-      WHERE id = ? AND is_active = 1
-    `).bind(terms_id).first();
-
-    if (term) terms_snapshot = term.content;
-  }
-
-  /* ===== INSERT QUOTATION ===== */
-  const q = await env.DB.prepare(`
-    INSERT INTO quotations (
-      quotation_no,
-      customer,
-      amount,
-      terms_id,
-      terms_snapshot,
-      status,
-      created_at
-    ) VALUES (?, ?, ?, ?, ?, 'OPEN', datetime('now'))
-  `).bind(
-    quotation_no,
-    customer,
-    total,
-    terms_id || null,
-    terms_snapshot
-  ).run();
-
-  const quotation_id = q.meta.last_row_id;
-
-  /* ===== INSERT ITEMS ===== */
-  for (const it of items) {
-    await env.DB.prepare(`
-      INSERT INTO quotation_items (
-        quotation_id,
-        description,
-        qty,
-        price
-      ) VALUES (?, ?, ?, ?)
-    `).bind(
-      quotation_id,
-      it.description,
-      Number(it.qty),
-      Number(it.price)
-    ).run();
-  }
-
-  return Response.json({
-    success: true,
-    quotation_id,
-    quotation_no
+  // ===== 1. Admin Auth =====
+  const authRes = await fetch(new URL('/api/auth-check', request.url), {
+    headers: { Cookie: request.headers.get('Cookie') || '' }
   });
+  const auth = await authRes.json();
+  if (!auth.loggedIn || auth.role !== 'admin') return jsonError('Permission denied', 403);
+
+  try {
+    const body = await request.json();
+    const {
+      customer,
+      project_title,
+      project_address,
+      terms_id,
+      discount = 0,
+      sections = [] // 确保前端传的是 sections 数组
+    } = body;
+
+    if (!customer) return jsonError('Customer required', 400);
+
+    // 生成单号
+    const quotationNo = 'QT' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(1000 + Math.random() * 9000);
+
+    // 获取条款快照
+    let termsSnapshot = null;
+    if (terms_id) {
+      const term = await db.prepare(`SELECT content FROM quotation_terms WHERE id = ? AND is_active = 1`).bind(terms_id).first();
+      if (term) termsSnapshot = term.content;
+    }
+
+    /* ===============================
+     * 核心：执行事务级插入 (D1 Batch)
+     * =============================== */
+    // 1. 先插主表
+    const qRes = await db.prepare(`
+      INSERT INTO quotations (quotation_no, customer, project_title, project_address, terms_id, terms_snapshot, discount, subtotal, grand_total, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
+    `).bind(quotationNo, customer, project_title, project_address, terms_id, termsSnapshot, discount).run();
+
+    const quotationId = qRes.meta.last_row_id;
+    let subtotal = 0;
+
+    // 2. 循环插入 Section 和 Items
+    for (let s = 0; s < sections.length; s++) {
+      const sec = sections[s];
+      const secRes = await db.prepare(`
+        INSERT INTO quotation_sections (quotation_id, section_title, sort_order, created_at)
+        VALUES (?, ?, ?, datetime('now'))
+      `).bind(quotationId, sec.section_title || '', s).run();
+      
+      const sectionId = secRes.meta.last_row_id;
+
+      for (let i = 0; i < (sec.items || []).length; i++) {
+        const it = sec.items[i];
+        const qty = Number(it.qty) || 0;
+        const price = Number(it.price || it.unit_price) || 0;
+        const lineTotal = qty * price;
+        subtotal += lineTotal;
+
+        await db.prepare(`
+          INSERT INTO quotation_items (quotation_id, section_id, item_no, description, UOM, qty, unit_price, line_total, sort_order, is_priced)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        `).bind(quotationId, sectionId, String(i + 1), it.description, it.UOM, qty, price, lineTotal, i).run();
+      }
+    }
+
+    // 3. 更新总价
+    const grandTotal = Math.max(0, subtotal - discount);
+    await db.prepare(`UPDATE quotations SET subtotal = ?, grand_total = ? WHERE id = ?`)
+      .bind(subtotal, grandTotal, quotationId).run();
+
+    return jsonOK({ id: quotationId, quotation_no: quotationNo });
+
+  } catch (err) {
+    return jsonError(err.message, 500);
+  }
 }
+
+function jsonOK(data) { return new Response(JSON.stringify({ success:true, data }), { headers:{'Content-Type':'application/json'} }); }
+function jsonError(msg, status=400) { return new Response(JSON.stringify({ success:false, error:msg }), { status, headers:{'Content-Type':'application/json'} }); }

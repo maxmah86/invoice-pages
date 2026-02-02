@@ -1,106 +1,197 @@
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  const db = env.DB;
 
-  /* ===== AUTH ===== */
-  const cookie = request.headers.get("Cookie") || "";
-  const token = cookie.match(/session=([^;]+)/)?.[1];
-  if (!token) return new Response("Unauthorized", { status: 401 });
+  /* ===============================
+   * Admin auth
+   * =============================== */
+  const authRes = await fetch(new URL("/api/auth-check", request.url), {
+    headers: { Cookie: request.headers.get("Cookie") || "" }
+  });
+  const auth = await authRes.json();
 
-  const user = await env.DB.prepare(`
-    SELECT username, role
-    FROM users
-    WHERE session_token = ?
-  `).bind(token).first();
-
-  if (!user || user.role !== "admin") {
-    return new Response("Forbidden", { status: 403 });
+  if (!auth.loggedIn || auth.role !== "admin") {
+    return jsonError("Permission denied", 403);
   }
 
-  /* ===== BODY ===== */
-  let body;
   try {
-    body = await request.json();
-  } catch {
-    return new Response("Invalid JSON", { status: 400 });
-  }
-
-  const { id, customer, items, terms_id } = body;
-
-  if (!id || !customer || !Array.isArray(items) || items.length === 0) {
-    return new Response("Invalid data", { status: 400 });
-  }
-
-  /* ===== CHECK STATUS ===== */
-  const quotation = await env.DB.prepare(`
-    SELECT status
-    FROM quotations
-    WHERE id = ?
-  `).bind(id).first();
-
-  if (!quotation || quotation.status !== "OPEN") {
-    return new Response("Quotation not editable", { status: 400 });
-  }
-
-  /* ===== CALCULATE TOTAL ===== */
-  const total = items.reduce(
-    (sum, it) => sum + (Number(it.qty) || 0) * (Number(it.price) || 0),
-    0
-  );
-
-  /* ===== TERMS SNAPSHOT ===== */
-  let terms_snapshot = "";
-  if (terms_id) {
-    const term = await env.DB.prepare(`
-      SELECT content
-      FROM quotation_terms
-      WHERE id = ? AND is_active = 1
-    `).bind(terms_id).first();
-
-    if (!term) {
-      return new Response("Invalid terms", { status: 400 });
-    }
-    terms_snapshot = term.content;
-  }
-
-  /* ===== UPDATE QUOTATION (✅ ONLY EXISTING COLUMNS) ===== */
-  await env.DB.prepare(`
-    UPDATE quotations
-    SET
-      customer = ?,
-      amount = ?,
-      terms_id = ?,
-      terms_snapshot = ?
-    WHERE id = ?
-  `).bind(
-    customer,
-    total,
-    terms_id || null,
-    terms_snapshot,
-    id
-  ).run();
-
-  /* ===== REPLACE ITEMS ===== */
-  await env.DB.prepare(`
-    DELETE FROM quotation_items
-    WHERE quotation_id = ?
-  `).bind(id).run();
-
-  const stmt = env.DB.prepare(`
-    INSERT INTO quotation_items (
-      quotation_id,
-      description,
-      qty,
-      price
-    ) VALUES (?, ?, ?, ?)
-  `);
-
-  for (const it of items) {
-    await stmt.bind(
+    const body = await request.json();
+    const {
       id,
-      it.description || "",
-      Number(it.qty) || 0,
-      Number(it.price) || 0
-    ).run();
-  }
+      customer,
+      project_title,
+      project_address,
+      terms_id,
+      discount = 0,
+      sections = []
+    } = body;
 
-  return Response.json({ success: true });
+    if (!id) return jsonError("Missing quotation id", 400);
+    if (!customer) return jsonError("Customer required", 400);
+
+    /* ===============================
+     * Check quotation exists
+     * =============================== */
+    const existing = await db.prepare(`
+      SELECT id FROM quotations WHERE id = ?
+    `).bind(id).first();
+
+    if (!existing) {
+      return jsonError("Quotation not found", 404);
+    }
+
+    /* ===============================
+     * Resolve terms snapshot (KEY FIX)
+     * =============================== */
+    let termsSnapshot = null;
+
+    if (terms_id) {
+      const term = await db.prepare(`
+        SELECT content FROM quotation_terms
+        WHERE id = ? AND is_active = 1
+      `).bind(terms_id).first();
+
+      if (!term) {
+        return jsonError("Invalid terms", 400);
+      }
+
+      termsSnapshot = term.content;
+    }
+
+    /* ===============================
+     * Update quotation master
+     * =============================== */
+    await db.prepare(`
+      UPDATE quotations
+      SET
+        customer = ?,
+        project_title = ?,
+        project_address = ?,
+        terms_id = ?,
+        terms_snapshot = ?,
+        discount = ?,
+        updated_at = datetime('now')
+      WHERE id = ?
+    `).bind(
+      customer,
+      project_title || null,
+      project_address || null,
+      terms_id || null,
+      termsSnapshot,
+      discount,
+      id
+    ).run();
+
+    /* ===============================
+     * Clear old sections & items
+     * =============================== */
+    await db.prepare(`
+      DELETE FROM quotation_items WHERE quotation_id = ?
+    `).bind(id).run();
+
+    await db.prepare(`
+      DELETE FROM quotation_sections WHERE quotation_id = ?
+    `).bind(id).run();
+
+    /* ===============================
+     * Recreate sections & items
+     * =============================== */
+    let subtotal = 0;
+
+    for (let s = 0; s < sections.length; s++) {
+      const sec = sections[s];
+
+      const secRes = await db.prepare(`
+        INSERT INTO quotation_sections (
+          quotation_id,
+          section_title,
+          sort_order,
+          created_at
+        )
+        VALUES (?, ?, ?, datetime('now'))
+      `).bind(
+        id,
+        sec.section_title || "",
+        s
+      ).run();
+
+      const sectionId = secRes.meta.last_row_id;
+
+      for (let i = 0; i < (sec.items || []).length; i++) {
+        const it = sec.items[i];
+
+        const qty = Number(it.qty) || 0;
+        const unitPrice =
+          Number(it.unit_price ?? it.price) || 0;
+
+        const lineTotal = qty * unitPrice;
+        subtotal += lineTotal;
+
+        await db.prepare(`
+          INSERT INTO quotation_items (
+            quotation_id,
+            item_no,
+            description,
+            UOM,
+            qty,
+            unit_price,
+            line_total,
+            section_id,
+            sort_order,
+            is_priced
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        `).bind(
+          id,
+          String(i + 1),
+          it.description || "",
+          it.UOM || "",
+          qty,
+          unitPrice,
+          lineTotal,
+          sectionId,
+          i
+        ).run();
+      }
+    }
+
+    /* ===============================
+     * Update totals
+     * =============================== */
+    const grandTotal = Math.max(0, subtotal - discount);
+
+    await db.prepare(`
+      UPDATE quotations
+      SET
+        subtotal = ?,
+        grand_total = ?
+      WHERE id = ?
+    `).bind(
+      subtotal,
+      grandTotal,
+      id
+    ).run();
+
+    return jsonOK({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    return jsonError(err.message || "Update quotation failed", 500);
+  }
+}
+
+/* ===============================
+ * Helpers
+ * =============================== */
+function jsonOK(data) {
+  return new Response(JSON.stringify({ success: true, data }), {
+    headers: { "Content-Type": "application/json" }
+  });
+}
+
+function jsonError(message, status = 400) {
+  return new Response(JSON.stringify({ success: false, error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" }
+  });
 }
