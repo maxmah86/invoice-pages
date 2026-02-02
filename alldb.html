@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DB Schema</title>
+  <style>
+    body { font-family: monospace; padding: 16px; }
+    textarea { width: 100%; height: 80vh; }
+    button { padding: 8px 14px; margin-right: 8px; }
+  </style>
+</head>
+<body>
+
+<button onclick="loadSchema()">Load Schema</button>
+<button onclick="copySQL()">Copy</button>
+
+<br><br>
+
+<textarea id="sql"></textarea>
+
+<script>
+async function loadSchema() {
+  const res = await fetch('/api/db-schema'); // 如果有 key，就加 ?key=xxx
+  const text = await res.text();
+  document.getElementById('sql').value = text;
+}
+
+function copySQL() {
+  const el = document.getElementById('sql');
+  el.select();
+  document.execCommand('copy');
+  alert('Copied');
+}
+</script>
+
+</body>
+</html>
