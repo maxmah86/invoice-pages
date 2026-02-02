@@ -1,85 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <title>Create Quotation</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 12px;
+  background:#f4f6f8;
+  margin:0;
+  padding:12px;
 }
-h2 { margin-top: 0; }
+h2 { margin-top:0; }
+
 .box {
-  background: #fff;
-  padding: 14px;
-  border-radius: 8px;
-  margin-bottom: 12px;
+  background:#fff;
+  padding:14px;
+  border-radius:8px;
+  margin-bottom:12px;
 }
+
 label {
-  display: block;
-  font-size: 14px;
-  font-weight: bold;
-  margin-top: 10px;
+  font-size:14px;
+  font-weight:bold;
+  display:block;
+  margin-top:10px;
 }
+
 input, select {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  margin-top: 6px;
-  box-sizing: border-box;
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  margin-top:6px;
+  box-sizing: border-box; 
 }
+
+.section {
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:10px;
+  margin-top:10px;
+}
+
 .item {
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 6px;
-  margin-top: 10px;
+  border-top:1px dashed #ddd;
+  padding-top:8px;
+  margin-top:8px;
 }
+
 .row {
-  display: flex;
-  gap: 8px;
+  display:flex;
+  gap:6px;
 }
-.row > div { flex: 1; }
+.row .uom-input { flex: 0.5; }
+.row .qty-input { flex: 0.5; }
+.row .price-input { flex: 1; }
+
 .subtotal {
-  text-align: right;
-  font-size: 14px;
-  margin-top: 6px;
+  text-align:right;
+  font-weight:bold;
+  margin-top:6px;
 }
-.add-btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  margin-top: 10px;
-  background: #3498db;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
+
+.btn {
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:6px;
+  font-size:15px;
+  margin-top:8px;
   cursor: pointer;
 }
+.btn-add { background:#3498db; color:#fff; }
+.btn-save { background:#27ae60; color:#fff; }
+.btn-cancel { background:#7f8c8d; color:#fff; }
+
 .total {
-  text-align: right;
-  font-size: 18px;
-  font-weight: bold;
+  font-size:18px;
+  font-weight:bold;
+  text-align:right;
   margin-top: 10px;
 }
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-.actions button {
-  flex: 1;
-  padding: 14px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.submit-btn { background: #27ae60; color: #fff; }
-.cancel-btn { background: #7f8c8d; color: #fff; }
 </style>
 </head>
 
@@ -87,133 +89,228 @@ input, select {
 
 <h2>Create Quotation</h2>
 
-<div class="box">
-  <label>Customer</label>
-  <input id="customer" placeholder="Customer name">
-</div>
-
-<div class="box">
-  <label>Terms</label>
-  <select id="terms_id">
-    <option value="">Loading terms...</option>
-  </select>
-</div>
-
-<div class="box">
-  <h3>Items</h3>
-  <div id="items"></div>
-  <button class="add-btn" onclick="addItem()">+ Add Item</button>
-  <div class="total" id="total">Total: RM 0.00</div>
-</div>
-
-<div class="actions">
-  <button class="submit-btn" onclick="submitQuotation()">Save Quotation</button>
-  <button class="cancel-btn" onclick="cancel()">Cancel</button>
-</div>
-
 <script>
-/* ===== AUTH CHECK (ADMIN ONLY) ===== */
-fetch("/api/auth-check", { credentials: "include" })
+fetch("/api/auth-check", { credentials:"include" })
   .then(r => r.ok ? r.json() : Promise.reject())
   .then(d => {
-    if (d.role !== "admin") {
-      alert("Admin only");
-      location.replace("/index.html");
-    }
+    if (d.role !== "admin") location.replace("/index.html");
   })
   .catch(() => location.replace("/login.html"));
+</script>
 
-const items = document.getElementById("items");
+<div class="box">
+  <label>Customer Name</label>
+  <input type="text" id="customer" placeholder="Enter customer name">
+
+  <label>Project Title</label>
+  <input type="text" id="project_title" placeholder="Enter project title">
+
+  <label>Project Address</label>
+  <input type="text" id="project_address" placeholder="Enter project address">
+</div>
+
+<div class="box">
+  <label>Terms & Conditions</label>
+  <select id="terms_id"></select>
+</div>
+
+<div class="box">
+  <h3>Sections</h3>
+  <div id="sections"></div>
+  <button class="btn btn-add" onclick="addSection()">+ Add New Section</button>
+</div>
+
+<div class="box">
+  <label>Discount (RM)</label>
+  <input type="number" id="discount" value="0" oninput="calc()">
+  <div class="total" id="grandTotal">Total: RM 0.00</div>
+</div>
+
+<button class="btn btn-save" onclick="save()">Save Quotation</button>
+<button class="btn btn-cancel" onclick="history.back()">Cancel</button>
+
+<datalist id="catalogs"></datalist>
+
+<script>
+const sectionsEl = document.getElementById("sections");
 
 /* ===== LOAD TERMS ===== */
-fetch("/api/quotation-terms-list", { credentials: "include" })
-  .then(res => res.json())
-  .then(list => {
-    const sel = document.getElementById("terms_id");
-    sel.innerHTML = `<option value="">-- Select Terms --</option>`;
-    list.forEach(t => {
-      const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = t.title;
-      sel.appendChild(opt);
-    });
+fetch("/api/quotation-terms-list",{credentials:"include"})
+.then(r=>r.json())
+.then(list=>{
+  const sel = document.getElementById("terms_id");
+  sel.innerHTML = `<option value="">-- Select Terms --</option>`;
+  list.forEach(t=>{
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.title;
+    sel.appendChild(opt);
   });
+})
+.catch(err => console.error("Load Terms Error:", err));
 
-function addItem(desc = "", qty = 1, price = 0) {
-  const div = document.createElement("div");
-  div.className = "item";
-  div.innerHTML = `
-    <label>Description</label>
-    <input class="desc" value="${desc}">
-    <div class="row">
-      <div>
-        <label>Qty</label>
-        <input type="number" class="qty" value="${qty}">
-      </div>
-      <div>
-        <label>Price</label>
-        <input type="number" class="price" value="${price}">
-      </div>
+/* ===== LOAD ITEM CATALOG ===== */
+fetch("/api/item-catalog-list",{credentials:"include"})
+.then(r=>r.json())
+.then(list=>{
+  const dl = document.getElementById("catalogs");
+  dl.innerHTML="";
+  list
+    .filter(i=>Number(i.is_active)===1)
+    .forEach(i=>{
+      const opt=document.createElement("option");
+      opt.value=i.description;
+      opt.dataset.price=i.default_amount;
+      dl.appendChild(opt);
+    });
+});
+
+function addSection(title="") {
+  const sec=document.createElement("div");
+  sec.className="section box";
+  sec.style.border = "1px solid #eee";
+  sec.innerHTML=`
+    <div style="display:flex; gap:10px;">
+        <input placeholder="Section Title (e.g. Living Hall)" value="${title}" style="font-weight:bold; flex:1;">
+        <button class="btn-cancel" style="width:auto; padding:0 10px; margin-top:6px; border-radius:4px;" onclick="this.parentElement.parentElement.remove(); calc();">Remove</button>
     </div>
+    <div class="items"></div>
+    <button class="btn btn-add" style="font-size:13px; padding:8px; background:#f1f1f1; color:#333;" onclick="addItem(this)">+ Add Item</button>
     <div class="subtotal">Subtotal: RM <span>0.00</span></div>
   `;
-  items.appendChild(div);
-  div.querySelectorAll("input").forEach(i =>
-    i.addEventListener("input", updateTotal)
-  );
-  updateTotal();
+  sectionsEl.appendChild(sec);
+  // 默认给每个新 Section 加一个 Item
+  addItem(sec.querySelector(".btn-add"));
 }
-addItem();
 
-function updateTotal() {
-  let total = 0;
-  document.querySelectorAll(".item").forEach(item => {
-    const qty = Number(item.querySelector(".qty").value) || 0;
-    const price = Number(item.querySelector(".price").value) || 0;
-    const sub = qty * price;
-    item.querySelector(".subtotal span").innerText = sub.toFixed(2);
-    total += sub;
+function addItem(btn) {
+  const itemsContainer = btn.previousElementSibling;
+  const div=document.createElement("div");
+  div.className="item";
+  div.innerHTML=`
+    <input list="catalogs" placeholder="Item Description" class="desc-input">
+    <div class="row">
+      <input type="text" placeholder="UOM" class="uom-input">
+      <input type="number" placeholder="Qty" value="1" class="qty-input">
+      <input type="number" placeholder="Price" class="price-input">
+    </div>
+    <div style="text-align:right;">
+        <small style="color:red; cursor:pointer;" onclick="this.closest('.item').remove(); calc();">Remove Item</small>
+    </div>
+  `;
+  itemsContainer.appendChild(div);
+
+  const desc = div.querySelector(".desc-input");
+  const priceInput = div.querySelector(".price-input");
+
+  desc.onchange=()=>{
+    const opt=[...document.querySelectorAll("#catalogs option")]
+      .find(o=>o.value===desc.value);
+    if(opt) priceInput.value=opt.dataset.price;
+    calc();
+  };
+
+  div.querySelectorAll("input").forEach(i=>i.oninput=calc);
+  calc();
+}
+
+function calc() {
+  let grand=0;
+  document.querySelectorAll(".section").forEach(sec=>{
+    let sub=0;
+    sec.querySelectorAll(".item").forEach(it=>{
+      const qty = Number(it.querySelector(".qty-input").value)||0;
+      const price = Number(it.querySelector(".price-input").value)||0;
+      sub += qty * price;
+    });
+    const subSpan = sec.querySelector(".subtotal span");
+    if(subSpan) subSpan.textContent = sub.toFixed(2);
+    grand += sub;
   });
-  document.getElementById("total").innerText =
-    "Total: RM " + total.toFixed(2);
+  const discount = Number(document.getElementById("discount").value)||0;
+  const grandTotal = Math.max(0, grand - discount);
+  document.getElementById("grandTotal").textContent = `Total: RM ${grandTotal.toFixed(2)}`;
 }
 
-async function submitQuotation() {
+
+async function save() {
   const customer = document.getElementById("customer").value.trim();
-  const terms_id = document.getElementById("terms_id").value;
+  const project_title = document.getElementById("project_title").value.trim();
+  const project_address = document.getElementById("project_address").value.trim();
+  const terms_id = document.getElementById("terms_id").value || null;
+  const discount = Number(document.getElementById("discount").value) || 0;
 
-  if (!customer) return alert("Customer is required");
-  if (!terms_id) return alert("Please select Terms");
-
-  const itemsData = [];
-  document.querySelectorAll(".item").forEach(item => {
-    const desc = item.querySelector(".desc").value.trim();
-    const qty = Number(item.querySelector(".qty").value);
-    const price = Number(item.querySelector(".price").value);
-    if (desc && qty > 0) itemsData.push({ description: desc, qty, price });
-  });
-
-  if (!itemsData.length) return alert("At least one item is required");
-
-  const res = await fetch("/api/quotation-create", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ customer, terms_id, items: itemsData })
-  });
-
-  if (!res.ok) {
-    alert("Failed to save quotation");
+  if (!customer) {
+    alert("Please enter Customer Name");
     return;
   }
 
-  alert("Quotation saved");
-  location.href = "/quotations.html";
-}
+  const sections = [];
 
-function cancel() {
-  history.back();
+  document.querySelectorAll(".section").forEach((sec, sIdx) => {
+    const sectionTitle = sec.querySelector("input").value.trim();
+    if (!sectionTitle) return;
+
+    const items = [];
+
+    sec.querySelectorAll(".item").forEach((it, iIdx) => {
+      const description = it.querySelector(".desc-input").value.trim();
+      if (!description) return;
+
+      items.push({
+        description,
+        UOM: it.querySelector(".uom-input").value.trim(),
+        qty: Number(it.querySelector(".qty-input").value) || 0,
+        price: Number(it.querySelector(".price-input").value) || 0
+      });
+    });
+
+    if (items.length > 0) {
+      sections.push({
+        section_title: sectionTitle,
+        items
+      });
+    }
+  });
+
+  if (sections.length === 0) {
+    alert("Please add at least one section with items");
+    return;
+  }
+
+  const payload = {
+    customer,
+    project_title,
+    project_address,
+    terms_id,
+    discount,
+    sections
+  };
+
+  try {
+    const res = await fetch("/api/quotation-create", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (!json.success) {
+      alert("Save failed: " + (json.error || "Unknown error"));
+      return;
+    }
+
+    alert("Quotation Saved!");
+    location.href = "/quotation-view.html?id=" + json.data.id;
+
+  } catch (e) {
+    alert("Network error, please try again.");
+  }
 }
+  
+// 初始化：默认添加一个 Section
+addSection();
 </script>
 
 </body>

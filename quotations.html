@@ -5,201 +5,98 @@
 <title>Quotations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<script src="/js/config.js"></script>
+<script src="/js/company-settings.js"></script>
+
 <style>
 body {
   font-family: Arial, sans-serif;
-  margin: 16px;
-  background: #f5f5f5;
+  background:#f4f6f8;
+  margin:0;
+  padding:12px;
+}
+h2 { margin:0 0 12px 0; }
+
+.box {
+  background:#fff;
+  padding:14px;
+  border-radius:8px;
 }
 
-h1 {
-  margin-top: 0;
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
 }
-
-.filter-box {
-  background: #fff;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 12px;
+th, td {
+  border:1px solid #ddd;
+  padding:8px;
 }
-
-.filter-box label {
-  font-size: 13px;
-  font-weight: bold;
-  display: block;
-  margin-top: 6px;
+th {
+  background:#f0f0f0;
 }
+.right { text-align:right; }
 
-.filter-box input,
-.filter-box select {
-  width: 100%;
-  padding: 8px;
-  font-size: 14px;
-  margin-top: 4px;
-}
-
-.list {
-  background: #fff;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.item {
-  border-bottom: 1px solid #eee;
-  padding: 12px;
-}
-
-.item:last-child {
-  border-bottom: none;
-}
-
-.item .row {
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.status {
-  font-weight: bold;
-}
-
-.OPEN { color: #1c7ed6; }
-.ACCEPTED { color: #2f9e44; }
-.VOID { color: #c92a2a; }
-
-.actions {
-  margin-top: 8px;
-}
-
-.btn {
-  padding: 6px 10px;
-  font-size: 13px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background: #2c3e50;
-  color: #fff;
-}
-
-@media print {
-  .filter-box { display: none; }
+a {
+  color:#007bff;
+  text-decoration:none;
 }
 </style>
 </head>
 
 <body>
 
-<h1>Quotations</h1>
+<div class="box">
+  <h2>Quotations</h2>
 
-<!-- ===== Filters ===== -->
-<div class="filter-box">
-  <label>Status</label>
-  <select id="filterStatus" onchange="applyFilter()">
-    <option value="">ALL</option>
-    <option value="OPEN">OPEN</option>
-    <option value="ACCEPTED">ACCEPTED</option>
-    <option value="VOID">VOID</option>
-  </select>
-
-  <label>Quotation No</label>
-  <input id="filterQuoteNo" placeholder="Search quotation no" oninput="applyFilter()">
-
-  <label>Customer</label>
-  <input id="filterCustomer" placeholder="Search customer" oninput="applyFilter()">
+  <table>
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Customer</th>
+        <th>Project</th>
+        <th>Status</th>
+        <th class="right">Amount (RM)</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
 </div>
 
-<div class="list" id="list"></div>
-
 <script>
-let quotations = [];
-let currentUserRole = "user";
-
-/* ===== LOAD USER ROLE ===== */
-fetch("/api/auth-check", { credentials: "include" })
+fetch(CONFIG.API_BASE_URL + '/quotations')
   .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
-    currentUserRole = d.role;
-  });
-
-/* ===== LOAD QUOTATIONS ===== */
-fetch("/api/quotations", { credentials: "include" })
-.then(res => {
-  if (res.status === 401) {
-    location.replace("/login.html");
-    throw new Error("Unauthorized");
-  }
-  return res.json();
-})
-.then(data => {
-  quotations = data;
-  render(quotations);
-})
-.catch(err => alert(err.message));
-
-function applyFilter() {
-  const status = document.getElementById("filterStatus").value;
-  const quoteNo = document.getElementById("filterQuoteNo").value.toLowerCase();
-  const customer = document.getElementById("filterCustomer").value.toLowerCase();
-
-  const filtered = quotations.filter(q => {
-    if (status && q.status !== status) return false;
-    if (quoteNo && !q.quotation_no.toLowerCase().includes(quoteNo)) return false;
-    if (customer && !q.customer.toLowerCase().includes(customer)) return false;
-    return true;
-  });
-
-  render(filtered);
-}
-
-function render(list) {
-  const container = document.getElementById("list");
-  container.innerHTML = "";
-
-  if (!list.length) {
-    container.innerHTML = "<div class='item'>No quotations found</div>";
-    return;
-  }
-
-  list.forEach(q => {
-    const div = document.createElement("div");
-    div.className = "item";
-
-    div.innerHTML = `
-      <div class="row"><strong>${q.quotation_no}</strong></div>
-      <div class="row">Customer: ${q.customer}</div>
-      <div class="row">Total: RM ${q.amount.toFixed(2)}</div>
-      <div class="row status ${q.status}">${q.status}</div>
-    `;
-
-    /* ===== ACTIONS ===== */
-    const actions = document.createElement("div");
-    actions.className = "actions";
-
-    if (
-      q.status === "ACCEPTED" &&
-      currentUserRole === "admin" &&
-      !q.has_checklist
-    ) {
-      const btn = document.createElement("button");
-      btn.className = "btn btn-primary";
-      btn.textContent = "Create Checklist";
-      btn.onclick = () => {
-        location.href = `/create-checklist.html?quotation_id=${q.id}`;
-      };
-      actions.appendChild(btn);
+  .then(json => {
+    if (!json.success) {
+      alert(json.error || 'Failed to load');
+      return;
     }
 
-    div.onclick = () => {
-      location.href = `/quotation-view.html?id=${q.id}`;
-    };
+    const tbody = document.getElementById('list');
+    tbody.innerHTML = '';
 
-    div.appendChild(actions);
-    container.appendChild(div);
+    json.data.list.forEach(q => {
+      const tr = document.createElement('tr');
+
+      tr.innerHTML = `
+        <td>
+          <a href="/quotation-view.html?id=${q.id}">
+            ${q.quotation_no}
+          </a>
+        </td>
+        <td>${q.customer || ''}</td>
+        <td>${q.project_title || ''}</td>
+        <td>${q.status || 'OPEN'}</td>
+        <td class="right">
+          ${CONFIG.CURRENCY} ${(q.grand_total || 0).toFixed(2)}
+        </td>
+        <td>${q.created_at?.slice(0,10) || ''}</td>
+      `;
+
+      tbody.appendChild(tr);
+    });
   });
-}
 </script>
 
 </body>

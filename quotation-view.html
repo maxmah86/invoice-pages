@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Quotation</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Config -->
+<script src="/js/config.js"></script>
+<script src="/js/company-settings.js"></script>
 
 <style>
 body {
@@ -12,85 +16,37 @@ body {
   color: #000;
 }
 
-/* ================= HEADER ================= */
+/* ===== HEADER ===== */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
 }
 
-/* ===== Company ===== */
-.company {
-  font-size: 14px;
-  line-height: 1.5;
+#company-logo {
+  width: 80px;
+  height: auto;
 }
 
 .company-header {
   display: flex;
-  align-items: flex-start;
   gap: 10px;
 }
 
 .company-logo {
-  width: 48px;
-  height: auto;
-  margin-top: 4px;
+  width: 60px;
 }
 
-.company-text h1 {
+.company h1 {
   margin: 0;
-  font-size: 26px;
-  font-weight: bold;
+  font-size: 22px;
 }
 
-.ssm-code {
-  font-size: 14px;
-  margin-top: 2px;
-}
-
-/* ===== Quote Box ===== */
-.quote-box {
-  text-align: right;
-}
-
-.quote-title {
-  font-size: 26px;
-  font-weight: bold;
-}
-
-.quote-actions {
-  margin: 8px 0;
-}
-
-.quote-actions button {
-  padding: 6px 12px;
-  font-size: 13px;
-  margin-left: 6px;
-  cursor: pointer;
-}
-
-.quote-meta {
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.status {
-  font-weight: bold;
-}
-
-.status.OPEN { color: #1c7ed6; }
-.status.ACCEPTED { color: #2f9e44; }
-.status.VOID { color: #c92a2a; }
-
-/* ================= CONTENT ================= */
-.section {
-  margin-top: 20px;
-}
-
+/* ===== TABLE ===== */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
 th, td {
@@ -103,139 +59,195 @@ th {
   background: #f0f0f0;
 }
 
-.text-right {
+.right {
   text-align: right;
 }
 
-.total {
-  font-size: 16px;
+/* ===== SECTION ===== */
+.section-title td {
   font-weight: bold;
-  text-align: right;
-  margin-top: 12px;
+  background: #eee;
 }
 
-.footer {
+.section-subtotal td,
+.grand-total td {
+  font-weight: bold;
+  background: #f5f5f5;
+}
+
+/* ===== INFO ===== */
+.project-info {
   margin-top: 20px;
+  font-size: 14px;
+}
+
+/* ===== TERMS ===== */
+.terms {
+  margin-top: 30px;
   font-size: 13px;
-  line-height: 1.6;
+  white-space: pre-line;
 }
 
-/* ===== Company Chop ===== */
-.company-chop {
-  position: fixed;
-  right: 30px;
-  bottom: 40px;
+/* ===== SIGNATURE ===== */
+.signature {
+  margin-top: 50px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.signature-box {
+  text-align: center;
+  font-size: 13px;
+}
+
+.signature-box img {
   width: 120px;
-  opacity: 0.85;
 }
 
-/* ===== PRINT MODE ===== */
+/* ===== PRINT ===== */
 @media print {
-  button {
-    display: none !important;
-  }
+  .no-print { display: none; }
+  tr { page-break-inside: avoid; }
 }
 </style>
 </head>
 
 <body>
 
+<div class="no-print" id="action-buttons" style="text-align:right; margin-bottom:10px;">
+  <button onclick="goEdit()">Edit</button>
+  <button onclick="approveQuotation()">Approve</button>
+  <button onclick="rejectQuotation()">Reject</button>
+</div>
+
+<div class="no-print" style="text-align:right">
+  <button onclick="window.print()">Print</button>
+</div>
+
 <!-- ================= HEADER ================= -->
 <div class="header">
-  <div class="company">
+  <div class="company" id="companyInfo">
     <div class="company-header">
-      <img src="/icon-512.png" class="company-logo" />
+      <img id="company-logo" alt="Company Logo">
       <div class="company-text">
-        <h1>MMAC CONSTRUCTION</h1>
-        <div class="ssm-code">201903134488 (002977225-A)</div>
+        <h1 id="comp-name">Loading...</h1>
+        <div id="comp-reg" class="ssm-code"></div>
       </div>
     </div>
-    52, Jalan Mahogani SD 1/3<br>
-    Sri Damansara<br>
-    52200 Kuala Lumpur<br>
-    Tel: 016-444-2128
+    <address style="font-style: normal;">
+      <div id="comp-address"></div>
+      <div id="comp-contact"></div>
+    </address>
   </div>
 
-  <div class="quote-box">
-    <div class="quote-title">QUOTATION</div>
-
-    <div class="quote-actions">
-      <button onclick="printQuotation()">PRINT / SAVE PDF</button>
-      <button id="editBtn" style="display:none" onclick="editQuotation()">EDIT</button>
-      <button id="convertBtn" style="display:none" onclick="convertQuotation()">CONVERT</button>
-      <button id="rejectBtn" style="display:none" onclick="rejectQuotation()">REJECT</button>
-    </div>
-
-    <div class="quote-meta">
-      <div><strong>Quotation No:</strong> <span id="quoteNo"></span></div>
-      <div><strong>Date:</strong> <span id="quoteDate"></span></div>
-      <div><strong>To:</strong> <span id="customer"></span></div>
-      <div><strong>Status:</strong> <span id="status" class="status"></span></div>
-    </div>
+  <div>
+    <h2>QUOTATION</h2>
+    <div>No: <span id="quotation_no"></span></div>
+    <div>Date: <span id="quotation_date"></span></div>
   </div>
+</div>
+
+<!-- ================= PROJECT ================= -->
+<div class="project-info">
+  <div><strong>Customer:</strong> <span id="customer"></span></div>
+  <div><strong>Project:</strong> <span id="project_title"></span></div>
+  <div><strong>Address:</strong> <span id="project_address"></span></div>
 </div>
 
 <!-- ================= ITEMS ================= -->
-<div class="section">
-  <table>
-    <thead>
-      <tr>
-        <th style="width:5%">No</th>
-        <th>Description</th>
-        <th style="width:10%">Qty</th>
-        <th style="width:15%">Unit Price</th>
-        <th style="width:15%">Amount (RM)</th>
-      </tr>
-    </thead>
-    <tbody id="items"></tbody>
-  </table>
+<table>
 
-  <div class="total">
-    TOTAL (RM): <span id="total"></span>
+  <thead>
+  <tr>
+    <th style="width:5%">No</th>
+    <th>Description</th>
+    <th style="width:8%">UOM</th>
+    <th style="width:8%">Qty</th>
+    <th style="width:12%">Unit Price</th>
+    <th style="width:15%">Amount</th>
+  </tr>
+</thead>
+
+
+  <tbody id="items"></tbody>
+</table>
+
+<!-- ================= BANK ================= -->
+<div class="bank-info" style="margin-top:20px;">
+  <strong>Bank Details</strong>
+  <div id="bank-info"></div>
+</div>
+
+<!-- ================= TERMS ================= -->
+<div class="terms">
+  <strong>Terms & Conditions</strong>
+  <div id="terms"></div>
+</div>
+
+<!-- ================= SIGNATURE ================= -->
+<div class="signature">
+  <div class="signature-box">
+    <img id="company-chop">
+    <div id="authorized-title"></div>
+    <div><strong id="authorized-name"></strong></div>
   </div>
 </div>
 
-<!-- ================= FOOTER ================= -->
-<div class="footer">
-  <strong>TERMS:</strong><br>
-  <div id="termsContent" style="white-space:pre-line;"></div>
-</div>
-
-<img src="/mmac-chop.png" class="company-chop" />
-
 <script>
-const id = new URLSearchParams(location.search).get("id");
+const id = new URL(location.href).searchParams.get("id");
+const CURRENCY = CONFIG.CURRENCY || "RM";
 
-/* ===== PRINT ===== */
-function printQuotation() {
-  window.print();
-}
+function qid(id){ return document.getElementById(id); }
 
-function editQuotation() {
-  location.href = `/quotation-edit.html?id=${id}`;
-}
+/* ================= LOAD DATA ================= */
+fetch("/api/quotation-view?id=" + id)
+  .then(r => r.json())
+  .then(json => {
+    if (!json.success) {
+      alert(json.error || "Load failed");
+      return;
+    }
 
-/* ===== CONVERT ===== */
-async function convertQuotation() {
-  if (!confirm("Convert this quotation to invoice?")) return;
+    const q = json.data;
+    const sections = q.sections || [];
 
-  const res = await fetch("/api/quotation-convert", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quotation_id: id })
+    // header
+    qid("quotation_no").innerText = q.quotation_no;
+    qid("quotation_date").innerText = q.created_at?.slice(0,10) || "";
+    qid("customer").innerText = q.customer;
+    qid("project_title").innerText = q.project_title || "";
+    qid("project_address").innerText = q.project_address || "";
+    qid("terms").innerText = q.terms_snapshot || "";
+
+    renderItems(sections, q.discount || 0);
   });
 
-  if (!res.ok) {
-    alert("Convert failed");
+/* ================= RENDER ITEMS ================= */
+
+function goEdit() {
+  location.href = "/quotation-edit.html?id=" + id;
+}
+
+async function approveQuotation() {
+  if (!confirm("Approve this quotation?")) return;
+
+  const res = await fetch("/api/quotation-accept", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id })
+  });
+
+  const json = await res.json();
+  if (!json.success) {
+    alert(json.error || "Approve failed");
     return;
   }
 
-  const data = await res.json();
-  location.href = `/invoice-view.html?id=${data.invoice_id}`;
+  alert("Quotation approved");
+  location.reload();
 }
 
-/* ===== REJECT ===== */
 async function rejectQuotation() {
   const reason = prompt("Reject reason (optional):");
   if (reason === null) return;
@@ -261,53 +273,93 @@ async function rejectQuotation() {
   location.href = "/quotations.html";
 }
 
-/* ===== LOAD DATA ===== */
-fetch(`/api/quotation-view?id=${id}`, { credentials: "include" })
-.then(res => {
-  if (!res.ok) throw new Error("Unauthorized");
-  return res.json();
-})
-.then(data => {
-  const q = data.quotation;
 
-  document.getElementById("quoteNo").textContent = q.quotation_no;
-  document.getElementById("quoteDate").textContent = q.created_at.split(" ")[0];
-  document.getElementById("customer").textContent = q.customer;
 
-  const statusEl = document.getElementById("status");
-  statusEl.textContent = q.status;
-  statusEl.classList.add(q.status);
+function renderItems(sections, discount) {
+  const tbody = qid("items");
+  tbody.innerHTML = "";
 
-  if (q.status === "OPEN") {
-    editBtn.style.display = "inline-block";
-    convertBtn.style.display = "inline-block";
-    rejectBtn.style.display = "inline-block";
-  }
+  let grandTotal = 0;
 
-  document.getElementById("termsContent").textContent =
-    q.terms_snapshot || "—";
+  sections.forEach(sec => {
+    tbody.insertAdjacentHTML(
+      "beforeend",
+      `<tr class="section-title">
+        <td colspan="6">${sec.section_title}</td>
+      </tr>`
+    );
 
-  let total = 0;
-  const tbody = document.getElementById("items");
+    let sectionTotal = 0;
 
-  data.items.forEach((it, i) => {
-    const amount = it.qty * it.price;
-    total += amount;
+    sec.items.forEach(it => {
+      const line = Number(it.line_total) || 0;
+      sectionTotal += line;
+      grandTotal += line;
 
-    tbody.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td>${i + 1}</td>
-        <td>${it.description}</td>
-        <td class="text-right">${it.qty}</td>
-        <td class="text-right">${it.price.toFixed(2)}</td>
-        <td class="text-right">${amount.toFixed(2)}</td>
-      </tr>
-    `);
+
+      const unitPrice = Number(it.unit_price) || 0;
+
+tbody.insertAdjacentHTML(
+  "beforeend",
+  `<tr>
+    <td>${it.item_no || ""}</td>
+    <td>${it.description}</td>
+    <td class="right">${it.UOM || ""}</td>
+    <td class="right">${it.qty}</td>
+    <td class="right">${unitPrice.toFixed(2)}</td>
+    <td class="right">${line.toFixed(2)}</td>
+  </tr>`
+);
+
+    });
+
+    tbody.insertAdjacentHTML(
+      "beforeend",
+      `<tr class="section-subtotal">
+        <td colspan="5" class="right">Subtotal</td>
+        <td class="right">${sectionTotal.toFixed(2)}</td>
+      </tr>`
+    );
   });
 
-  document.getElementById("total").textContent = total.toFixed(2);
-})
-.catch(() => location.replace("/login.html"));
+  if (discount > 0) {
+    tbody.insertAdjacentHTML(
+      "beforeend",
+      `<tr>
+        <td colspan="5" class="right">Discount</td>
+        <td class="right">-${discount.toFixed(2)}</td>
+      </tr>`
+    );
+  }
+
+  tbody.insertAdjacentHTML(
+    "beforeend",
+    `<tr class="grand-total">
+      <td colspan="5" class="right">TOTAL (${CURRENCY})</td>
+      <td class="right">${(grandTotal - discount).toFixed(2)}</td>
+    </tr>`
+  );
+}
+
+/* ================= COMPANY ================= */
+document.addEventListener("DOMContentLoaded", () => {
+  if (!window.COMPANY_CONFIG) return;
+
+  qid("company-logo").src = COMPANY_CONFIG.logoUrl || "";
+  qid("comp-name").innerText = COMPANY_CONFIG.name;
+  qid("comp-reg").innerText = COMPANY_CONFIG.regNo || "";
+  qid("comp-address").innerText = COMPANY_CONFIG.address || "";
+  qid("comp-contact").innerText =
+    `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
+
+  qid("bank-info").innerText =
+    `${COMPANY_CONFIG.bankName} : ${COMPANY_CONFIG.bankAcc}`;
+
+  qid("company-chop").src = COMPANY_CONFIG.chopUrl || "";
+  qid("authorized-title").innerText =
+    COMPANY_CONFIG.authorizedTitle || "Authorized Signature";
+  qid("authorized-name").innerText = COMPANY_CONFIG.name;
+});
 </script>
 
 </body>
