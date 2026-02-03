@@ -76,9 +76,9 @@ function view() {
   const params = new URLSearchParams();
 
   if (customer) params.set("customer", customer);
-  if (status) params.set("status", status);
-if (from) params.set("date_from", from);
-if (to) params.set("date_to", to);
+  if (status) params.set("status", customer);
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
 
   location.href = `/statement-view.html?${params.toString()}`;
 }
