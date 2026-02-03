@@ -41,7 +41,7 @@ h1 {
 }
 
 .card h2 {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   font-size: 18px;
 }
 
@@ -86,7 +86,7 @@ h1 {
 
 .actions a {
   flex: 1;
-  min-width: 120px;
+  min-width: 140px;
   text-align: center;
   padding: 10px;
   text-decoration: none;
@@ -102,6 +102,7 @@ h1 {
 .btn-info    { background: #2980b9; }
 .btn-purple  { background: #6f42c1; }
 .btn-gray    { background: #7f8c8d; }
+.btn-danger  { background: #c0392b; }
 
 .logout {
   margin-top: 28px;
@@ -123,7 +124,7 @@ h1 {
 
 <h1>MMAC CONSTRUCTION</h1>
 <div class="subtitle">
-Invoice • Quotation • Statement • Projects • VO • Purchase Order • HR
+Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labour • VO • PO • HR
 </div>
 
 <!-- ===== Monthly Summary ===== -->
@@ -149,7 +150,6 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
 <div class="section">
   <div class="card">
     <h2>Invoice</h2>
-    <p>Create, manage, edit and track invoices.</p>
     <div class="actions">
       <a class="btn-success" href="/invoice.html">Create Invoice</a>
       <a class="btn-primary" href="/invoices.html">Invoice List</a>
@@ -161,33 +161,56 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
 <div class="section">
   <div class="card">
     <h2>Quotation</h2>
-    <p>Create quotation and convert to invoice.</p>
+    <p>Quotation creation, list and terms settings.</p>
     <div class="actions">
       <a class="btn-info" href="/quotation.html">Create Quotation</a>
       <a class="btn-primary" href="/quotations.html">Quotation List</a>
+      <a class="btn-gray" href="/quotation_terms.html">Quotation Terms</a>
     </div>
   </div>
 </div>
 
-<!-- ===== Statement ===== -->
+<!-- ===== Statement (RESTORED) ===== -->
 <div class="section">
   <div class="card">
     <h2>Statement</h2>
-    <p>Customer statement, outstanding balance and payment tracking.</p>
+    <p>Customer statements and outstanding balances.</p>
     <div class="actions">
       <a class="btn-purple" href="/statement.html">View Statements</a>
     </div>
   </div>
 </div>
 
-<!-- ===== Projects / Work ===== -->
+<!-- ===== Item Catalog ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Item Catalog</h2>
+    <p>Reusable items for quotation, invoice and VO.</p>
+    <div class="actions">
+      <a class="btn-purple" href="/item-catalogs.html">Manage Item Catalog</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Projects & Work ===== -->
 <div class="section">
   <div class="card">
     <h2>Projects & Work</h2>
-    <p>Manage site work progress and checklists.</p>
+    <p>Site work progress and checklists.</p>
     <div class="actions">
       <a class="btn-success" href="/work-checklist.html">Work Checklists</a>
       <a class="btn-primary" href="/create-checklist.html">Create Checklist</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Daily Labour ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Daily Labour / Payslip</h2>
+    <div class="actions">
+      <a class="btn-success" href="/daily-labour-create.html">Add Daily Labour</a>
+      <a class="btn-primary" href="/daily-labours.html">Daily Labour List</a>
     </div>
   </div>
 </div>
@@ -196,7 +219,6 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
 <div class="section">
   <div class="card">
     <h2>Variation Orders (VO)</h2>
-    <p>Manage additional works and contract variations.</p>
     <div class="actions">
       <a class="btn-warning" href="/vo.html">Create VO</a>
       <a class="btn-primary" href="/vos.html">VO List</a>
@@ -208,7 +230,6 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
 <div class="section">
   <div class="card">
     <h2>Purchase Order</h2>
-    <p>Create, manage and approve supplier purchase orders.</p>
     <div class="actions">
       <a class="btn-warning" href="/po.html">Create PO</a>
       <a class="btn-primary" href="/pos.html">PO List</a>
@@ -221,7 +242,6 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
 <div class="section">
   <div class="card">
     <h2>Employees</h2>
-    <p>Manage staff information.</p>
     <div class="actions">
       <a class="btn-info" href="/employee.html">Add Employee</a>
       <a class="btn-primary" href="/employees.html">Employee List</a>
@@ -233,22 +253,8 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
 <div class="section">
   <div class="card">
     <h2>Salaries</h2>
-    <p>Generate monthly salaries and payslips.</p>
     <div class="actions">
-      <a class="btn-success" href="/salaries.html">Salary Management</a>
-    </div>
-  </div>
-</div>
-
-<!-- ===== System / User Management ===== -->
-<div class="section">
-  <div class="card">
-    <h2>System / User Management</h2>
-    <p>User registration, access control and invitations.</p>
-    <div class="actions">
-      <a class="btn-primary" href="/reg.html">Register User</a>
-      <a class="btn-info" href="/users.html">User List</a>
-      <a class="btn-gray" href="/invite.html">Invite User</a>
+      <a class="btn-purple" href="/salaries.html">Salary Management</a>
     </div>
   </div>
 </div>
@@ -259,12 +265,6 @@ Invoice • Quotation • Statement • Projects • VO • Purchase Order • H
 </div>
 
 <script>
-/* ===== PWA ===== */
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js");
-}
-
-/* ===== Auth Check (ADMIN ONLY) ===== */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => {
     if (!r.ok) location.replace("/login.html");
@@ -277,11 +277,9 @@ fetch("/api/auth-check", { credentials: "include" })
   })
   .catch(() => location.replace("/login.html"));
 
-/* ===== Month Picker ===== */
 const monthInput = document.getElementById("monthPicker");
 monthInput.value = new Date().toISOString().slice(0,7);
 
-/* ===== Load Summary ===== */
 async function loadSummary() {
   const m = monthInput.value;
   try {
@@ -305,7 +303,6 @@ async function loadSummary() {
 monthInput.onchange = loadSummary;
 loadSummary();
 
-/* ===== Logout ===== */
 async function logout() {
   await fetch("/api/logout", { method:"POST", credentials:"include" });
   location.replace("/login.html");
@@ -314,4 +311,3 @@ async function logout() {
 
 </body>
 </html>
-
