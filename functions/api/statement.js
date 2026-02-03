@@ -51,9 +51,9 @@ export async function onRequest({ request, env }) {
   const binds = [];
 
   if (customer) {
-    sql += " AND customer = ?";
-    binds.push(customer);
-  }
+      sql += " AND customer LIKE ?";
+      binds.push(`%${customer}%`);
+    }
 
   if (from) {
     sql += " AND date(created_at) >= date(?)";
