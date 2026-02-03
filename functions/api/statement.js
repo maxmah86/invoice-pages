@@ -54,8 +54,8 @@ export async function onRequestGet(context) {
      * Status filter (NEW)
      * =============================== */
     if (status) {
-      sql += " AND status = ?";
-      binds.push(status);
+      sql += " AND status LIKE ?";
+      binds.push(`%${status}%`);
     }
 
     /* ===============================
