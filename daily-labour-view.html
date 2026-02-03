@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daily Labour Payslip</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  color: #000;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.row {
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.status {
+  font-weight: bold;
+}
+.status.PAID { color: #2f9e44; }
+.status.UNPAID { color: #c92a2a; }
+
+/* ===== ACTIONS ===== */
+.actions {
+  margin-top: 20px;
+}
+.actions button {
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+/* ===== PRINT ===== */
+@media print {
+  .actions {
+    display: none !important;
+  }
+  body {
+    margin: 0;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Daily Labour Payslip</h1>
+
+<div class="section">
+  <div class="row"><span class="label">Slip No:</span> <span id="slip_no">-</span></div>
+  <div class="row"><span class="label">Date:</span> <span id="labour_date">-</span></div>
+  <div class="row"><span class="label">Worker:</span> <span id="worker_name">-</span></div>
+  <div class="row"><span class="label">Job:</span> <span id="job">-</span></div>
+  <div class="row"><span class="label">Amount:</span> RM <span id="amount">0.00</span></div>
+</div>
+
+<hr>
+
+<div class="section">
+  <div class="row"><span class="label">Status:</span> <span id="status" class="status">-</span></div>
+  <div class="row"><span class="label">Payment Method:</span> <span id="payment_method">-</span></div>
+  <div class="row"><span class="label">Paid By:</span> <span id="paid_by">-</span></div>
+  <div class="row"><span class="label">Paid At:</span> <span id="paid_at">-</span></div>
+</div>
+
+<hr>
+
+<div class="section">
+  <div class="row"><span class="label">Notes:</span></div>
+  <div class="row" id="notes">-</div>
+</div>
+
+<div class="section">
+  <div class="row"><span class="label">Void Reason:</span></div>
+  <div class="row" id="void_reason">-</div>
+</div>
+
+<!-- ===== ACTIONS ===== -->
+<div class="actions" id="actions"></div>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+
+/* ===============================
+   LOAD DATA
+   =============================== */
+fetch(`/api/daily-labour-view?id=${id}`, { credentials: "include" })
+  .then(r => {
+    if (!r.ok) throw new Error("API error");
+    return r.json();
+  })
+  .then(d => {
+
+    // ===== BASIC =====
+    document.getElementById("slip_no").textContent = d.slip_no || "-";
+    document.getElementById("labour_date").textContent = d.labour_date || "-";
+    document.getElementById("worker_name").textContent = d.worker_name || "-";
+    document.getElementById("job").textContent = d.job || "-";
+    document.getElementById("amount").textContent =
+      Number(d.amount || 0).toFixed(2);
+
+    // ===== PAYMENT =====
+    const statusEl = document.getElementById("status");
+    statusEl.textContent = d.status || "-";
+    if (d.status) statusEl.classList.add(d.status);
+
+    document.getElementById("payment_method").textContent =
+      d.payment_method || "-";
+    document.getElementById("paid_by").textContent =
+      d.paid_by || "-";
+    document.getElementById("paid_at").textContent =
+      d.paid_at || "-";
+
+    // ===== NOTES =====
+    document.getElementById("notes").textContent =
+      d.notes || "-";
+    document.getElementById("void_reason").textContent =
+      d.void_reason || "-";
+
+    // ===== ACTIONS =====
+    const actions = document.getElementById("actions");
+    if (d.status === "UNPAID") {
+      actions.innerHTML = `
+        <button onclick="mark('PAID')">Mark as PAID</button>
+        <button onclick="printSlip()">Print</button>
+      `;
+    } else {
+      actions.innerHTML = `
+        <button onclick="mark('UNPAID')">Mark as UNPAID</button>
+        <button onclick="printSlip()">Print</button>
+      `;
+    }
+  });
+
+/* ===============================
+   MARK STATUS
+   =============================== */
+async function mark(status) {
+  if (!confirm("Change status to " + status + "?")) return;
+
+  const res = await fetch("/api/daily-labour-mark-paid", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, status })
+  });
+
+  if (!res.ok) {
+    alert("Failed to update status");
+    return;
+  }
+
+  location.reload();
+}
+
+/* ===============================
+   PRINT
+   =============================== */
+function printSlip() {
+  const t = document.title;
+  document.title = "daily-labour-slip";
+  window.print();
+  setTimeout(() => document.title = t, 300);
+}
+</script>
+
+</body>
+</html>

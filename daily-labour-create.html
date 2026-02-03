@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create Daily Labour Payslip</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 12px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.box {
+  background: #fff;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.actions button {
+  flex: 1;
+  padding: 14px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.save-btn {
+  background: #27ae60;
+  color: #fff;
+}
+
+.cancel-btn {
+  background: #7f8c8d;
+  color: #fff;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Create Daily Labour Payslip</h2>
+
+<!-- ===== BASIC INFO ===== -->
+<div class="box">
+  <label>Labour Date</label>
+  <input type="date" id="labour_date">
+
+  <label>Worker Name</label>
+  <input id="worker_name" placeholder="e.g. Ali">
+
+  <label>Job / Work Description</label>
+  <input id="job" placeholder="e.g. Bricklaying / Wiring">
+
+  <label>Amount (RM)</label>
+  <input type="number" id="amount" placeholder="0.00">
+</div>
+
+<!-- ===== PAYMENT ===== -->
+<div class="box">
+  <label>Status</label>
+  <select id="status">
+    <option value="PAID">PAID</option>
+    <option value="UNPAID">UNPAID</option>
+  </select>
+
+  <label>Payment Method</label>
+  <select id="payment_method">
+    <option value="">-- Select --</option>
+    <option value="CASH">Cash</option>
+    <option value="TRANSFER">Bank Transfer</option>
+  </select>
+
+  <label>Paid By</label>
+  <input id="paid_by" placeholder="e.g. Site Supervisor">
+
+  <label>Notes</label>
+  <textarea id="notes" rows="3"></textarea>
+</div>
+
+<!-- ===== ACTIONS ===== -->
+<div class="actions">
+  <button class="save-btn" onclick="save()">Save Payslip</button>
+  <button class="cancel-btn" onclick="cancel()">Cancel</button>
+</div>
+
+<script>
+/* ===============================
+   AUTH CHECK
+   =============================== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => {
+    if (!r.ok) throw new Error();
+    return r.json();
+  })
+  .catch(() => location.replace("/login.html"));
+
+/* ===== DEFAULT DATE ===== */
+document.getElementById("labour_date").value =
+  new Date().toISOString().slice(0,10);
+
+/* ===============================
+   SAVE
+   =============================== */
+async function save() {
+  const labour_date = document.getElementById("labour_date").value;
+  const worker_name = document.getElementById("worker_name").value.trim();
+  const job = document.getElementById("job").value.trim();
+  const amount = document.getElementById("amount").value;
+  const status = document.getElementById("status").value;
+  const payment_method = document.getElementById("payment_method").value;
+  const paid_by = document.getElementById("paid_by").value.trim();
+  const notes = document.getElementById("notes").value.trim();
+
+  if (!labour_date || !worker_name || !amount) {
+    alert("Date, worker name and amount are required");
+    return;
+  }
+
+  const res = await fetch("/api/daily-labour-create", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      labour_date,
+      worker_name,
+      job,
+      amount,
+      status,
+      payment_method,
+      paid_by,
+      notes
+    })
+  });
+
+  if (!res.ok) {
+    alert("Failed to save payslip");
+    return;
+  }
+
+  alert("Daily labour payslip saved");
+  location.href = "/daily-labours.html";
+}
+
+function cancel() {
+  history.back();
+}
+</script>
+
+</body>
+</html>

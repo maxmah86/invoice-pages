@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daily Labours</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 14px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.card {
+  background: #fff;
+  padding: 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.name {
+  font-weight: bold;
+}
+
+.status {
+  font-weight: bold;
+}
+
+.status.PAID { color: #2f9e44; }
+.status.UNPAID { color: #c92a2a; }
+
+.amount {
+  font-size: 14px;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Daily Labour Payslips</h2>
+
+<div id="list"></div>
+
+<script>
+/* ===== AUTH ===== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => { if (!r.ok) location.replace("/login.html"); });
+
+/* ===== LOAD LIST ===== */
+fetch("/api/daily-labours-list", { credentials: "include" })
+  .then(r => r.json())
+  .then(rows => {
+    const box = document.getElementById("list");
+    box.innerHTML = "";
+
+    if (!rows.length) {
+      box.innerHTML = "<p>No records</p>";
+      return;
+    }
+
+    rows.forEach(r => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <a href="/daily-labour-view.html?id=${r.id}">
+          <div class="row">
+            <div>
+              <div class="name">${r.worker_name}</div>
+              <div>${r.labour_date}</div>
+            </div>
+            <div class="status ${r.status}">${r.status}</div>
+          </div>
+          <div class="amount">RM ${Number(r.amount).toFixed(2)}</div>
+        </a>
+      `;
+      box.appendChild(div);
+    });
+  });
+</script>
+
+</body>
+</html>
