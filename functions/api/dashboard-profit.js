@@ -28,7 +28,9 @@ export async function onRequestGet({ request, env }) {
       url.searchParams.get("month") ||
       new Date().toISOString().slice(0, 7);
 
-    /* ===== Salary (PAID only) ===== */
+    /* ===============================
+       1. MONTHLY SALARY (PAID)
+       =============================== */
     const salaryRow = await env.DB.prepare(`
       SELECT IFNULL(SUM(net_salary),0) AS total
       FROM salaries
@@ -36,14 +38,34 @@ export async function onRequestGet({ request, env }) {
         AND status = 'PAID'
     `).bind(month).first();
 
-    /* ===== PO ===== */
+    /* ===============================
+       2. DAILY LABOUR (PAID)
+       =============================== */
+    const dailyRow = await env.DB.prepare(`
+      SELECT IFNULL(SUM(amount),0) AS total
+      FROM daily_labours
+      WHERE status = 'PAID'
+        AND substr(labour_date,1,7) = ?
+    `).bind(month).first();
+
+    const salaryTotal =
+      Number(salaryRow.total || 0) +
+      Number(dailyRow.total || 0);
+
+    /* ===============================
+       3. PURCHASE ORDER
+       =============================== */
     const poRow = await env.DB.prepare(`
       SELECT IFNULL(SUM(total),0) AS total
       FROM purchase_orders
       WHERE substr(created_at,1,7)=?
     `).bind(month).first();
 
-    /* ===== Invoice (auto detect amount column) ===== */
+    const poTotal = Number(poRow.total || 0);
+
+    /* ===============================
+       4. INVOICE (AUTO COLUMN)
+       =============================== */
     const columns = await env.DB.prepare(`
       PRAGMA table_info(invoices)
     `).all();
@@ -68,14 +90,15 @@ export async function onRequestGet({ request, env }) {
       invoiceTotal = Number(invRow.total || 0);
     }
 
-    const salaryTotal = Number(salaryRow.total || 0);
-    const poTotal = Number(poRow.total || 0);
+    /* ===============================
+       5. PROFIT
+       =============================== */
     const profit = invoiceTotal - salaryTotal - poTotal;
 
     return Response.json({
       month,
       invoice: invoiceTotal,
-      salary: salaryTotal,
+      salary: salaryTotal,        // ← 已含 daily_labours
       po: poTotal,
       profit
     });
