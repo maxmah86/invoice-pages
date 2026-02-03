@@ -23,6 +23,10 @@ body {
   align-items: flex-start;
 }
 
+.amount-zero {
+  color: transparent;
+}
+
 #company-logo {
   width: 80px;
   height: auto;
@@ -193,6 +197,7 @@ th {
   </div>
 </div>
 
+
 <script>
 const id = new URL(location.href).searchParams.get("id");
 const CURRENCY = CONFIG.CURRENCY || "RM";
@@ -222,7 +227,7 @@ fetch("/api/quotation-view?id=" + id)
     renderItems(sections, q.discount || 0);
   });
 
-/* ================= RENDER ITEMS ================= */
+/* ================= ACTIONS ================= */
 
 function goEdit() {
   location.href = "/quotation-edit.html?id=" + id;
@@ -273,7 +278,7 @@ async function rejectQuotation() {
   location.href = "/quotations.html";
 }
 
-
+/* ================= RENDER ITEMS ================= */
 
 function renderItems(sections, discount) {
   const tbody = qid("items");
@@ -292,25 +297,29 @@ function renderItems(sections, discount) {
     let sectionTotal = 0;
 
     sec.items.forEach(it => {
+      const qty = Number(it.qty) || 0;
+      const unitPrice = Number(it.unit_price) || 0;
       const line = Number(it.line_total) || 0;
+
       sectionTotal += line;
       grandTotal += line;
 
+      // ⭐ 统一规则：值为 0 → 透明
+      const qtyClass   = qty === 0 ? "right amount-zero" : "right";
+      const priceClass = unitPrice === 0 ? "right amount-zero" : "right";
+      const amtClass   = line === 0 ? "right amount-zero" : "right";
 
-      const unitPrice = Number(it.unit_price) || 0;
-
-tbody.insertAdjacentHTML(
-  "beforeend",
-  `<tr>
-    <td>${it.item_no || ""}</td>
-    <td>${it.description}</td>
-    <td class="right">${it.UOM || ""}</td>
-    <td class="right">${it.qty}</td>
-    <td class="right">${unitPrice.toFixed(2)}</td>
-    <td class="right">${line.toFixed(2)}</td>
-  </tr>`
-);
-
+      tbody.insertAdjacentHTML(
+        "beforeend",
+        `<tr>
+          <td>${it.item_no || ""}</td>
+          <td>${it.description}</td>
+          <td class="right">${it.UOM || ""}</td>
+          <td class="${qtyClass}">${qty}</td>
+          <td class="${priceClass}">${unitPrice.toFixed(2)}</td>
+          <td class="${amtClass}">${line.toFixed(2)}</td>
+        </tr>`
+      );
     });
 
     tbody.insertAdjacentHTML(
