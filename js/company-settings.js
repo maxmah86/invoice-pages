@@ -1,56 +1,103 @@
-// js/company-settings.js
+/* ===============================
+   COMPANY SETTINGS (GLOBAL)
+   =============================== */
+
 const COMPANY_CONFIG = {
-    name: "MMAC Construction",
-    regNo: "002972725-A",
-    address: "52, Jalan Mahogani SD 1/3, Sri Damansara, 52200 Kuala Lumpur.",
-    phone: "0164442128",
-    email: "support@mmaclimousine4u.com",
-    logoUrl: "/icon-512.png",
+  // ===== BASIC INFO =====
+  name: "MMAC Construction",
+  regNo: "002972725-A",
+  address: "52, Jalan Mahogani SD 1/3, Sri Damansara, 52200 Kuala Lumpur.",
+  phone: "016-444 2128",
+  email: "support@mmaclimousine4u.com",
 
-    // --- 新增银行信息 ---
-    bankName: "Maybank",
-    bankAcc: "5142 0863 6636",
+  // ===== BRANDING =====
+  logoUrl: "/icon-512.png",     // 公司 logo
+  chopUrl: "/chop.png",         // 公司盖章（signature / chop）
 
-    // --- 新增公司盖章（CHOP） ---
-    chopUrl: "/chop.png",          // 公司盖章图片
-    authorizedTitle: ""
+  // ===== BANK =====
+  bankName: "Maybank",
+  bankAcc: "5142 0863 6636",
+
+  // ===== SIGNATURE =====
+  authorizedTitle: ""           // 为空 = 不显示标题
 };
 
+
+/* ===============================
+   APPLY SETTINGS TO PAGE
+   =============================== */
 function applyCompanySettings() {
-    const elements = {
-        '#comp-name': COMPANY_CONFIG.name,
-        '#comp-reg': `(Reg No: ${COMPANY_CONFIG.regNo})`,
-        '#comp-address': COMPANY_CONFIG.address,
-        '#comp-contact': `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`,
-        '#bank-info': `${COMPANY_CONFIG.bankName} : ${COMPANY_CONFIG.bankAcc}`
-    };
 
-    for (const [selector, value] of Object.entries(elements)) {
-        const el = document.querySelector(selector);
-        if (el) el.innerText = value;
-    }
-
-    // ===== CHOP / SIGNATURE =====
-    const chopImg = document.getElementById('company-chop');
-    if (chopImg && COMPANY_CONFIG.chopUrl) {
-        chopImg.src = COMPANY_CONFIG.chopUrl;
-    }
-
-const logo = document.getElementById("company-logo");
+  /* ===== LOGO ===== */
+  const logo = document.getElementById("company-logo");
   if (logo && COMPANY_CONFIG.logoUrl) {
     logo.src = COMPANY_CONFIG.logoUrl;
     logo.onerror = () => logo.style.display = "none";
   }
 
-    const signTitle = document.getElementById('authorized-title');
-    if (signTitle) {
-        signTitle.innerText = COMPANY_CONFIG.authorizedTitle;
-    }
+  /* ===== COMPANY NAME (ID: comp-name) ===== */
+  const compName = document.getElementById("comp-name");
+  if (compName) {
+    compName.innerText = COMPANY_CONFIG.name;
+  }
 
-    const signName = document.getElementById('authorized-name');
-    if (signName) {
-        signName.innerText = COMPANY_CONFIG.name;
+  /* ===== COMPANY NAME (CLASS: company-name) ===== */
+  document.querySelectorAll(".company-name").forEach(el => {
+    el.innerText = COMPANY_CONFIG.name;
+  });
+
+  /* ===== REG NO ===== */
+  const reg = document.getElementById("comp-reg");
+  if (reg) {
+    reg.innerText = `(${COMPANY_CONFIG.regNo})`;
+  }
+
+  /* ===== ADDRESS ===== */
+  const addr = document.getElementById("comp-address");
+  if (addr) {
+    addr.innerText = COMPANY_CONFIG.address;
+  }
+
+  /* ===== CONTACT ===== */
+  const contact = document.getElementById("comp-contact");
+  if (contact) {
+    contact.innerText =
+      `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
+  }
+
+  /* ===== BANK INFO ===== */
+  const bank = document.getElementById("bank-info");
+  if (bank) {
+    bank.innerText =
+      `${COMPANY_CONFIG.bankName} : ${COMPANY_CONFIG.bankAcc}`;
+  }
+
+  /* ===== CHOP / SIGNATURE IMAGE ===== */
+  const chopImg = document.getElementById("company-chop");
+  if (chopImg && COMPANY_CONFIG.chopUrl) {
+    chopImg.src = COMPANY_CONFIG.chopUrl;
+    chopImg.onerror = () => chopImg.style.display = "none";
+  }
+
+  /* ===== AUTHORIZED TITLE ===== */
+  const signTitle = document.getElementById("authorized-title");
+  if (signTitle) {
+    if (COMPANY_CONFIG.authorizedTitle) {
+      signTitle.innerText = COMPANY_CONFIG.authorizedTitle;
+    } else {
+      signTitle.style.display = "none";
     }
+  }
+
+  /* ===== AUTHORIZED NAME ===== */
+  const signName = document.getElementById("authorized-name");
+  if (signName) {
+    signName.innerText = COMPANY_CONFIG.name;
+  }
 }
 
-document.addEventListener('DOMContentLoaded', applyCompanySettings);
+
+/* ===============================
+   INIT
+   =============================== */
+document.addEventListener("DOMContentLoaded", applyCompanySettings);
