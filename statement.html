@@ -80,6 +80,8 @@ function view() {
 if (from) params.set("from", from);
 if (to) params.set("to", to);
 
+  console.log("QUERY =", params.toString());
+
   location.href = `/statement-view.html?${params.toString()}`;
 }
 </script>
