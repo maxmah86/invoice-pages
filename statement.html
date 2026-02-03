@@ -54,6 +54,9 @@ button {
   <label>Customer</label>
   <input id="customer" placeholder="Leave empty for ALL customers">
 
+  <label>Status</label>
+  <input id="status" placeholder="Leave empty for ALL status">
+  
   <label>From Date</label>
   <input type="date" id="from">
 
@@ -66,12 +69,14 @@ button {
 <script>
 function view() {
   const customer = document.getElementById("customer").value.trim();
+  const status = document.getElementById("status").value.trim();
   const from = document.getElementById("from").value;
   const to = document.getElementById("to").value;
 
   const params = new URLSearchParams();
 
   if (customer) params.set("customer", customer);
+  if (status) params.set("status", customer);
   if (from) params.set("from", from);
   if (to) params.set("to", to);
 
