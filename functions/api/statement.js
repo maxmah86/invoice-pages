@@ -12,9 +12,7 @@ export async function onRequestGet(context) {
    * Admin auth
    * =============================== */
   const authRes = await fetch(new URL("/api/auth-check", request.url), {
-    headers: {
-      Cookie: request.headers.get("Cookie") || ""
-    }
+    headers: { Cookie: request.headers.get("Cookie") || "" }
   });
   const auth = await authRes.json();
 
@@ -24,19 +22,17 @@ export async function onRequestGet(context) {
 
   try {
     /* ===============================
-     * Base SQL
+     * Base SQL (INVOICES)
      * =============================== */
     let sql = `
       SELECT
         id,
-        quotation_no,
+        invoice_no,
         customer,
-        status,
         created_at,
-        subtotal,
-        discount,
-        grand_total
-      FROM quotations
+        amount,
+        status
+      FROM invoices
       WHERE 1 = 1
     `;
 
@@ -51,7 +47,7 @@ export async function onRequestGet(context) {
     }
 
     /* ===============================
-     * Status filter (NEW)
+     * Status keyword (你要的效果)
      * =============================== */
     if (status) {
       sql += " AND status LIKE ?";
@@ -71,9 +67,6 @@ export async function onRequestGet(context) {
       binds.push(date_to);
     }
 
-    /* ===============================
-     * Order
-     * =============================== */
     sql += " ORDER BY created_at DESC";
 
     const res = await db.prepare(sql).bind(...binds).all();
@@ -90,18 +83,14 @@ export async function onRequestGet(context) {
  * Helpers
  * =============================== */
 function jsonOK(data) {
-  return new Response(
-    JSON.stringify({ success: true, data }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+  return new Response(JSON.stringify({ success: true, data }), {
+    headers: { "Content-Type": "application/json" }
+  });
 }
 
 function jsonError(message, status = 400) {
-  return new Response(
-    JSON.stringify({ success: false, error: message }),
-    {
-      status,
-      headers: { "Content-Type": "application/json" }
-    }
-  );
+  return new Response(JSON.stringify({ success: false, error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" }
+  });
 }
