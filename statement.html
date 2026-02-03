@@ -66,23 +66,24 @@ button {
   <button onclick="view()">View Statement</button>
 </div>
 
-<script>
+
+<script> 
 function view() {
   const customer = document.getElementById("customer").value.trim();
-  const status = document.getElementById("status").value.trim();
-  const from = document.getElementById("from").value;
-  const to = document.getElementById("to").value;
+  const status   = document.getElementById("status").value.trim();
+  const from     = document.getElementById("from").value;
+  const to       = document.getElementById("to").value;
 
   const params = new URLSearchParams();
 
   if (customer) params.set("customer", customer);
-  if (status) params.set("status", customer);
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
+  if (status)   params.set("status", status);
+  if (from)     params.set("date_from", from);
+  if (to)       params.set("date_to", to);
 
   location.href = `/statement-view.html?${params.toString()}`;
 }
-</script>
+  </script> 
 
 </body>
 </html>
