@@ -29,7 +29,7 @@ label {
   margin-top: 10px;
 }
 
-input, button {
+input, select, button {
   width: 100%;
   padding: 10px;
   font-size: 14px;
@@ -54,8 +54,12 @@ button {
   <label>Customer</label>
   <input id="customer" placeholder="Leave empty for ALL customers">
 
-   <label>status</label>
-   <input id="status" placeholder="Leave empty for ALL status">
+   <label>Status</label>
+<select id="status">
+  <option value="">ALL</option>
+  <option value="PAID">PAID</option>
+  <option value="UNPAID">UNPAID</option>
+</select>
   
   <label>From Date</label>
   <input type="date" id="from">
