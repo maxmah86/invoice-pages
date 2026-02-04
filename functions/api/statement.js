@@ -31,7 +31,7 @@ export async function onRequest({ request, env }) {
      =============================== */
   const url = new URL(request.url);
   const customer = url.searchParams.get("customer"); // optional
-  const status    = searchParams.get("status");
+  const status    = url.searchParams.get("status");
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
 
