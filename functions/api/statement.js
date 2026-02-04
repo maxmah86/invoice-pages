@@ -31,6 +31,7 @@ export async function onRequest({ request, env }) {
      =============================== */
   const url = new URL(request.url);
   const customer = url.searchParams.get("customer"); // optional
+  const status    = searchParams.get("status");
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
 
@@ -50,10 +51,21 @@ export async function onRequest({ request, env }) {
   `;
   const binds = [];
 
-  if (customer) {
-    sql += " AND customer = ?";
-    binds.push(customer);
-  }
+  /* ===============================
+     * Customer keyword
+     * =============================== */
+    if (customer) {
+      sql += " AND customer LIKE ?";
+      binds.push(`%${customer}%`);
+    }
+
+    /* ===============================
+     * Status keyword 
+     * =============================== */
+    if (status) {
+      sql += " AND status LIKE ?";
+      binds.push(`%${status}%`);
+    }
 
   if (from) {
     sql += " AND date(created_at) >= date(?)";
