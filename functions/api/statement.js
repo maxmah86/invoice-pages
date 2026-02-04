@@ -64,7 +64,7 @@ export async function onRequest({ request, env }) {
      * =============================== */
     if (status) {
       sql += " AND status LIKE ?";
-      binds.push(`%${status}%`);
+      binds.push(`${status}`);
     }
 
   if (from) {
