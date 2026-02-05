@@ -350,17 +350,23 @@
           itemsTbody.innerHTML = '';
           if (data.items && data.items.length) {
             data.items.forEach((item, i) => {
-              const amount = (item.qty || 0) * (item.price || 0);
-              const tr = document.createElement('tr');
-              tr.innerHTML = `
-                <td>${i + 1}</td>
-                <td>${item.description || ''}</td>
-                <td class="text-right">${item.qty}</td>
-                <td class="text-right">${formatCurrency(item.price)}</td>
-                <td class="text-right">${formatCurrency(amount)}</td>
-              `;
-              itemsTbody.appendChild(tr);
-            });
+  const qty = Number(item.qty || 0);
+  const price = Number(item.price || 0);
+  const amount = qty * price;
+
+  const showPrice  = price > 0 ? formatCurrency(price) : '';
+  const showAmount = amount > 0 ? formatCurrency(amount) : '';
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>${i + 1}</td>
+    <td>${item.description || ''}</td>
+    <td class="text-right">${qty}</td>
+    <td class="text-right">${showPrice}</td>
+    <td class="text-right">${showAmount}</td>
+  `;
+  itemsTbody.appendChild(tr);
+});
           } else {
             itemsTbody.innerHTML = '<tr><td colspan="5">No items found</td></tr>';
           }
