@@ -137,13 +137,20 @@
 
     /* PRINT MODE */
     @media print {
-      button {
-        display: none !important;
-      }
-      .company-chop {
-        position: absolute;
-      }
-    }
+  button {
+    display: none !important;
+  }
+
+  /* ✅ hide invoice status when printing */
+  .status-badge,
+  #statusBadge {
+    display: none !important;
+  }
+
+  .company-chop {
+    position: absolute;
+  }
+}
 
 /* ===== SIGNATURE ===== */
 .signature {
@@ -210,8 +217,7 @@
         <div><strong>Invoice No:</strong> <span id="invoiceNo">—</span></div>
         <div><strong>Date:</strong> <span id="invoiceDate">—</span></div>
         <div><strong>To:</strong> <span id="customer">—</span></div>
-        <div id="statusBadge" style="margin-top: 4px; font-weight: bold;"></div>
-      </div>
+        <<div id="statusBadge" class="status-badge" style="margin-top: 4px; font-weight: bold;"></div>
     </div>
   </header>
 
