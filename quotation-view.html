@@ -37,10 +37,6 @@ body {
   gap: 10px;
 }
 
-.company-logo {
-  width: 60px;
-}
-
 .company h1 {
   margin: 0;
   font-size: 22px;
@@ -118,10 +114,12 @@ th {
 
 <body>
 
+<!-- ================= ACTION BUTTONS ================= -->
 <div class="no-print" id="action-buttons" style="text-align:right; margin-bottom:10px;">
-  <button onclick="goEdit()">Edit</button>
-  <button onclick="approveQuotation()">Approve</button>
-  <button onclick="rejectQuotation()">Reject</button>
+  <button id="btn-edit" onclick="goEdit()">Edit</button>
+  <button id="btn-approve" onclick="approveQuotation()">Approve</button>
+  <button id="btn-convert" onclick="convertInvoice()">Convert to Invoice</button>
+  <button id="btn-reject" onclick="rejectQuotation()">Reject</button>
 </div>
 
 <div class="no-print" style="text-align:right">
@@ -130,12 +128,12 @@ th {
 
 <!-- ================= HEADER ================= -->
 <div class="header">
-  <div class="company" id="companyInfo">
+  <div class="company">
     <div class="company-header">
       <img id="company-logo" alt="Company Logo">
-      <div class="company-text">
+      <div>
         <h1 id="comp-name">Loading...</h1>
-        <div id="comp-reg" class="ssm-code"></div>
+        <div id="comp-reg"></div>
       </div>
     </div>
     <address style="font-style: normal;">
@@ -160,45 +158,24 @@ th {
 
 <!-- ================= ITEMS ================= -->
 <table>
-
   <thead>
-  <tr>
-    <th style="width:5%">No</th>
-    <th>Description</th>
-    <th style="width:8%">UOM</th>
-    <th style="width:8%">Qty</th>
-    <th style="width:12%">Unit Price</th>
-    <th style="width:15%">Amount</th>
-  </tr>
-</thead>
-
-
+    <tr>
+      <th style="width:5%">No</th>
+      <th>Description</th>
+      <th style="width:8%">UOM</th>
+      <th style="width:8%">Qty</th>
+      <th style="width:12%">Unit Price</th>
+      <th style="width:15%">Amount</th>
+    </tr>
+  </thead>
   <tbody id="items"></tbody>
 </table>
 
 <!-- ================= BANK ================= -->
-
-
-<div class="bank-info" style="margin-top:15px; font-size:13px; line-height:1.3;">
-
-  <div style="margin-bottom:6px;">
-    <strong>ALL CHEQUES TO BE CROSSED AND MADE PAYABLE TO THE ORDER OF</strong>
-    <strong class="company-name"></strong>
-  </div>
-
-  <div style="margin-bottom:2px;">
-    <strong>Bank Details</strong><br>
-    <strong class="company-name"></strong>
-  </div>
-
-  <div>
-    <span id="bank-info"></span>
-  </div>
-
+<div class="bank-info" style="margin-top:15px; font-size:13px;">
+  <strong>Bank Details</strong><br>
+  <span id="bank-info"></span>
 </div>
-
-
-
 
 <!-- ================= TERMS ================= -->
 <div class="terms">
@@ -215,15 +192,15 @@ th {
   </div>
 </div>
 
-
+<!-- ================= SCRIPT ================= -->
 <script>
+/* ===== BASIC ===== */
 const id = new URL(location.href).searchParams.get("id");
 const CURRENCY = CONFIG.CURRENCY || "RM";
-
-function qid(id){ return document.getElementById(id); }
+const qid = (id) => document.getElementById(id);
 
 /* ================= LOAD DATA ================= */
-fetch("/api/quotation-view?id=" + id)
+fetch("/api/quotation-view?id=" + id, { credentials: "include" })
   .then(r => r.json())
   .then(json => {
     if (!json.success) {
@@ -234,7 +211,10 @@ fetch("/api/quotation-view?id=" + id)
     const q = json.data;
     const sections = q.sections || [];
 
-    // header
+    // ✅ 关键修正：统一 status
+    const status = (q.status || "").toUpperCase().trim();
+
+    /* ===== Header ===== */
     qid("quotation_no").innerText = q.quotation_no;
     qid("quotation_date").innerText = q.created_at?.slice(0,10) || "";
     qid("customer").innerText = q.customer;
@@ -242,11 +222,28 @@ fetch("/api/quotation-view?id=" + id)
     qid("project_address").innerText = q.project_address || "";
     qid("terms").innerText = q.terms_snapshot || "";
 
+    /* ===== Button visibility ===== */
+    if (status === "OPEN") {
+      qid("btn-edit").style.display = "";
+      qid("btn-approve").style.display = "";
+      qid("btn-convert").style.display = "";
+      qid("btn-reject").style.display = "";
+    } else if (status === "ACCEPTED") {
+      qid("btn-edit").style.display = "none";
+      qid("btn-approve").style.display = "none";
+      qid("btn-reject").style.display = "none";
+      qid("btn-convert").style.display = "";
+    } else {
+      qid("btn-edit").style.display = "none";
+      qid("btn-approve").style.display = "none";
+      qid("btn-convert").style.display = "none";
+      qid("btn-reject").style.display = "none";
+    }
+
     renderItems(sections, q.discount || 0);
   });
 
 /* ================= ACTIONS ================= */
-
 function goEdit() {
   location.href = "/quotation-edit.html?id=" + id;
 }
@@ -275,16 +272,11 @@ async function rejectQuotation() {
   const reason = prompt("Reject reason (optional):");
   if (reason === null) return;
 
-  if (!confirm("Reject this quotation?")) return;
-
   const res = await fetch("/api/quotation-reject", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      quotation_id: id,
-      reason
-    })
+    body: JSON.stringify({ quotation_id: id, reason })
   });
 
   if (!res.ok) {
@@ -292,80 +284,85 @@ async function rejectQuotation() {
     return;
   }
 
-  alert("Quotation rejected");
   location.href = "/quotations.html";
 }
 
-/* ================= RENDER ITEMS ================= */
+async function convertInvoice() {
+  if (!confirm("Convert this quotation to invoice?")) return;
 
+  const res = await fetch("/api/quotation-convert-invoice", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ quotation_id: id })
+  });
+
+  const json = await res.json();
+  if (!json.success) {
+    alert(json.error);
+    return;
+  }
+
+  location.href = "/invoice-view.html?id=" + json.data.invoice_id;
+}
+
+/* ================= RENDER ITEMS ================= */
 function renderItems(sections, discount) {
   const tbody = qid("items");
   tbody.innerHTML = "";
-
   let grandTotal = 0;
 
   sections.forEach(sec => {
     tbody.insertAdjacentHTML(
       "beforeend",
-      `<tr class="section-title">
-        <td colspan="6">${sec.section_title}</td>
-      </tr>`
+      `<tr class="section-title"><td colspan="6">${sec.section_title}</td></tr>`
     );
 
     let sectionTotal = 0;
 
     sec.items.forEach(it => {
       const qty = Number(it.qty) || 0;
-      const unitPrice = Number(it.unit_price) || 0;
+      const price = Number(it.unit_price) || 0;
       const line = Number(it.line_total) || 0;
 
       sectionTotal += line;
       grandTotal += line;
 
-      // ⭐ 统一规则：值为 0 → 透明
-      const qtyClass   = qty === 0 ? "right amount-zero" : "right";
-      const priceClass = unitPrice === 0 ? "right amount-zero" : "right";
-      const amtClass   = line === 0 ? "right amount-zero" : "right";
-
-      tbody.insertAdjacentHTML(
-        "beforeend",
-        `<tr>
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr>
           <td>${it.item_no || ""}</td>
           <td>${it.description}</td>
           <td class="right">${it.UOM || ""}</td>
-          <td class="${qtyClass}">${qty}</td>
-          <td class="${priceClass}">${unitPrice.toFixed(2)}</td>
-          <td class="${amtClass}">${line.toFixed(2)}</td>
-        </tr>`
-      );
+          <td class="right ${qty === 0 ? 'amount-zero' : ''}">${qty}</td>
+          <td class="right ${price === 0 ? 'amount-zero' : ''}">${price.toFixed(2)}</td>
+          <td class="right ${line === 0 ? 'amount-zero' : ''}">${line.toFixed(2)}</td>
+        </tr>
+      `);
     });
 
-    tbody.insertAdjacentHTML(
-      "beforeend",
-      `<tr class="section-subtotal">
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr class="section-subtotal">
         <td colspan="5" class="right">Subtotal</td>
         <td class="right">${sectionTotal.toFixed(2)}</td>
-      </tr>`
-    );
+      </tr>
+    `);
   });
 
   if (discount > 0) {
-    tbody.insertAdjacentHTML(
-      "beforeend",
-      `<tr>
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr>
         <td colspan="5" class="right">Discount</td>
         <td class="right">-${discount.toFixed(2)}</td>
-      </tr>`
-    );
+      </tr>
+    `);
   }
 
-  tbody.insertAdjacentHTML(
-    "beforeend",
-    `<tr class="grand-total">
+  tbody.insertAdjacentHTML("beforeend", `
+    <tr class="grand-total">
       <td colspan="5" class="right">TOTAL (${CURRENCY})</td>
       <td class="right">${(grandTotal - discount).toFixed(2)}</td>
-    </tr>`
-  );
+    </tr>
+  `);
 }
 
 /* ================= COMPANY ================= */
