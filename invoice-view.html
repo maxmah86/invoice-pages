@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <title>Invoice</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="/js/config.js"></script>
-  <script src="/js/company-settings.js"></script>
   <style>
     :root {
       --gap: 10px;
@@ -14,6 +12,7 @@
       --muted-bg: #f0f0f0;
       --padding: 8px;
     }
+
     body {
       font-family: var(--font);
       margin: 16px;
@@ -126,7 +125,7 @@
       line-height: 1.6;
     }
 
-    /* Company Chop */
+    /* Company Chop (右下角) */
     .company-chop {
       position: fixed;
       right: 30px;
@@ -144,23 +143,6 @@
         position: absolute;
       }
     }
-
-/* ===== SIGNATURE ===== */
-.signature {
-  margin-top: 50px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.signature-box {
-  text-align: center;
-  font-size: 13px;
-}
-
-.signature-box img {
-  width: 120px;
-}
-
 
     /* Responsive tweaks */
     @media (max-width: 720px) {
@@ -184,16 +166,18 @@
   <header class="header" role="banner">
     <div class="company" id="companyInfo">
       <div class="company-header">
-        <img id="comp-logo" src="" alt="Logo" class="company-logo" />
+        <img src="/icon-512.png" alt="MMAC Logo" class="company-logo" />
         <div class="company-text">
-          <h1 id="comp-name">Loading...</h1>
-          <div id="comp-reg" class="ssm-code"></div>
+          <h1>MMAC CONSTRUCTION</h1>
+          <div class="ssm-code">201903134488 (002977225-A)</div>
         </div>
       </div>
 
       <address>
-        <div id="comp-address"></div>
-        <div id="comp-contact"></div>
+        52, Jalan Mahogani SD 1/3<br />
+        Sri Damansara<br />
+        52200 Kuala Lumpur, Malaysia<br />
+        Tel: 016-444-2128
       </address>
     </div>
 
@@ -210,7 +194,6 @@
         <div><strong>Invoice No:</strong> <span id="invoiceNo">—</span></div>
         <div><strong>Date:</strong> <span id="invoiceDate">—</span></div>
         <div><strong>To:</strong> <span id="customer">—</span></div>
-        <div id="statusBadge" style="margin-top: 4px; font-weight: bold;"></div>
       </div>
     </div>
   </header>
@@ -224,150 +207,206 @@
           <th>Description</th>
           <th style="width:10%">Qty</th>
           <th style="width:15%">Unit Price</th>
-          <th style="width:15%">Amount (<span class="currency-label">RM</span>)</th>
+          <th style="width:15%">Amount (RM)</th>
         </tr>
       </thead>
       <tbody id="items" aria-live="polite"></tbody>
     </table>
 
     <div class="total">
-      TOTAL (<span class="currency-label">RM</span>): <span id="total">0.00</span>
+      TOTAL (RM): <span id="total">0.00</span>
     </div>
   </main>
 
   <footer class="footer" role="contentinfo">
     <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br />
-    <span id="footer-comp-name">Loading...</span><br /><br />
+    MMAC CONSTRUCTION<br /><br />
 
     <strong>COMPANY ACCOUNT NUMBER:</strong><br />
-    <div id="bank-info">Loading Bank Info...</div><br />
+    MAYBANK : 5142-0863-6636<br /><br />
 
     Thank you.
   </footer>
 
-  <div class="signature">
-  <div class="signature-box">
-    <img id="company-chop">
-    <div id="authorized-title"></div>
-    <div><strong id="authorized-name"></strong></div>
-  </div>
-</div>
+  <img src="/mmac-chop.png" alt="MMAC Company Chop" class="company-chop" />
 
   <script>
     (function () {
+      // Utilities
+      const qs = (sel) => document.querySelector(sel);
       const qid = (id) => document.getElementById(id);
-
-      // 1. 同步加载静态公司设置 (对应 company-settings.js)
-      if (typeof COMPANY_CONFIG !== 'undefined') {
-          qid('comp-logo').src = COMPANY_CONFIG.logoUrl;
-          qid('footer-comp-name').textContent = COMPANY_CONFIG.name;
-          // 其他具有 ID 的字段 (如 #bank-info) 由 company-settings.js 自动填充
-      }
-
-      // 2. 加载全局 CONFIG 配置
-      const CURRENCY_CODE = typeof CONFIG !== 'undefined' ? CONFIG.CURRENCY : 'RM';
-      const API_BASE = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : '/api';
-
-      document.querySelectorAll('.currency-label').forEach(el => el.textContent = CURRENCY_CODE);
-
       const formatCurrency = (value) => {
-        return CURRENCY_CODE + ' ' + Number(value || 0).toLocaleString('en-MY', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        });
+        try {
+          return new Intl.NumberFormat('en-MY', {
+            style: 'currency',
+            currency: 'MYR',
+            currencyDisplay: 'narrowSymbol',
+            minimumFractionDigits: 2
+          }).format(value);
+        } catch {
+          return 'RM ' + Number(value).toFixed(2);
+        }
       };
+
+      // Elements
+      const printBtn = qid('printBtn');
+      const editBtn = qid('editBtn');
+      const voidBtn = qid('voidBtn');
+      const invoiceNoEl = qid('invoiceNo');
+      const invoiceDateEl = qid('invoiceDate');
+      const customerEl = qid('customer');
+      const itemsTbody = qid('items');
+      const totalEl = qid('total');
 
       const params = new URLSearchParams(location.search);
       const id = params.get('id');
-
       if (!id) {
-        qid('items').innerHTML = '<tr><td colspan="5">No invoice id provided.</td></tr>';
-        ['printBtn', 'editBtn', 'voidBtn'].forEach(b => qid(b).disabled = true);
+        // If no id provided, inform the user and stop further processing
+        invoiceNoEl.textContent = 'N/A';
+        invoiceDateEl.textContent = 'N/A';
+        customerEl.textContent = 'N/A';
+        itemsTbody.innerHTML = '<tr><td colspan="5">No invoice id provided.</td></tr>';
+        printBtn.disabled = true;
+        editBtn.disabled = true;
+        voidBtn.disabled = true;
         return;
       }
 
-      // 3. 页面控制逻辑
-      qid('printBtn').addEventListener('click', () => window.print());
-      qid('editBtn').addEventListener('click', () => {
+      // Print handling with before/after hooks to restore title reliably
+      const originalTitle = document.title;
+      const setPrintTitle = () => { document.title = `invoice-${id}.pdf`; };
+      const restoreTitle = () => { document.title = originalTitle; };
+
+      // Some browsers support onbeforeprint/onafterprint
+      window.onbeforeprint = setPrintTitle;
+      window.onafterprint = restoreTitle;
+
+      // Also handle as fallback
+      printBtn.addEventListener('click', () => {
+        setPrintTitle();
+        // Use print(), then restore via afterprint or timeout fallback
+        window.print();
+        // Timeout fallback: restore after 1s if onafterprint not triggered
+        setTimeout(restoreTitle, 1000);
+      });
+
+      editBtn.addEventListener('click', () => {
         location.href = `/invoice-edit.html?id=${encodeURIComponent(id)}`;
       });
 
-      qid('voidBtn').addEventListener('click', async () => {
+      voidBtn.addEventListener('click', async () => {
         if (!confirm('Are you sure you want to VOID this invoice?')) return;
+        voidBtn.disabled = true;
         try {
-          const res = await fetch(`${API_BASE}/invoice-void`, {
+          const res = await fetch('/api/invoice-void', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ id })
           });
-          if (!res.ok) throw new Error('Void failed');
+          if (!res.ok) {
+            const text = await res.text().catch(() => null);
+            throw new Error(text || 'Server returned error');
+          }
           alert('Invoice voided');
           location.reload();
         } catch (err) {
-          alert(err.message);
+          console.error('Void error', err);
+          alert('Failed to void invoice: ' + (err.message || 'Unknown error'));
+          voidBtn.disabled = false;
         }
       });
 
-      // 4. 加载 API 数据 (对接 invoice-view.js)
-      async function loadInvoice() {
+      // Load invoice data
+      (async function load() {
         try {
-          const res = await fetch(`${API_BASE}/invoice-view?id=${encodeURIComponent(id)}`);
-
-          if (res.status === 401 && typeof CONFIG !== 'undefined') {
-            location.replace(CONFIG.ROUTES.LOGIN);
+          const res = await fetch(`/api/invoice-view?id=${encodeURIComponent(id)}`, { credentials: 'include' });
+          if (res.status === 401) {
+            location.replace('/login.html');
             return;
           }
-
+          if (!res.ok) {
+            const text = await res.text().catch(() => null);
+            throw new Error(text || `HTTP.status}`);
+          }
           const data = await res.json();
-          if (!data || !data.invoice) throw new Error('Invoice not found');
 
-          qid('invoiceNo').textContent = data.invoice.invoice_no;
-          qid('customer').textContent = data.invoice.customer;
-          document.title = `Invoice - ${data.invoice.invoice_no}`;
-
-          // 日期处理
-          let dateStr = data.invoice.created_at || '';
-          qid('invoiceDate').textContent = dateStr.split(' ')[0] || '—';
-
-          // 状态颜色处理
-          if (data.invoice.status) {
-            const status = data.invoice.status.toUpperCase();
-            const badge = qid('statusBadge');
-            badge.textContent = status;
-            if (typeof CONFIG !== 'undefined') {
-                badge.style.color = CONFIG.STATUS_COLORS[status] || '#000';
-            }
+          if (!data || !data.invoice) {
+            throw new Error('Invoice not found');
           }
 
-          // 渲染项目
-          const itemsTbody = qid('items');
+          // Populate header/meta
+          invoiceNoEl.textContent = data.invoice.invoice_no ?? '—';
+
+          // Parse date robustly: replace space with T to help browsers parse "YYYY-MM-DD HH:MM:SS"
+          let createdAt = data.invoice.created_at || '';
+          let dateDisplay = createdAt.split(' ')[0] || '—';
+          try {
+            const d = new Date(createdAt.replace(' ', 'T'));
+            if (!isNaN(d)) {
+              dateDisplay = d.toLocaleDateString();
+            }
+          } catch (e) {
+            // keep fallback
+          }
+          invoiceDateEl.textContent = dateDisplay;
+
+          customerEl.textContent = data.invoice.customer ?? '—';
+
+          // Build items safely (avoid innerHTML)
           itemsTbody.innerHTML = '';
-          if (data.items && data.items.length) {
+          let total = 0;
+          if (Array.isArray(data.items) && data.items.length) {
             data.items.forEach((item, i) => {
-              const amount = (item.qty || 0) * (item.price || 0);
+              const qty = Number(item.qty) || 0;
+              const price = Number(item.price) || 0;
+              const amount = qty * price;
+              total += amount;
+
               const tr = document.createElement('tr');
-              tr.innerHTML = `
-                <td>${i + 1}</td>
-                <td>${item.description || ''}</td>
-                <td class="text-right">${item.qty}</td>
-                <td class="text-right">${formatCurrency(item.price)}</td>
-                <td class="text-right">${formatCurrency(amount)}</td>
-              `;
+
+              const tdNo = document.createElement('td');
+              tdNo.textContent = String(i + 1);
+              tr.appendChild(tdNo);
+
+              const tdDesc = document.createElement('td');
+              tdDesc.textContent = item.description ?? '';
+              tr.appendChild(tdDesc);
+
+              const tdQty = document.createElement('td');
+              tdQty.className = 'text-right';
+              tdQty.textContent = qty.toString();
+              tr.appendChild(tdQty);
+
+              const tdPrice = document.createElement('td');
+              tdPrice.className = 'text-right';
+              tdPrice.textContent = formatCurrency(price);
+              tr.appendChild(tdPrice);
+
+              const tdAmount = document.createElement('td');
+              tdAmount.className = 'text-right';
+              tdAmount.textContent = formatCurrency(amount);
+              tr.appendChild(tdAmount);
+
               itemsTbody.appendChild(tr);
             });
           } else {
-            itemsTbody.innerHTML = '<tr><td colspan="5">No items found</td></tr>';
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.colSpan = 5;
+            td.textContent = 'No items';
+            tr.appendChild(td);
+            itemsTbody.appendChild(tr);
           }
 
-          qid('total').textContent = formatCurrency(data.invoice.amount);
-
+          totalEl.textContent = formatCurrency(total);
         } catch (err) {
           console.error(err);
-          qid('items').innerHTML = '<tr><td colspan="5">Error loading data.</td></tr>';
+          // Friendly UI fallback
+          itemsTbody.innerHTML = '<tr><td colspan="5">Failed to load invoice data.</td></tr>';
+          alert('Unable to load invoice: ' + (err.message || 'Unknown error'));
         }
-      }
-
-      loadInvoice();
+      })();
     })();
   </script>
 </body>
