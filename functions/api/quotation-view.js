@@ -1,5 +1,4 @@
-export async function onRequestGet(context) {
-  const { request, env } = context;
+export async function onRequestGet({ request, env }) {
   const db = env.DB;
 
   const { searchParams } = new URL(request.url);
@@ -13,17 +12,24 @@ export async function onRequestGet(context) {
    * Admin auth
    * =============================== */
   const authRes = await fetch(new URL("/api/auth-check", request.url), {
-    headers: { Cookie: request.headers.get("Cookie") || "" }
+    headers: {
+      Cookie: request.headers.get("Cookie") || ""
+    }
   });
+
   const auth = await authRes.json();
 
-  if (!auth.loggedIn || auth.role !== "admin") {
+  if (!auth.loggedIn) {
+    return jsonError("Not logged in", 401);
+  }
+
+  if (auth.role !== "admin") {
     return jsonError("Permission denied", 403);
   }
 
   try {
     /* ===============================
-     * 1. Quotation main
+     * 1️⃣ Quotation main
      * =============================== */
     const quotation = await db.prepare(`
       SELECT *
@@ -36,7 +42,7 @@ export async function onRequestGet(context) {
     }
 
     /* ===============================
-     * 2. Sections
+     * 2️⃣ Sections
      * =============================== */
     const secRes = await db.prepare(`
       SELECT *
@@ -46,7 +52,7 @@ export async function onRequestGet(context) {
     `).bind(id).all();
 
     /* ===============================
-     * 3. Items
+     * 3️⃣ Items
      * =============================== */
     const itemRes = await db.prepare(`
       SELECT *
@@ -59,7 +65,7 @@ export async function onRequestGet(context) {
     const items = itemRes.results || [];
 
     /* ===============================
-     * 4. Attach items to sections
+     * 4️⃣ Attach items to sections
      * =============================== */
     const sectionMap = {};
 
@@ -76,7 +82,6 @@ export async function onRequestGet(context) {
       if (it.section_id && sectionMap[it.section_id]) {
         sectionMap[it.section_id].items.push(it);
       } else {
-        // 👇 没有 section 的 item
         noSectionItems.push(it);
       }
     });
@@ -84,7 +89,7 @@ export async function onRequestGet(context) {
     let finalSections = Object.values(sectionMap);
 
     /* ===============================
-     * 5. 🔥 方案 A：虚拟 Section
+     * 5️⃣ Virtual section (optional)
      * =============================== */
     if (noSectionItems.length > 0) {
       finalSections.unshift({
@@ -96,7 +101,7 @@ export async function onRequestGet(context) {
     }
 
     /* ===============================
-     * 6. Response
+     * 6️⃣ Response
      * =============================== */
     return jsonOK({
       ...quotation,
@@ -104,7 +109,7 @@ export async function onRequestGet(context) {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("quotation-view error:", err);
     return jsonError(err.message || "Load quotation failed", 500);
   }
 }
@@ -113,14 +118,15 @@ export async function onRequestGet(context) {
  * Helpers
  * =============================== */
 function jsonOK(data) {
-  return new Response(JSON.stringify({ success: true, data }), {
-    headers: { "Content-Type": "application/json" }
-  });
+  return new Response(
+    JSON.stringify({ success: true, data }),
+    { headers: { "Content-Type": "application/json" } }
+  );
 }
 
 function jsonError(message, status = 400) {
-  return new Response(JSON.stringify({ success: false, error: message }), {
-    status,
-    headers: { "Content-Type": "application/json" }
-  });
+  return new Response(
+    JSON.stringify({ success: false, error: message }),
+    { status, headers: { "Content-Type": "application/json" } }
+  );
 }
