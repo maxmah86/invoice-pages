@@ -58,9 +58,9 @@ h1 {
 
 /* Progress badge */
 .progress {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
   font-weight: bold;
   background: #eee;
 }
@@ -159,18 +159,28 @@ function renderList(items) {
     div.innerHTML = `
       <div class="row">
         <div>
-          <div class="title">Checklist #${it.id}</div>
-          <div class="small">Quotation: ${it.quotation_no || it.quotation_id}</div>
-          <div class="small">📍 ${it.project_title || "No Project Title"}</div>
+          <!-- 主标题：Project Title -->
+          <div class="title">
+            📍 ${it.project_title || "Untitled Project"}
+          </div>
+
+          <div class="small">
+            Quotation: ${it.quotation_no || it.quotation_id}
+          </div>
+
           <div class="small">
             Progress: ${done} / ${total} (${percent}%)
           </div>
         </div>
+
         <div class="progress ${cls}">
           ${percent}%
         </div>
       </div>
-      <div class="small">Created: ${it.created_at}</div>
+
+      <div class="small">
+        Created: ${it.created_at}
+      </div>
     `;
 
     listBox.appendChild(div);

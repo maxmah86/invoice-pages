@@ -80,7 +80,6 @@ h1 {
   cursor: pointer;
   min-width: 110px;
   text-align: center;
-  transition: 0.2s;
 }
 
 .NOT_STARTED { background: #e0e0e0; color: #666; }
@@ -98,18 +97,9 @@ textarea {
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 14px;
-  font-family: inherit;
-}
-textarea:focus {
-  border-color: #3498db;
-  outline: none;
-}
-.saving {
-  opacity: 0.6;
-  pointer-events: none;
 }
 
-/* ===== Button ===== */
+/* ===== Buttons ===== */
 .btn-back {
   width: 100%;
   margin-top: 18px;
@@ -121,12 +111,27 @@ textarea:focus {
   color: #fff;
   cursor: pointer;
 }
+
+.btn-remove-checklist {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 14px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: none;
+  background: #e74c3c;
+  color: #fff;
+  cursor: pointer;
+}
 </style>
 </head>
 
 <body>
 
 <h1>Work Checklist</h1>
+
+<!-- admin-only action -->
+<div id="adminActions"></div>
 
 <div class="subtitle" id="headerInfo">
   Loading project details...
@@ -139,139 +144,169 @@ textarea:focus {
 <button class="btn-back" onclick="history.back()">Back</button>
 
 <script>
-const checklistId = new URLSearchParams(location.search).get("id");
+const checklistId = Number(
+  new URLSearchParams(location.search).get("id")
+);
+let IS_ADMIN = false;
+
+/* ===============================
+ * Check role
+ * =============================== */
+async function checkRole() {
+  const res = await fetch("/api/auth-check", {
+    credentials: "include"
+  });
+  const data = await res.json();
+
+  IS_ADMIN = data.role === "admin";
+
+  if (IS_ADMIN) {
+    document.getElementById("adminActions").innerHTML = `
+      <button
+        class="btn-remove-checklist"
+        onclick="removeChecklist()"
+      >
+        🗑 Remove Checklist
+      </button>
+    `;
+  }
+}
 
 /* ===============================
  * Load checklist
  * =============================== */
 async function loadChecklist() {
+  const res = await fetch(
+    `/api/work-checklist-view?id=${checklistId}`,
+    { credentials: "include" }
+  );
+
+  if (!res.ok) {
+    document.getElementById("itemsBox").innerHTML =
+      "<div style='color:red;text-align:center;'>Failed to load checklist</div>";
+    return;
+  }
+
+  const data = await res.json();
+
+  document.getElementById("headerInfo").innerHTML = `
+    <div>Quotation: <b>${data.checklist.quotation_no}</b></div>
+    <div class="project-title">📍 ${data.checklist.project_title || "-"}</div>
+    <div style="color:#7f8c8d;">
+      ${data.checklist.project_address || ""}
+    </div>
+  `;
+
+  const box = document.getElementById("itemsBox");
+  box.innerHTML = "";
+
+  data.items.forEach(it => {
+    const div = document.createElement("div");
+
+    if (it.status === "SECTION") {
+      div.className = "section-row";
+      div.textContent = it.description;
+    } else {
+      div.className = "item";
+      div.innerHTML = `
+        <div class="desc">${it.description}</div>
+
+        <div
+          class="status-btn ${it.status}"
+          onclick="toggleStatus(${it.id}, '${it.status}')"
+        >
+          ${it.status.replace("_", " ")}
+        </div>
+
+        <div class="remarks">
+          <textarea
+            onblur="saveRemarks(${it.id}, this.value)"
+          >${it.remarks || ""}</textarea>
+        </div>
+      `;
+    }
+
+    box.appendChild(div);
+  });
+}
+
+/* ===============================
+ * Remove checklist (admin only)
+ * =============================== */
+async function removeChecklist() {
+  if (
+    !confirm(
+      "This will permanently delete the entire checklist.\nAre you sure?"
+    )
+  ) return;
+
   try {
-    const res = await fetch(`/api/work-checklist-view?id=${checklistId}`, {
-      credentials: "include"
+    const res = await fetch("/api/work-checklist-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id: checklistId })
     });
 
-    if (!res.ok) throw new Error();
+    const text = await res.text();
 
-    const data = await res.json();
+    console.log("DELETE STATUS:", res.status);
+    console.log("DELETE RESPONSE:", text);
 
-    /* ----- Header ----- */
-    document.getElementById("headerInfo").innerHTML = `
-      <div>Quotation: <b>${data.checklist.quotation_no}</b></div>
-      <div class="project-title">📍 ${data.checklist.project_title || "-"}</div>
-      <div style="color:#7f8c8d;">
-        ${data.checklist.project_address || ""}
-      </div>
-    `;
+    if (!res.ok) {
+      alert(`Delete failed (${res.status}):\n${text}`);
+      return;
+    }
 
-    /* ----- Items ----- */
-    const box = document.getElementById("itemsBox");
-    box.innerHTML = "";
-
-    data.items.forEach(it => {
-      const div = document.createElement("div");
-
-      /* ===== SECTION ===== */
-      if (it.status === "SECTION") {
-        div.className = "section-row";
-        div.textContent = it.description;
-      }
-      /* ===== ITEM ===== */
-      else {
-        div.className = "item";
-        div.innerHTML = `
-          <div class="desc">${it.description}</div>
-
-          <div
-            class="status-btn ${it.status}"
-            id="btn-${it.id}"
-            onclick="toggleStatus(${it.id}, '${it.status}')"
-          >
-            ${it.status.replace("_", " ")}
-          </div>
-
-          <div class="remarks">
-            <textarea
-              id="remarks-${it.id}"
-              placeholder="Add worker remarks..."
-              onblur="saveRemarks(${it.id}, this.value)"
-            >${it.remarks || ""}</textarea>
-          </div>
-        `;
-      }
-
-      box.appendChild(div);
-    });
+    // ✅ 只有成功才跳页
+    location.href = "/work-checklist.html";
 
   } catch (err) {
-    document.getElementById("itemsBox").innerHTML =
-      "<div style='color:red;text-align:center;'>Failed to load checklist.</div>";
+    console.error(err);
+    alert("Network / JS error");
   }
 }
 
 /* ===============================
- * Status toggle
+ * Status & remarks (existing)
  * =============================== */
-function getNextStatus(current) {
-  if (current === "NOT_STARTED") return "IN_PROGRESS";
-  if (current === "IN_PROGRESS") return "DONE";
+function getNextStatus(c) {
+  if (c === "NOT_STARTED") return "IN_PROGRESS";
+  if (c === "IN_PROGRESS") return "DONE";
   return "IN_PROGRESS";
 }
 
 async function toggleStatus(id, current) {
-  const next = getNextStatus(current);
-  const btn = document.getElementById(`btn-${id}`);
-  const oldText = btn.textContent;
-
-  btn.textContent = "Updating...";
-  btn.style.opacity = "0.6";
-
-  try {
-    const res = await fetch("/api/work-checklist-item-update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ item_id: id, status: next })
-    });
-
-    if (!res.ok) throw new Error();
-
-    btn.className = `status-btn ${next}`;
-    btn.textContent = next.replace("_", " ");
-    btn.style.opacity = "1";
-    btn.setAttribute("onclick", `toggleStatus(${id}, '${next}')`);
-
-  } catch {
-    alert("Update failed");
-    btn.textContent = oldText;
-    btn.style.opacity = "1";
-  }
+  await fetch("/api/work-checklist-item-update", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      item_id: id,
+      status: getNextStatus(current)
+    })
+  });
+  loadChecklist();
 }
 
-/* ===============================
- * Save remarks
- * =============================== */
 async function saveRemarks(id, remarks) {
-  const textarea = document.getElementById(`remarks-${id}`);
-  textarea.classList.add("saving");
-
-  try {
-    const res = await fetch("/api/work-checklist-item-remarks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ id, remarks })
-    });
-
-    if (!res.ok) throw new Error();
-  } catch {
-    alert("Failed to save remarks");
-  } finally {
-    textarea.classList.remove("saving");
-  }
+  await fetch("/api/work-checklist-item-remarks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ id, remarks })
+  });
 }
 
 /* Init */
-loadChecklist();
+(async () => {
+  if (!Number.isInteger(checklistId)) {
+    alert("Invalid checklist id");
+    return;
+  }
+  await checkRole();
+  await loadChecklist();
+})();
 </script>
 
 </body>
