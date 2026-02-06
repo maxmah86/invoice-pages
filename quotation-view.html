@@ -116,6 +116,8 @@ th {
 
 <!-- ================= ACTION BUTTONS ================= -->
 <div class="no-print" id="action-buttons" style="text-align:right; margin-bottom:10px;">
+
+  <button id="homeBtn" type="button">HOME</button>
   <button id="btn-edit" onclick="goEdit()">Edit</button>
   <button id="btn-approve" onclick="approveQuotation()">Approve</button>
   <button id="btn-convert" onclick="convertInvoice()">Convert to Invoice</button>
@@ -224,16 +226,28 @@ fetch("/api/quotation-view?id=" + id, { credentials: "include" })
 
     /* ===== Button visibility ===== */
     if (status === "OPEN") {
+      qid('homeBtn').addEventListener('click', () => {
+  // 改成你的首页路径
+  location.href = '/index.html';
+});
       qid("btn-edit").style.display = "";
       qid("btn-approve").style.display = "";
       qid("btn-convert").style.display = "";
       qid("btn-reject").style.display = "";
     } else if (status === "ACCEPTED") {
+      qid('homeBtn').addEventListener('click', () => {
+  // 改成你的首页路径
+  location.href = '/index.html';
+});
       qid("btn-edit").style.display = "none";
       qid("btn-approve").style.display = "none";
       qid("btn-reject").style.display = "none";
       qid("btn-convert").style.display = "";
     } else {
+      qid('homeBtn').addEventListener('click', () => {
+  // 改成你的首页路径
+  location.href = '/index.html';
+});
       qid("btn-edit").style.display = "none";
       qid("btn-approve").style.display = "none";
       qid("btn-convert").style.display = "none";

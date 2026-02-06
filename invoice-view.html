@@ -208,10 +208,11 @@
       <div id="invoiceLabel" class="invoice-title">INVOICE</div>
 
       <div class="invoice-actions" id="actionButtons">
-        <button id="printBtn" type="button">PRINT / SAVE PDF</button>
-        <button id="editBtn" type="button">EDIT</button>
-        <button id="voidBtn" type="button">VOID</button>
-      </div>
+  <button id="homeBtn" type="button">HOME</button>
+  <button id="printBtn" type="button">PRINT / SAVE PDF</button>
+  <button id="editBtn" type="button">EDIT</button>
+  <button id="voidBtn" type="button">VOID</button>
+</div>
 
       <div class="invoice-meta" id="invoiceMeta">
         <div><strong>Invoice No:</strong> <span id="invoiceNo">—</span></div>
@@ -293,6 +294,10 @@
       }
 
       // 3. 页面控制逻辑
+      qid('homeBtn').addEventListener('click', () => {
+  // 改成你的首页路径
+  location.href = '/index.html';
+});
       qid('printBtn').addEventListener('click', () => window.print());
       qid('editBtn').addEventListener('click', () => {
         location.href = `/invoice-edit.html?id=${encodeURIComponent(id)}`;
