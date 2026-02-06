@@ -38,20 +38,31 @@ label {
   margin-bottom: 6px;
 }
 
-select, textarea {
+select {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   font-size: 14px;
   border-radius: 6px;
   border: 1px solid #ccc;
 }
 
-.checklist-item {
-  border-bottom: 1px solid #eee;
-  padding: 10px 0;
+/* ===== Preview styles ===== */
+.preview-section {
+  margin: 14px 0 8px;
+  padding: 8px 10px;
+  background: #f1f3f5;
+  border-left: 4px solid #3498db;
+  font-weight: bold;
+  color: #2c3e50;
+  border-radius: 4px;
 }
 
-.checklist-item:last-child {
+.preview-item {
+  padding: 8px 0 10px 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.preview-item:last-child {
   border-bottom: none;
 }
 
@@ -62,8 +73,10 @@ select, textarea {
 .item-meta {
   font-size: 12px;
   color: #777;
+  margin-top: 2px;
 }
 
+/* ===== Buttons ===== */
 .btn {
   width: 100%;
   padding: 12px;
@@ -99,13 +112,13 @@ select, textarea {
   </select>
 </div>
 
-<!-- ===== PREVIEW ITEMS ===== -->
+<!-- ===== PREVIEW ===== 
 <div class="card">
   <label>Checklist Preview</label>
   <div id="itemsBox" style="font-size:14px;color:#777;">
     Please select a quotation
   </div>
-</div>
+</div>-->
 
 <!-- ===== ACTION ===== -->
 <div class="card">
@@ -118,45 +131,35 @@ select, textarea {
 </div>
 
 <script>
-/* ===== ADMIN AUTH CHECK ===== */
+/* ===== AUTH CHECK ===== */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
   .then(d => {
-    if (!d.loggedIn) {
-      location.replace("/login.html");
-      return;
-    }
-
-    if (d.role !== "admin") {
-      // 非 admin 直接踢去 checklist list
-      location.replace("/work-checklist.html");
-    }
-  })
-  .catch(() => location.replace("/login.html"));
+    if (!d.loggedIn) location.replace("/login.html");
+    if (d.role !== "admin") location.replace("/work-checklist.html");
+  });
 
 const quotationSelect = document.getElementById("quotationSelect");
 const itemsBox = document.getElementById("itemsBox");
 
-/* ===== LOAD ACCEPTED QUOTATIONS ===== */
+/* ===== LOAD QUOTATIONS ===== */
 fetch("/api/quotation-list-for-checklist", { credentials: "include" })
-.then(r => r.json())
-.then(list => {
-  quotationSelect.innerHTML = `<option value="">-- Select quotation --</option>`;
-  list.forEach(q => {
-    const opt = document.createElement("option");
-    opt.value = q.id;
-    opt.textContent = `${q.quotation_no} - ${q.customer}`;
-    quotationSelect.appendChild(opt);
+  .then(r => r.json())
+  .then(list => {
+    quotationSelect.innerHTML =
+      `<option value="">-- Select quotation --</option>`;
+    list.forEach(q => {
+      const opt = document.createElement("option");
+      opt.value = q.id;
+      opt.textContent = `${q.quotation_no} - ${q.customer}`;
+      quotationSelect.appendChild(opt);
+    });
   });
-})
-.catch(() => {
-  quotationSelect.innerHTML = `<option value="">Failed to load</option>`;
-});
 
-/* ===== LOAD QUOTATION ITEMS ===== */
+/* ===== LOAD PREVIEW ===== */
 quotationSelect.onchange = async () => {
   const id = quotationSelect.value;
-  itemsBox.innerHTML = "Loading items...";
+  itemsBox.innerHTML = "Loading preview...";
 
   if (!id) {
     itemsBox.innerHTML = "Please select a quotation";
@@ -168,28 +171,55 @@ quotationSelect.onchange = async () => {
   });
 
   if (!res.ok) {
-    itemsBox.innerHTML = "Failed to load items";
+    itemsBox.innerHTML = "Failed to load quotation";
     return;
   }
 
   const data = await res.json();
-  const items = data.items;
+  const sections = data.sections || [];
+  const items = data.items || [];
 
-  if (!items.length) {
-    itemsBox.innerHTML = "No items found";
+  itemsBox.innerHTML = "";
+
+  /* ===== CASE 1: 有 section ===== */
+  if (sections.length) {
+    sections.forEach(sec => {
+      const secDiv = document.createElement("div");
+      secDiv.className = "preview-section";
+      secDiv.textContent = sec.section_title;
+      itemsBox.appendChild(secDiv);
+
+      items
+        .filter(it => it.section_id === sec.id)
+        .forEach(it => {
+          const itemDiv = document.createElement("div");
+          itemDiv.className = "preview-item";
+          itemDiv.innerHTML = `
+            <div class="item-desc">${it.description}</div>
+            <div class="item-meta">Default status: NOT_STARTED</div>
+          `;
+          itemsBox.appendChild(itemDiv);
+        });
+    });
     return;
   }
 
-  itemsBox.innerHTML = "";
-  items.forEach((it, i) => {
-    const div = document.createElement("div");
-    div.className = "checklist-item";
-    div.innerHTML = `
-      <div class="item-desc">${i + 1}. ${it.description}</div>
-      <div class="item-meta">Default status: NOT_STARTED</div>
-    `;
-    itemsBox.appendChild(div);
-  });
+  /* ===== CASE 2: 没 section，但有 items ===== */
+  if (items.length) {
+    items.forEach(it => {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "preview-item";
+      itemDiv.innerHTML = `
+        <div class="item-desc">${it.description}</div>
+        <div class="item-meta">Default status: NOT_STARTED</div>
+      `;
+      itemsBox.appendChild(itemDiv);
+    });
+    return;
+  }
+
+  /* ===== CASE 3: 什么都没有 ===== */
+  itemsBox.innerHTML = "No checklist items found";
 };
 
 /* ===== CREATE CHECKLIST ===== */

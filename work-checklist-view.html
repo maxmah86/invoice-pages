@@ -4,131 +4,226 @@
 <meta charset="UTF-8" />
 <title>Work Checklist</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 14px; }
-  .subtitle { 
-    background: #fff; padding: 12px; border-radius: 8px; 
-    border-left: 5px solid #3498db; margin-bottom: 16px; font-size: 14px; 
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1); line-height: 1.6;
-  }
-  .project-title { color: #2c3e50; font-weight: bold; font-size: 16px; margin-top: 5px; }
-  .card { background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-  .item { border-bottom: 1px solid #eee; padding: 16px 0; }
-  .item:last-child { border-bottom: none; }
-  .desc { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #333; }
-  
-  /* 状态按钮样式 */
-  .status-btn { 
-    display: inline-block; padding: 8px 16px; border-radius: 20px; 
-    font-size: 13px; font-weight: bold; cursor: pointer; 
-    text-align: center; min-width: 100px; transition: all 0.2s;
-  }
-  .NOT_STARTED { background: #e0e0e0; color: #666; }
-  .IN_PROGRESS { background: #f39c12; color: #fff; }
-  .DONE { background: #27ae60; color: #fff; }
-  
-  /* Section 特殊样式 */
-  .SECTION-ROW { 
-    background: #f9f9f9; padding: 10px; border-radius: 6px; 
-    text-align: center; color: #7f8c8d; font-weight: bold; 
-    border: 1px dashed #ccc; margin: 15px 0 10px 0; 
-  }
-  
-  .remarks { margin-top: 12px; }
-  textarea { 
-    width: 100%; box-sizing: border-box; margin-top: 8px; 
-    padding: 10px; border-radius: 6px; border: 1px solid #ccc; 
-    font-size: 14px; font-family: inherit;
-  }
-  textarea:focus { border-color: #3498db; outline: none; }
-  .saving { opacity: 0.5; pointer-events: none; }
 
-  button.btn-back {
-    width: 100%; padding: 14px; font-size: 16px; border-radius: 6px;
-    border: none; cursor: pointer; background: #34495e; color: #fff; margin-top: 15px;
-  }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 14px;
+}
+
+h1 {
+  margin-bottom: 12px;
+}
+
+/* ===== Header ===== */
+.subtitle {
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  border-left: 5px solid #3498db;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.project-title {
+  font-weight: bold;
+  font-size: 16px;
+  color: #2c3e50;
+}
+
+/* ===== Card ===== */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* ===== Section ===== */
+.section-row {
+  margin: 18px 0 10px;
+  padding: 10px 12px;
+  background: #f7f9fb;
+  border-left: 4px solid #3498db;
+  border-radius: 6px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+/* ===== Item ===== */
+.item {
+  border-bottom: 1px solid #eee;
+  padding: 14px 0;
+}
+.item:last-child {
+  border-bottom: none;
+}
+
+.desc {
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+/* ===== Status button ===== */
+.status-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 110px;
+  text-align: center;
+  transition: 0.2s;
+}
+
+.NOT_STARTED { background: #e0e0e0; color: #666; }
+.IN_PROGRESS { background: #f39c12; color: #fff; }
+.DONE { background: #27ae60; color: #fff; }
+
+/* ===== Remarks ===== */
+.remarks {
+  margin-top: 12px;
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  font-family: inherit;
+}
+textarea:focus {
+  border-color: #3498db;
+  outline: none;
+}
+.saving {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ===== Button ===== */
+.btn-back {
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: none;
+  background: #34495e;
+  color: #fff;
+  cursor: pointer;
+}
 </style>
 </head>
+
 <body>
 
 <h1>Work Checklist</h1>
-<div class="subtitle" id="headerInfo">Loading project details...</div>
 
-<div class="card" id="itemsBox">
-  <div style="text-align: center; padding: 20px;">Loading items...</div>
+<div class="subtitle" id="headerInfo">
+  Loading project details...
 </div>
 
-<button class="btn-back" onclick="location.href='/dashboard.html'">Back to Dashboard</button>
+<div class="card" id="itemsBox">
+  <div style="text-align:center;padding:20px;">Loading items...</div>
+</div>
+
+<button class="btn-back" onclick="history.back()">Back</button>
 
 <script>
 const checklistId = new URLSearchParams(location.search).get("id");
 
-/* ===== 1. 加载数据并渲染 UI ===== */
+/* ===============================
+ * Load checklist
+ * =============================== */
 async function loadChecklist() {
   try {
-    const res = await fetch(`/api/work-checklist-view?id=${checklistId}`, { credentials: "include" });
+    const res = await fetch(`/api/work-checklist-view?id=${checklistId}`, {
+      credentials: "include"
+    });
+
     if (!res.ok) throw new Error();
+
     const data = await res.json();
 
-    // 渲染顶端信息
+    /* ----- Header ----- */
     document.getElementById("headerInfo").innerHTML = `
-      <div>Quotation: <b>${data.checklist.quotation_no || data.checklist.quotation_id}</b></div>
-      <div class="project-title">📍 ${data.checklist.project_title || 'Project'}</div>
-      <div style="color:#7f8c8d;">${data.checklist.project_address || 'No Address Provided'}</div>
+      <div>Quotation: <b>${data.checklist.quotation_no}</b></div>
+      <div class="project-title">📍 ${data.checklist.project_title || "-"}</div>
+      <div style="color:#7f8c8d;">
+        ${data.checklist.project_address || ""}
+      </div>
     `;
 
+    /* ----- Items ----- */
     const box = document.getElementById("itemsBox");
     box.innerHTML = "";
 
     data.items.forEach(it => {
       const div = document.createElement("div");
-      
-      // 判断是否是 Section 标题
-      if (it.status === 'SECTION') {
-        div.className = "SECTION-ROW";
+
+      /* ===== SECTION ===== */
+      if (it.status === "SECTION") {
+        div.className = "section-row";
         div.textContent = it.description;
-      } else {
+      }
+      /* ===== ITEM ===== */
+      else {
         div.className = "item";
         div.innerHTML = `
           <div class="desc">${it.description}</div>
-          <div 
-            class="status-btn ${it.status}" 
-            id="btn-${it.id}" 
+
+          <div
+            class="status-btn ${it.status}"
+            id="btn-${it.id}"
             onclick="toggleStatus(${it.id}, '${it.status}')"
           >
-            ${it.status.replace('_', ' ')}
+            ${it.status.replace("_", " ")}
           </div>
+
           <div class="remarks">
-            <textarea 
+            <textarea
               id="remarks-${it.id}"
-              placeholder="Add worker remarks..." 
+              placeholder="Add worker remarks..."
               onblur="saveRemarks(${it.id}, this.value)"
             >${it.remarks || ""}</textarea>
           </div>
         `;
       }
+
       box.appendChild(div);
     });
+
   } catch (err) {
-    document.getElementById("itemsBox").innerHTML = "<div style='color:red;text-align:center;'>Failed to load checklist.</div>";
+    document.getElementById("itemsBox").innerHTML =
+      "<div style='color:red;text-align:center;'>Failed to load checklist.</div>";
   }
 }
 
-/* ===== 2. 状态切换逻辑 (修复无法切换问题) ===== */
+/* ===============================
+ * Status toggle
+ * =============================== */
 function getNextStatus(current) {
   if (current === "NOT_STARTED") return "IN_PROGRESS";
   if (current === "IN_PROGRESS") return "DONE";
-  return "IN_PROGRESS"; // DONE 之后点一下回到进行中
+  return "IN_PROGRESS";
 }
 
 async function toggleStatus(id, current) {
   const next = getNextStatus(current);
   const btn = document.getElementById(`btn-${id}`);
-
-  // 视觉反馈
   const oldText = btn.textContent;
+
   btn.textContent = "Updating...";
-  btn.style.opacity = "0.7";
+  btn.style.opacity = "0.6";
 
   try {
     const res = await fetch("/api/work-checklist-item-update", {
@@ -138,46 +233,46 @@ async function toggleStatus(id, current) {
       body: JSON.stringify({ item_id: id, status: next })
     });
 
-    if (res.ok) {
-      // 更新成功：改变颜色、文本和点击事件
-      btn.className = `status-btn ${next}`;
-      btn.textContent = next.replace('_', ' ');
-      btn.style.opacity = "1";
-      btn.setAttribute("onclick", `toggleStatus(${id}, '${next}')`);
-    } else {
-      throw new Error();
-    }
-  } catch (err) {
-    alert("Update failed. Please check your connection.");
+    if (!res.ok) throw new Error();
+
+    btn.className = `status-btn ${next}`;
+    btn.textContent = next.replace("_", " ");
+    btn.style.opacity = "1";
+    btn.setAttribute("onclick", `toggleStatus(${id}, '${next}')`);
+
+  } catch {
+    alert("Update failed");
     btn.textContent = oldText;
     btn.style.opacity = "1";
   }
 }
 
-/* ===== 3. 保存备注逻辑 (修复无法保存问题) ===== */
+/* ===============================
+ * Save remarks
+ * =============================== */
 async function saveRemarks(id, remarks) {
   const textarea = document.getElementById(`remarks-${id}`);
-  textarea.classList.add("saving"); // 变淡表示正在保存
+  textarea.classList.add("saving");
 
   try {
     const res = await fetch("/api/work-checklist-item-remarks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ id: id, remarks: remarks })
+      body: JSON.stringify({ id, remarks })
     });
 
     if (!res.ok) throw new Error();
-    console.log(`Remarks saved for item ${id}`);
-  } catch (err) {
-    alert("Remarks failed to save.");
+  } catch {
+    alert("Failed to save remarks");
   } finally {
     textarea.classList.remove("saving");
   }
 }
 
-// 页面加载时运行
+/* Init */
 loadChecklist();
 </script>
+
 </body>
 </html>

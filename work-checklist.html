@@ -14,9 +14,22 @@ body {
 }
 
 h1 {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
+/* Filter */
+.filter-box {
+  margin-bottom: 14px;
+}
+.filter-box input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+/* Card */
 .card {
   background: #fff;
   padding: 14px;
@@ -56,6 +69,7 @@ h1 {
 .progress.mid { background: #f39c12; color:#000; }
 .progress.done { background: #27ae60; color:#fff; }
 
+/* Button */
 button {
   width: 100%;
   margin-top: 16px;
@@ -73,29 +87,61 @@ button {
 
 <h1>Work Checklists</h1>
 
+<!-- 🔍 Filter -->
+<div class="filter-box">
+  <input
+    type="text"
+    id="projectFilter"
+    placeholder="Filter by project title..."
+  />
+</div>
+
 <div id="list">Loading...</div>
 
 <button onclick="history.back()">Back</button>
 
 <script>
-fetch("/api/work-checklist-list", { credentials: "include" })
-.then(res => {
-  if (res.status === 401) {
-    location.replace("/login.html");
-    throw new Error("Unauthorized");
-  }
-  return res.json();
-})
-.then(data => {
-  const box = document.getElementById("list");
-  box.innerHTML = "";
+const listBox = document.getElementById("list");
+const filterInput = document.getElementById("projectFilter");
 
-  if (!data.items || data.items.length === 0) {
-    box.textContent = "No checklist found.";
+/* ===============================
+ * Load checklist list
+ * =============================== */
+async function loadList() {
+  const keyword = filterInput.value.trim();
+  const url = keyword
+    ? `/api/work-checklist-list?project=${encodeURIComponent(keyword)}`
+    : `/api/work-checklist-list`;
+
+  listBox.textContent = "Loading...";
+
+  try {
+    const res = await fetch(url, { credentials: "include" });
+    if (res.status === 401) {
+      location.replace("/login.html");
+      return;
+    }
+
+    const data = await res.json();
+    renderList(data.items || []);
+  } catch (err) {
+    console.error(err);
+    listBox.textContent = "Failed to load checklist";
+  }
+}
+
+/* ===============================
+ * Render UI
+ * =============================== */
+function renderList(items) {
+  listBox.innerHTML = "";
+
+  if (items.length === 0) {
+    listBox.textContent = "No checklist found.";
     return;
   }
 
-  data.items.forEach(it => {
+  items.forEach(it => {
     const done = Number(it.done_items || 0);
     const total = Number(it.total_items || 0);
     const percent = Number(it.progress_percent || 0);
@@ -115,6 +161,7 @@ fetch("/api/work-checklist-list", { credentials: "include" })
         <div>
           <div class="title">Checklist #${it.id}</div>
           <div class="small">Quotation: ${it.quotation_no || it.quotation_id}</div>
+          <div class="small">📍 ${it.project_title || "No Project Title"}</div>
           <div class="small">
             Progress: ${done} / ${total} (${percent}%)
           </div>
@@ -126,13 +173,19 @@ fetch("/api/work-checklist-list", { credentials: "include" })
       <div class="small">Created: ${it.created_at}</div>
     `;
 
-    box.appendChild(div);
+    listBox.appendChild(div);
   });
-})
-.catch(err => {
-  document.getElementById("list").textContent = "Failed to load checklist";
-  console.error(err);
+}
+
+/* ===============================
+ * Events
+ * =============================== */
+filterInput.addEventListener("input", () => {
+  loadList();
 });
+
+/* Initial load */
+loadList();
 </script>
 
 </body>
