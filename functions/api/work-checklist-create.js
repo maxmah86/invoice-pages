@@ -23,7 +23,7 @@ export async function onRequestPost(context) {
     }
 
     /* ===============================
-     * 2. 检查 quotation 是否存在
+     * 2. Check quotation
      * =============================== */
     const quotation = await db.prepare(
       `SELECT id FROM quotations WHERE id = ?`
@@ -34,17 +34,21 @@ export async function onRequestPost(context) {
     }
 
     /* ===============================
-     * 3. 创建 work_checklist
+     * 3. Create work checklist
      * =============================== */
     const wcRes = await db.prepare(`
-      INSERT INTO work_checklists (quotation_id, status, created_at)
+      INSERT INTO work_checklists (
+        quotation_id,
+        status,
+        created_at
+      )
       VALUES (?, 'NOT_STARTED', datetime('now'))
     `).bind(quotation_id).run();
 
     const workChecklistId = wcRes.meta.last_row_id;
 
     /* ===============================
-     * 4. 读取 sections
+     * 4. Load quotation sections
      * =============================== */
     const sectionsRes = await db.prepare(`
       SELECT id, section_title
@@ -54,11 +58,11 @@ export async function onRequestPost(context) {
     `).bind(quotation_id).all();
 
     /* ===============================
-     * 5. 循环 sections → items
+     * 5. Loop sections → items
      * =============================== */
     for (const sec of sectionsRes.results || []) {
 
-      // 5.1 写入 section title 作为 checklist item
+      /* ----- 5.1 Insert SECTION (only as header) ----- */
       if (sec.section_title) {
         await db.prepare(`
           INSERT INTO work_checklist_items (
@@ -67,34 +71,39 @@ export async function onRequestPost(context) {
             status,
             created_at
           )
-          VALUES (?, ?, 'NOT_STARTED', datetime('now'))
+          VALUES (?, ?, 'SECTION', datetime('now'))
         `).bind(
           workChecklistId,
           sec.section_title
         ).run();
       }
 
-      // 5.2 读取该 section 下的 items
+      /* ----- 5.2 Load items under this section ----- */
       const itemsRes = await db.prepare(`
         SELECT description, UOM, qty
         FROM quotation_items
         WHERE quotation_id = ?
           AND section_id = ?
         ORDER BY sort_order
-      `).bind(quotation_id, sec.id).all();
+      `).bind(
+        quotation_id,
+        sec.id
+      ).all();
 
+      /* ----- 5.3 Insert real checklist items ----- */
       for (const it of itemsRes.results || []) {
         if (!it.description) continue;
 
-        // 只拼你指定的字段
-        const descParts = [];
-        descParts.push(it.description);
+        const parts = [];
+        parts.push(it.description);
 
-        if (it.UOM) descParts.push(`UOM: ${it.UOM}`);
-        if (it.qty !== null && it.qty !== undefined)
-          descParts.push(`Qty: ${it.qty}`);
+        if (it.qty !== null && it.qty !== undefined) {
+          parts.push(`Qty: ${it.qty}`);
+        }
 
-        const finalDescription = descParts.join(' | ');
+        if (it.UOM) {
+          parts.push(`UOM: ${it.UOM}`);
+        }
 
         await db.prepare(`
           INSERT INTO work_checklist_items (
@@ -106,7 +115,7 @@ export async function onRequestPost(context) {
           VALUES (?, ?, 'NOT_STARTED', datetime('now'))
         `).bind(
           workChecklistId,
-          finalDescription
+          parts.join(' | ')
         ).run();
       }
     }
@@ -117,7 +126,10 @@ export async function onRequestPost(context) {
 
   } catch (err) {
     console.error(err);
-    return jsonError(err.message || 'Create work checklist failed', 500);
+    return jsonError(
+      err.message || 'Create work checklist failed',
+      500
+    );
   }
 }
 
@@ -125,7 +137,7 @@ export async function onRequestPost(context) {
  * Helpers
  * =============================== */
 function jsonOK(data) {
-  return new Response(JSON.stringify({ success: true, data }), {
+  return new Response(JSON.stringify({ success: true, ...data }), {
     headers: { 'Content-Type': 'application/json' }
   });
 }
