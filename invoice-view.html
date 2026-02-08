@@ -42,8 +42,9 @@
       margin-bottom: 8px;
     }
 
+    /* 修正 ID 以匹配 company-settings.js */
     .company-logo {
-      width: 48px;
+      width: 64px; /* 稍微调大一点 */
       height: auto;
       margin-top: 4px;
       flex-shrink: 0;
@@ -120,80 +121,60 @@
       margin-top: 12px;
     }
 
-    .footer {
-      margin-top: 20px;
-      font-size: 13px;
-      line-height: 1.6;
+    /* SIGNATURE & CHOP */
+    .signature {
+      margin-top: 50px;
+      display: flex;
+      justify-content: flex-end;
     }
 
-    /* Company Chop */
-    .company-chop {
-      position: fixed;
-      right: 30px;
-      bottom: 40px;
+    .signature-box {
+      text-align: center;
+      font-size: 13px;
+      min-width: 200px;
+    }
+
+    /* 公章样式：让它叠在签名区域上方 */
+    #company-chop {
       width: 120px;
+      margin-bottom: -30px; /* 负边距产生重叠效果 */
       opacity: 0.85;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     /* PRINT MODE */
     @media print {
-  button {
-    display: none !important;
-  }
+      button, .invoice-actions {
+        display: none !important;
+      }
+      .status-badge, #statusBadge {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+      }
+    }
 
-  /* ✅ hide invoice status when printing */
-  .status-badge,
-  #statusBadge {
-    display: none !important;
-  }
-
-  .company-chop {
-    position: absolute;
-  }
-}
-
-/* ===== SIGNATURE ===== */
-.signature {
-  margin-top: 50px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.signature-box {
-  text-align: center;
-  font-size: 13px;
-}
-
-.signature-box img {
-  width: 120px;
-}
-
-
-    /* Responsive tweaks */
     @media (max-width: 720px) {
-      .company {
-        max-width: 100%;
+      .header {
+        flex-direction: column;
       }
       .invoice-box {
         text-align: left;
-        width: 100%;
-        margin-top: 12px;
-      }
-      .header {
-        flex-direction: column;
-        align-items: stretch;
       }
     }
   </style>
 </head>
 
 <body>
-  <header class="header" role="banner">
-    <div class="company" id="companyInfo">
+  <header class="header">
+    <div class="company">
       <div class="company-header">
-        <img id="comp-logo" src="" alt="Logo" class="company-logo" />
+        <img id="company-logo" src="" alt="Logo" class="company-logo" />
         <div class="company-text">
-          <h1 id="comp-name">Loading...</h1>
+          <h1 id="comp-name">Demo Sdn Bhd</h1>
           <div id="comp-reg" class="ssm-code"></div>
         </div>
       </div>
@@ -204,27 +185,27 @@
       </address>
     </div>
 
-    <div class="invoice-box" aria-labelledby="invoiceLabel">
-      <div id="invoiceLabel" class="invoice-title">INVOICE</div>
+    <div class="invoice-box">
+      <div class="invoice-title">INVOICE</div>
 
-      <div class="invoice-actions" id="actionButtons">
-  <button id="homeBtn" type="button">HOME</button>
-  <button id="printBtn" type="button">PRINT / SAVE PDF</button>
-  <button id="editBtn" type="button">EDIT</button>
-  <button id="voidBtn" type="button">VOID</button>
-</div>
+      <div class="invoice-actions">
+        <button id="homeBtn">HOME</button>
+        <button id="printBtn">PRINT / PDF</button>
+        <button id="editBtn">EDIT</button>
+        <button id="voidBtn">VOID</button>
+      </div>
 
-      <div class="invoice-meta" id="invoiceMeta">
+      <div class="invoice-meta">
         <div><strong>Invoice No:</strong> <span id="invoiceNo">—</span></div>
         <div><strong>Date:</strong> <span id="invoiceDate">—</span></div>
         <div><strong>To:</strong> <span id="customer">—</span></div>
         <div id="statusBadge" class="status-badge" style="margin-top: 4px; font-weight: bold;"></div>
+      </div>
     </div>
   </header>
 
-  <main class="section" role="main">
-    <table aria-describedby="itemsDesc">
-      <caption id="itemsDesc" style="caption-side: top; text-align: left; font-weight: bold;">Items</caption>
+  <main class="section">
+    <table>
       <thead>
         <tr>
           <th style="width:5%">No</th>
@@ -234,7 +215,9 @@
           <th style="width:15%">Amount (<span class="currency-label">RM</span>)</th>
         </tr>
       </thead>
-      <tbody id="items" aria-live="polite"></tbody>
+      <tbody id="items">
+        <tr><td colspan="5" style="text-align:center">Loading items...</td></tr>
+      </tbody>
     </table>
 
     <div class="total">
@@ -242,43 +225,36 @@
     </div>
   </main>
 
-  <footer class="footer" role="contentinfo">
-    <strong>ALL CHEQUES TO BE CROSSED AND MAKE PAYABLE TO THE ORDER OF</strong><br />
-    <span id="footer-comp-name">Loading...</span><br /><br />
-
-    <strong>COMPANY ACCOUNT NUMBER:</strong><br />
-    <div id="bank-info">Loading Bank Info...</div><br />
-
-    Thank you.
-  </footer>
+  <div class="bank-info" style="margin-top:25px; font-size:13px; border-top: 1px solid #eee; pt: 10px;">
+    <strong>Payment Information:</strong><br>
+    Bank: <b id="bank-info"></b> | 
+    Beneficiary: <b class="company-name"></b>
+    <div style="margin-top: 5px;">
+      All cheques should be made payable to: <b class="company-name"></b>
+    </div>
+  </div>
 
   <div class="signature">
-  <div class="signature-box">
-    <img id="company-chop">
-    <div id="authorized-title"></div>
-    <div><strong id="authorized-name"></strong></div>
+    <div class="signature-box">
+      <img id="company-chop" src="" alt="Chop" />
+     
+      <div id="authorized-title" style="margin-top: 5px;"></div>
+      <div><strong id="authorized-name"></strong></div>
+    </div>
   </div>
-</div>
 
   <script>
     (function () {
       const qid = (id) => document.getElementById(id);
 
-      // 1. 同步加载静态公司设置 (对应 company-settings.js)
-      if (typeof COMPANY_CONFIG !== 'undefined') {
-          qid('comp-logo').src = COMPANY_CONFIG.logoUrl;
-          qid('footer-comp-name').textContent = COMPANY_CONFIG.name;
-          // 其他具有 ID 的字段 (如 #bank-info) 由 company-settings.js 自动填充
-      }
-
-      // 2. 加载全局 CONFIG 配置
+      // 1. 全局配置初始化 (从 config.js 获取)
       const CURRENCY_CODE = typeof CONFIG !== 'undefined' ? CONFIG.CURRENCY : 'RM';
       const API_BASE = typeof CONFIG !== 'undefined' ? CONFIG.API_BASE_URL : '/api';
 
       document.querySelectorAll('.currency-label').forEach(el => el.textContent = CURRENCY_CODE);
 
       const formatCurrency = (value) => {
-        return CURRENCY_CODE + ' ' + Number(value || 0).toLocaleString('en-MY', {
+        return Number(value || 0).toLocaleString('en-MY', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
         });
@@ -288,16 +264,13 @@
       const id = params.get('id');
 
       if (!id) {
-        qid('items').innerHTML = '<tr><td colspan="5">No invoice id provided.</td></tr>';
+        qid('items').innerHTML = '<tr><td colspan="5">No invoice ID provided.</td></tr>';
         ['printBtn', 'editBtn', 'voidBtn'].forEach(b => qid(b).disabled = true);
         return;
       }
 
-      // 3. 页面控制逻辑
-      qid('homeBtn').addEventListener('click', () => {
-  // 改成你的首页路径
-  location.href = '/index.html';
-});
+      // 2. 按钮事件
+      qid('homeBtn').addEventListener('click', () => location.href = '/index.html');
       qid('printBtn').addEventListener('click', () => window.print());
       qid('editBtn').addEventListener('click', () => {
         location.href = `/invoice-edit.html?id=${encodeURIComponent(id)}`;
@@ -319,7 +292,7 @@
         }
       });
 
-      // 4. 加载 API 数据 (对接 invoice-view.js)
+      // 3. 加载 API 数据 (对接 invoice-view.js)
       async function loadInvoice() {
         try {
           const res = await fetch(`${API_BASE}/invoice-view?id=${encodeURIComponent(id)}`);
@@ -332,46 +305,44 @@
           const data = await res.json();
           if (!data || !data.invoice) throw new Error('Invoice not found');
 
+          // 填充基本信息
           qid('invoiceNo').textContent = data.invoice.invoice_no;
           qid('customer').textContent = data.invoice.customer;
           document.title = `Invoice - ${data.invoice.invoice_no}`;
-
-          // 日期处理
+          
           let dateStr = data.invoice.created_at || '';
           qid('invoiceDate').textContent = dateStr.split(' ')[0] || '—';
 
-          // 状态颜色处理
+          // 状态勋章
           if (data.invoice.status) {
             const status = data.invoice.status.toUpperCase();
             const badge = qid('statusBadge');
             badge.textContent = status;
-            if (typeof CONFIG !== 'undefined') {
+            if (typeof CONFIG !== 'undefined' && CONFIG.STATUS_COLORS) {
                 badge.style.color = CONFIG.STATUS_COLORS[status] || '#000';
             }
           }
 
-          // 渲染项目
+          // 渲染表格项目
           const itemsTbody = qid('items');
           itemsTbody.innerHTML = '';
+          
           if (data.items && data.items.length) {
             data.items.forEach((item, i) => {
-  const qty = Number(item.qty || 0);
-  const price = Number(item.price || 0);
-  const amount = qty * price;
+              const qty = Number(item.qty || 0);
+              const price = Number(item.price || 0);
+              const amount = qty * price;
 
-  const showPrice  = price > 0 ? formatCurrency(price) : '';
-  const showAmount = amount > 0 ? formatCurrency(amount) : '';
-
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td>${i + 1}</td>
-    <td>${item.description || ''}</td>
-    <td class="text-right">${qty}</td>
-    <td class="text-right">${showPrice}</td>
-    <td class="text-right">${showAmount}</td>
-  `;
-  itemsTbody.appendChild(tr);
-});
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${i + 1}</td>
+                <td>${item.description || ''}</td>
+                <td class="text-right">${qty}</td>
+                <td class="text-right">${formatCurrency(price)}</td>
+                <td class="text-right">${formatCurrency(amount)}</td>
+              `;
+              itemsTbody.appendChild(tr);
+            });
           } else {
             itemsTbody.innerHTML = '<tr><td colspan="5">No items found</td></tr>';
           }
@@ -380,7 +351,7 @@
 
         } catch (err) {
           console.error(err);
-          qid('items').innerHTML = '<tr><td colspan="5">Error loading data.</td></tr>';
+          qid('items').innerHTML = '<tr><td colspan="5" style="color:red">Error loading data.</td></tr>';
         }
       }
 

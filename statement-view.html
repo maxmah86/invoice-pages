@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <title>Statement of Account</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+<script src="/js/config.js"></script>
+  <script src="/js/company-settings.js"></script>
+
 
 <style>
 body {
@@ -83,7 +87,9 @@ th {
 </head>
 
 <body>
-
+<button onclick="window.location.href='/index.html';">
+  Home
+</button>
 <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
 
 <div class="header">
@@ -101,6 +107,15 @@ th {
 </div>
 
 <div id="content"></div>
+
+  <div class="bank-info" style="margin-top:25px; font-size:13px; border-top: 1px solid #eee; pt: 10px;">
+    <strong>Payment Information:</strong><br>
+    Bank: <b id="bank-info"></b> | 
+    Beneficiary: <b class="company-name"></b>
+    <div style="margin-top: 5px;">
+      All cheques should be made payable to: <b class="company-name"></b>
+    </div>
+  </div>
 
 <script>
 const params = new URLSearchParams(location.search);
