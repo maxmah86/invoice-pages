@@ -1,86 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>Create Purchase Order</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 16px;
+  margin: 16px;
+  color: #000;
 }
 
-h1 { margin: 0 0 6px; }
-.subtitle { font-size:14px;color:#555;margin-bottom:16px; }
+h1 {
+  margin-bottom: 12px;
+}
 
-.card {
-  background:#fff;
-  padding:16px;
-  border-radius:8px;
-  margin-bottom:14px;
-  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+/* ===== Form ===== */
+.form-group {
+  margin-bottom: 14px;
 }
 
 label {
-  display:block;
-  margin-top:12px;
-  margin-bottom:4px;
-  font-size:14px;
-  font-weight:bold;
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 4px;
 }
 
 input, textarea {
-  width:100%;
-  padding:10px;
-  font-size:14px;
-  border-radius:6px;
-  border:1px solid #ccc;
-  box-sizing:border-box;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px;
+  font-size: 14px;
 }
 
-textarea { resize:vertical; }
+textarea {
+  min-height: 60px;
+}
 
+/* ===== Items ===== */
 table {
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
 }
 
 th, td {
-  border-bottom:1px solid #ddd;
-  padding:6px;
-  text-align:left;
+  border: 1px solid #000;
+  padding: 6px;
+  font-size: 13px;
 }
 
-th { background:#f0f0f0; }
-
-.btn {
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  border-radius:6px;
-  border:none;
-  cursor:pointer;
-  margin-top:10px;
+th {
+  background: #f0f0f0;
 }
 
-.btn-primary { background:#2c3e50;color:#fff; }
-.btn-secondary { background:#7f8c8d;color:#fff; }
-.btn-add { background:#27ae60;color:#fff;margin-top:10px; }
+.text-right {
+  text-align: right;
+}
 
-.right { text-align:right; }
+/* ===== Buttons ===== */
+button {
+  padding: 8px 14px;
+  font-size: 14px;
+  margin-top: 10px;
+  cursor: pointer;
+}
 
-.errorBox {
-  background:#fee;
-  border:1px solid #e74c3c;
-  color:#c0392b;
-  padding:10px;
-  border-radius:6px;
-  font-size:13px;
-  white-space:pre-wrap;
+.total {
+  font-size: 16px;
+  font-weight: bold;
+  text-align: right;
+  margin-top: 10px;
+}
+
+/* ===== Error Box ===== */
+#errorBox {
+  display: none;
+  margin-top: 16px;
+  padding: 10px;
+  border: 1px solid #c00;
+  background: #fff3f3;
+  font-size: 13px;
+  white-space: pre-wrap;
 }
 </style>
 </head>
@@ -88,153 +91,171 @@ th { background:#f0f0f0; }
 <body>
 
 <h1>Create Purchase Order</h1>
-<div class="subtitle">MMAC Construction</div>
 
 <!-- ===== BASIC INFO ===== -->
-<div class="card">
+<div class="form-group">
   <label>Supplier Name *</label>
-  <input id="supplier_name" placeholder="Supplier name">
-
-  <label>Issued By</label>
-  <input id="issued_by" value="MMAC SYSTEM">
+  <input id="supplier_name" placeholder="Required">
 </div>
 
-<!-- ===== DELIVERY INFO ===== -->
-<div class="card">
-  <label>Delivery Address</label>
-  <textarea id="delivery_address" rows="3"></textarea>
+<div class="form-group">
+  <label>PO Date</label>
+  <input type="date" id="po_date">
+</div>
 
+<div class="form-group">
+  <label>Issued By</label>
+  <input id="issued_by" placeholder="Leave empty to use login user">
+</div>
+
+<div class="form-group">
+  <label>Delivery Address</label>
+  <textarea id="delivery_address"></textarea>
+</div>
+
+<div class="form-group">
   <label>Delivery Date</label>
   <input type="date" id="delivery_date">
+</div>
 
+<div class="form-group">
   <label>Delivery Time</label>
-  <input type="time" id="delivery_time">
+  <input id="delivery_time">
+</div>
+
+<div class="form-group">
+  <label>Notes</label>
+  <textarea id="notes"></textarea>
 </div>
 
 <!-- ===== ITEMS ===== -->
-<div class="card">
-  <label>Items</label>
+<h3>Items *</h3>
 
-  <table id="itemsTable">
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th width="60">Qty</th>
-        <th width="90">Price</th>
-        <th width="90">Amount</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<table>
+  <thead>
+    <tr>
+      <th style="width:5%">No</th>
+      <th>Description</th>
+      <th style="width:10%">Qty</th>
+      <th style="width:15%">Unit Price</th>
+      <th style="width:15%">Amount (RM)</th>
+      <th style="width:5%"></th>
+    </tr>
+  </thead>
+  <tbody id="items"></tbody>
+</table>
 
-  <button class="btn btn-add" onclick="addItem()">+ Add Item</button>
+<button onclick="addRow()">+ Add Item</button>
+
+<div class="total">
+  TOTAL (RM): <span id="total">0.00</span>
 </div>
 
-<!-- ===== TOTAL ===== -->
-<div class="card">
-  <div class="right">Subtotal: RM <span id="subtotal">0.00</span></div>
-  <div class="right"><strong>Total: RM <span id="total">0.00</span></strong></div>
-</div>
+<br>
 
-<!-- ===== NOTES ===== -->
-<div class="card">
-  <label>Notes</label>
-  <textarea id="notes" rows="3">
-Please supply the above items/services as per stated quantities and prices.
-  </textarea>
-</div>
+<button onclick="submitPO()">Create PO</button>
+<button onclick="history.back()">Cancel</button>
 
-<!-- ===== ERROR ===== -->
-<div class="card" id="errorCard" style="display:none;">
-  <div class="errorBox" id="errorBox"></div>
-</div>
-
-<!-- ===== ACTION ===== -->
-<div class="card">
-  <button class="btn btn-primary" onclick="submitPO()">Create PO</button>
-  <button class="btn btn-secondary" onclick="history.back()">Cancel</button>
-</div>
+<!-- ===== ERROR OUTPUT ===== -->
+<div id="errorBox"></div>
 
 <script>
-fetch("/api/auth-check",{credentials:"include"})
-  .then(r=>r.json())
-  .then(d=>{ if(!d.loggedIn) location.replace("/login.html"); })
-  .catch(()=>location.replace("/login.html"));
-
-const tbody = document.querySelector("#itemsTable tbody");
-const subtotalEl = document.getElementById("subtotal");
-const totalEl = document.getElementById("total");
-
-function addItem() {
+function addRow(item = {}) {
+  const tbody = document.getElementById("items");
   const tr = document.createElement("tr");
+
   tr.innerHTML = `
-    <td><input></td>
-    <td><input type="number" value="1" min="1" onchange="calc()"></td>
-    <td><input type="number" step="0.01" value="0" onchange="calc()"></td>
-    <td class="right">0.00</td>
+    <td></td>
+    <td><input class="desc" value="${item.description || ""}"></td>
+    <td><input type="number" class="qty text-right" value="${item.qty || 0}" oninput="calc()"></td>
+    <td><input type="number" class="price text-right" value="${item.price || 0}" oninput="calc()"></td>
+    <td class="text-right amount">0.00</td>
+    <td><button onclick="this.closest('tr').remove(); calc()">X</button></td>
   `;
+
   tbody.appendChild(tr);
+  calc();
 }
 
 function calc() {
-  let subtotal = 0;
-  [...tbody.rows].forEach(r=>{
-    const qty = Number(r.cells[1].children[0].value||0);
-    const price = Number(r.cells[2].children[0].value||0);
-    const amt = qty * price;
-    r.cells[3].innerText = amt.toFixed(2);
-    subtotal += amt;
+  let total = 0;
+  document.querySelectorAll("#items tr").forEach((tr, i) => {
+    tr.children[0].textContent = i + 1;
+
+    const qty = Number(tr.querySelector(".qty").value) || 0;
+    const price = Number(tr.querySelector(".price").value) || 0;
+    const amount = qty * price;
+
+    tr.querySelector(".amount").textContent = amount.toFixed(2);
+    total += amount;
   });
-  subtotalEl.innerText = subtotal.toFixed(2);
-  totalEl.innerText = subtotal.toFixed(2);
+
+  document.getElementById("total").textContent = total.toFixed(2);
 }
 
-addItem();
-
 async function submitPO() {
-  errorCard.style.display = "none";
-  errorBox.innerText = "";
+  const errorBox = document.getElementById("errorBox");
+  errorBox.style.display = "none";
+  errorBox.textContent = "";
 
-  const items = [...tbody.rows].map(r=>({
-    description: r.cells[0].children[0].value,
-    qty: r.cells[1].children[0].value,
-    price: r.cells[2].children[0].value
-  }));
+  const items = [];
+  document.querySelectorAll("#items tr").forEach(tr => {
+    items.push({
+      description: tr.querySelector(".desc").value,
+      qty: Number(tr.querySelector(".qty").value) || 0,
+      price: Number(tr.querySelector(".price").value) || 0
+    });
+  });
+
+  if (!document.getElementById("supplier_name").value) {
+    alert("Supplier Name is required");
+    return;
+  }
+
+  if (items.length === 0) {
+    alert("Please add at least one item");
+    return;
+  }
 
   const payload = {
-    supplier_name: supplier_name.value,
-    issued_by: issued_by.value,
-    delivery_address: delivery_address.value,
-    delivery_date: delivery_date.value,
-    delivery_time: delivery_time.value,
-    notes: notes.value,
+    supplier_name: document.getElementById("supplier_name").value,
+    po_date: document.getElementById("po_date").value,
+    issued_by: document.getElementById("issued_by").value,
+    delivery_address: document.getElementById("delivery_address").value,
+    delivery_date: document.getElementById("delivery_date").value,
+    delivery_time: document.getElementById("delivery_time").value,
+    notes: document.getElementById("notes").value,
     items
   };
 
   try {
-    const res = await fetch("/api/po-create",{
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      credentials:"include",
-      body:JSON.stringify(payload)
+    const res = await fetch("/api/po-create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
     });
 
-    const data = await res.json();
+    const text = await res.text();
 
     if (!res.ok) {
-      errorCard.style.display = "block";
-      errorBox.innerText = JSON.stringify(data, null, 2);
+      errorBox.style.display = "block";
+      errorBox.textContent =
+        "Create PO failed (HTTP " + res.status + ")\n\n" + text;
       return;
     }
 
     alert("PO created successfully");
     location.href = "/pos.html";
 
-  } catch (e) {
-    errorCard.style.display = "block";
-    errorBox.innerText = String(e);
+  } catch (err) {
+    errorBox.style.display = "block";
+    errorBox.textContent = "Network / JS error:\n" + err.message;
   }
 }
+
+/* Init */
+addRow();
 </script>
 
 </body>

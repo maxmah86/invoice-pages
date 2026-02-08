@@ -6,175 +6,164 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 16px;
-  color: #000;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.company h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: bold;
-}
-
-.company {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.invoice-box {
-  text-align: right;
-}
-
-.invoice-title {
-  font-size: 26px;
-  font-weight: bold;
-}
-
-.invoice-actions {
-  margin: 6px 0;
-}
-
-.invoice-actions button {
-  padding: 6px 12px;
-  font-size: 13px;
-  margin-left: 6px;
-  cursor: pointer;
-}
-
-.invoice-meta {
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.section {
-  margin-top: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-th, td {
-  border: 1px solid #000;
-  padding: 6px;
-  font-size: 13px;
-}
-
-th {
-  background: #f0f0f0;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.total {
-  font-size: 16px;
-  font-weight: bold;
-  text-align: right;
-  margin-top: 12px;
-}
-
-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 4px;
-  font-size: 13px;
-}
-
-@media print {
-  button { display: none; }
-}
+/* 复用 po.html 的样式以保持 UI 一致性 */
+body { font-family: Arial, sans-serif; margin: 16px; color: #000; }
+h1 { margin-bottom: 12px; }
+.form-group { margin-bottom: 14px; }
+label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+input, textarea { width: 100%; box-sizing: border-box; padding: 6px; font-size: 14px; }
+textarea { min-height: 60px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #000; padding: 6px; font-size: 13px; }
+th { background: #f0f0f0; }
+.text-right { text-align: right; }
+button { padding: 8px 14px; font-size: 14px; margin-top: 10px; cursor: pointer; }
+.btn-save { background: #27ae60; color: white; border: none; border-radius: 4px; }
+.total { font-size: 16px; font-weight: bold; text-align: right; margin-top: 10px; }
+#errorBox { display: none; margin-top: 16px; padding: 10px; border: 1px solid #c00; background: #fff3f3; font-size: 13px; white-space: pre-wrap; }
+#loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-  <div class="company">
-    <h1>MMAC CONSTRUCTION</h1>
-    201903134488 (002977225-A)<br>
-    52, Jalan Mahogani SD 1/3<br>
-    Sri Damansara<br>
-    52200 Kuala Lumpur, Malaysia<br>
-    Tel: 016-444-2128
-  </div>
+<div id="loadingOverlay">Loading PO Data...</div>
 
-  <div class="invoice-box">
-    <div class="invoice-title">EDIT PURCHASE ORDER</div>
+<h1>Edit Purchase Order</h1>
 
-    <div class="invoice-actions">
-      <button onclick="savePO()">SAVE</button>
-      <button onclick="goBack()">CANCEL</button>
-    </div>
-
-    <div class="invoice-meta">
-      <div><strong>PO No:</strong> <span id="poNo"></span></div>
-      <div><strong>Date:</strong> <span id="poDate"></span></div>
-      <div>
-        <strong>Supplier:</strong><br>
-        <input id="supplier" />
-      </div>
-    </div>
-  </div>
+<div class="form-group">
+  <label>Supplier Name *</label>
+  <input id="supplier_name" placeholder="Required">
 </div>
 
-<div class="section">
-  <table>
-    <thead>
-      <tr>
-        <th style="width:5%">No</th>
-        <th>Description</th>
-        <th style="width:10%">Qty</th>
-        <th style="width:15%">Unit Price</th>
-        <th style="width:15%">Amount (RM)</th>
-        <th style="width:5%"></th>
-      </tr>
-    </thead>
-    <tbody id="items"></tbody>
-  </table>
-
-  <button onclick="addRow()">+ Add Item</button>
-
-  <div class="total">
-    TOTAL (RM): <span id="total"></span>
-  </div>
+<div class="form-group">
+  <label>PO Date</label>
+  <input type="date" id="po_date">
 </div>
+
+<div class="form-group">
+  <label>Issued By</label>
+  <input id="issued_by">
+</div>
+
+<div class="form-group">
+  <label>Delivery Address</label>
+  <textarea id="delivery_address"></textarea>
+</div>
+
+<div class="form-group">
+  <label>Delivery Date</label>
+  <input type="date" id="delivery_date">
+</div>
+
+<div class="form-group">
+  <label>Delivery Time</label>
+  <input id="delivery_time">
+</div>
+
+<div class="form-group">
+  <label>Notes</label>
+  <textarea id="notes"></textarea>
+</div>
+
+<h3>Items *</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width:5%">No</th>
+      <th>Description</th>
+      <th style="width:10%">Qty</th>
+      <th style="width:15%">Unit Price</th>
+      <th style="width:15%">Amount (RM)</th>
+      <th style="width:5%"></th>
+    </tr>
+  </thead>
+  <tbody id="items"></tbody>
+</table>
+
+<button onclick="addRow()">+ Add Item</button>
+
+<div class="total">
+  TOTAL (RM): <span id="total">0.00</span>
+</div>
+
+<br>
+
+<button class="btn-save" onclick="updatePO()">Update & Save Changes</button>
+<button onclick="history.back()">Cancel</button>
+
+<div id="errorBox"></div>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+// 获取 URL 中的 ID 参数
+const poId = new URLSearchParams(location.search).get("id");
 
-function goBack() {
-  history.back();
+if (!poId) {
+    alert("No PO ID provided");
+    location.href = "/pos.html";
 }
 
+/**
+ * 1. 初始化：加载现有 PO 数据
+ */
+async function loadPOData() {
+    try {
+        const res = await fetch(`/api/po-view?id=${poId}`, { credentials: "include" });
+        if (res.status === 401) {
+            location.replace("/login.html");
+            return;
+        }
+        const result = await res.json();
+        const po = result.po;
+
+        // 填充主表单字段
+        document.getElementById("supplier_name").value = po.supplier_name || "";
+        document.getElementById("po_date").value = po.po_date || "";
+        document.getElementById("issued_by").value = po.issued_by || "";
+        document.getElementById("delivery_address").value = po.delivery_address || "";
+        document.getElementById("delivery_date").value = po.delivery_date || "";
+        document.getElementById("delivery_time").value = po.delivery_time || "";
+        document.getElementById("notes").value = po.notes || "";
+
+        // 填充项目行
+        const tbody = document.getElementById("items");
+        tbody.innerHTML = ""; 
+        if (result.items && result.items.length > 0) {
+            result.items.forEach(item => addRow(item));
+        } else {
+            addRow();
+        }
+
+        document.getElementById("loadingOverlay").style.display = "none";
+    } catch (err) {
+        console.error(err);
+        alert("Failed to load PO data");
+    }
+}
+
+/**
+ * 2. 动态添加行功能
+ */
 function addRow(item = {}) {
   const tbody = document.getElementById("items");
-  const row = document.createElement("tr");
+  const tr = document.createElement("tr");
 
-  row.innerHTML = `
+  tr.innerHTML = `
     <td></td>
     <td><input class="desc" value="${item.description || ""}"></td>
-    <td><input type="number" class="qty text-right" value="${item.qty || 0}"></td>
-    <td><input type="number" class="price text-right" value="${item.unit_price || 0}"></td>
+    <td><input type="number" class="qty text-right" value="${item.qty || 0}" oninput="calc()"></td>
+    <td><input type="number" class="price text-right" value="${item.price || 0}" oninput="calc()"></td>
     <td class="text-right amount">0.00</td>
     <td><button onclick="this.closest('tr').remove(); calc()">X</button></td>
   `;
 
-  tbody.appendChild(row);
+  tbody.appendChild(tr);
   calc();
 }
 
+/**
+ * 3. 自动计算总额
+ */
 function calc() {
   let total = 0;
   document.querySelectorAll("#items tr").forEach((tr, i) => {
@@ -188,51 +177,63 @@ function calc() {
   document.getElementById("total").textContent = total.toFixed(2);
 }
 
-async function savePO() {
+/**
+ * 4. 提交更新
+ */
+async function updatePO() {
+  const errorBox = document.getElementById("errorBox");
+  errorBox.style.display = "none";
+
   const items = [];
   document.querySelectorAll("#items tr").forEach(tr => {
     items.push({
       description: tr.querySelector(".desc").value,
-      qty: tr.querySelector(".qty").value,
-      unit_price: tr.querySelector(".price").value
+      qty: Number(tr.querySelector(".qty").value) || 0,
+      price: Number(tr.querySelector(".price").value) || 0
     });
   });
 
-  const payload = {
-    id,
-    supplier_name: document.getElementById("supplier").value,
-    items
-  };
-
-  const res = await fetch("/api/po-edit", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    alert("Failed to save PO");
+  if (!document.getElementById("supplier_name").value) {
+    alert("Supplier Name is required");
     return;
   }
 
-  alert("PO updated");
-  location.href = `/po-view.html?id=${id}`;
+  const payload = {
+    id: poId, // 必须包含 ID 以供后端识别更新对象
+    supplier_name: document.getElementById("supplier_name").value,
+    po_date: document.getElementById("po_date").value,
+    issued_by: document.getElementById("issued_by").value,
+    delivery_address: document.getElementById("delivery_address").value,
+    delivery_date: document.getElementById("delivery_date").value,
+    delivery_time: document.getElementById("delivery_time").value,
+    notes: document.getElementById("notes").value,
+    items
+  };
+
+  try {
+    const res = await fetch("/api/po-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
+    }
+
+    alert("PO updated successfully");
+    location.href = `/po-view.html?id=${poId}`; // 返回查看页面
+
+  } catch (err) {
+    errorBox.style.display = "block";
+    errorBox.textContent = "Update failed:\n" + err.message;
+  }
 }
 
-/* ===== LOAD PO ===== */
-fetch(`/api/po-view?id=${id}`, { credentials: "include" })
-  .then(res => {
-    if (res.status === 401) location.replace("/login.html");
-    return res.json();
-  })
-  .then(data => {
-    document.getElementById("poNo").textContent = data.po_no;
-    document.getElementById("poDate").textContent = data.po_date;
-    document.getElementById("supplier").value = data.supplier_name;
-
-    data.items.forEach(addRow);
-  });
+// 启动加载
+loadPOData();
 </script>
 
 </body>
