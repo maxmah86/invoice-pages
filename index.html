@@ -138,13 +138,14 @@ Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labo
     </label>
 
     <div class="summary-grid">
-      <div class="summary-item invoice" id="invTotal">Invoice<br>RM 0.00</div>
-      <div class="summary-item salary" id="salTotal">Salary<br>RM 0.00</div>
-      <div class="summary-item po" id="poTotal">PO<br>RM 0.00</div>
-      <div class="summary-item profit" id="profitTotal">Profit<br>RM 0.00</div>
-    </div>
-  </div>
+  <div class="summary-item invoice" id="invTotal">Invoice<br>RM 0.00</div>
+  
+  <div class="summary-item salary" id="salTotal">Salary<br>RM 0.00</div>
+  <div class="summary-item po" id="poTotal">PO<br>RM 0.00</div>
+ <div class="summary-item quotation" id="quoTotal" style="background: #2980b9;">Accepted Quo<br>RM 0.00</div>
+   <div class="summary-item profit" id="profitTotal">Profit<br>RM 0.00</div>
 </div>
+
 
 <!-- ===== Invoice ===== -->
 <div class="section">
@@ -265,49 +266,82 @@ Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labo
 </div>
 
 <script>
+// 1. 身份验证与权限检查
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => {
     if (!r.ok) location.replace("/login.html");
     return r.json();
   })
   .then(d => {
+    // 只有 admin 角色可以查看仪表板，否则跳转到工作清单
     if (d.role !== "admin") {
       location.replace("/work-checklist.html");
     }
   })
   .catch(() => location.replace("/login.html"));
 
+// 2. 初始化月份选择器，默认为当前月份
 const monthInput = document.getElementById("monthPicker");
 monthInput.value = new Date().toISOString().slice(0,7);
 
+/**
+ * 3. 加载汇总数据
+ * 包含：Invoice, Salary, PO, Profit 以及新增的 Accepted Quotation
+ */
 async function loadSummary() {
   const m = monthInput.value;
   try {
-    const [i,s,p,pr] = await Promise.all([
-      fetch(`/api/dashboard-invoice-total?month=${m}`).then(r=>r.json()),
-      fetch(`/api/dashboard-salary-total?month=${m}`).then(r=>r.json()),
-      fetch(`/api/dashboard-po-total?month=${m}`).then(r=>r.json()),
-      fetch(`/api/dashboard-profit?month=${m}`).then(r=>r.json())
+    // 并发请求所有统计接口
+    const [i, s, p, pr, q] = await Promise.all([
+      fetch(`/api/dashboard-invoice-total?month=${m}`).then(r => r.json()),
+      fetch(`/api/dashboard-salary-total?month=${m}`).then(r => r.json()),
+      fetch(`/api/dashboard-po-total?month=${m}`).then(r => r.json()),
+      fetch(`/api/dashboard-profit?month=${m}`).then(r => r.json()),
+      // 假设您已根据建议创建了此接口
+      fetch(`/api/dashboard-quotation-total?month=${m}`).then(r => r.json())
     ]);
 
-    invTotal.innerHTML = `Invoice<br>RM ${Number(i.total).toFixed(2)}`;
-    salTotal.innerHTML = `Salary<br>RM ${Number(s.total).toFixed(2)}`;
-    poTotal.innerHTML  = `PO<br>RM ${Number(p.total).toFixed(2)}`;
+    // 更新 Invoice 总额
+    document.getElementById("invTotal").innerHTML = `Invoice<br>RM ${Number(i.total || 0).toFixed(2)}`;
+    
+    // 更新 Salary 总额 (包含月薪和日工)
+    document.getElementById("salTotal").innerHTML = `Salary<br>RM ${Number(s.total || 0).toFixed(2)}`;
+    
+    // 更新 PO 总额
+    document.getElementById("poTotal").innerHTML = `PO<br>RM ${Number(p.total || 0).toFixed(2)}`;
 
+    // 更新 Accepted Quotation 总额 (对应您截图中的新需求)
+    const quoElement = document.getElementById("quoTotal");
+    if (quoElement) {
+      quoElement.innerHTML = `Accepted Quo<br>RM ${Number(q.total || 0).toFixed(2)}`;
+    }
+
+    // 更新 Profit (利润) 并处理负数颜色
     const profit = Number(pr.profit || 0);
+    const profitTotal = document.getElementById("profitTotal");
     profitTotal.innerHTML = `Profit<br>RM ${profit.toFixed(2)}`;
     profitTotal.classList.toggle("negative", profit < 0);
-  } catch {}
+
+  } catch (err) {
+    console.error("Failed to load dashboard data:", err);
+  }
 }
 
+// 监听月份变化
 monthInput.onchange = loadSummary;
+// 页面加载时执行一次
 loadSummary();
 
+/**
+ * 4. 注销功能
+ */
 async function logout() {
-  await fetch("/api/logout", { method:"POST", credentials:"include" });
+  await fetch("/api/logout", { method: "POST", credentials: "include" });
   location.replace("/login.html");
 }
 </script>
 
+
 </body>
 </html>
+
