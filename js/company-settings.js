@@ -8,7 +8,7 @@ const COMPANY_CONFIG = {
   regNo: "002972725-A",
   address: "52, Jalan Mahogani SD 1/3, Sri Damansara, 52200 Kuala Lumpur.",
   phone: "016-444 2128",
-  email: "support@mmaclimousine4u.com",
+  email: "mmacconstruction.project@gmail.com",
 
   // ===== BRANDING =====
   logoUrl: "/icon-512.png",     // 公司 logo
