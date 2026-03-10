@@ -113,6 +113,10 @@ th {
 <h2>Create Variation Order</h2>
 <div class="subtitle">MMAC Construction</div>
 
+<div id="projectBanner" style="display:none; background:#2c3e50; color:#fff; padding:10px 15px; border-radius:6px; margin-bottom:12px; font-size:14px;">
+  📁 Project: <strong id="projectLabel"></strong>
+</div>
+
 <div class="card">
   <label>Quotation ID (optional)</label>
   <input id="quotation_id" placeholder="Quotation ID">
@@ -167,6 +171,23 @@ th {
 const tbody = document.getElementById("items");
 const totalEl = document.getElementById("total");
 
+/* ===== READ PROJECT_ID FROM URL ===== */
+const _params    = new URLSearchParams(window.location.search);
+const _projectId = _params.get("project_id");
+
+if (_projectId) {
+  fetch("/api/project-view?id=" + _projectId, { credentials: "include" })
+    .then(r => r.json())
+    .then(d => {
+      if (d.project) {
+        document.getElementById("projectBanner").style.display = "block";
+        document.getElementById("projectLabel").textContent =
+          d.project.project_name + " (" + d.project.client_name + ")";
+      }
+    })
+    .catch(() => {});
+}
+
 function addItem() {
   const tr = document.createElement("tr");
   tr.innerHTML = `
@@ -204,6 +225,7 @@ async function submitVO() {
   const payload = {
     quotation_id: quotation_id.value || null,
     invoice_id: invoice_id.value || null,
+    project_id: _projectId ? Number(_projectId) : null,
     title: title.value,
     reason: reason.value,
     notes: notes.value,
@@ -225,7 +247,9 @@ async function submitVO() {
     }
 
     alert("VO created");
-    location.href = "/vos.html";
+    location.href = _projectId
+      ? "/project-view.html?id=" + _projectId
+      : "/vos.html";
 
   } catch (e) {
     document.getElementById("errorBox").style.display = "block";
