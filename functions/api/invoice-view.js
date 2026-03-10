@@ -49,6 +49,7 @@ export async function onRequest({ request, env }) {
       customer,
       amount,
       status,
+      project_id,
       created_at
     FROM invoices
     WHERE id = ?

@@ -53,7 +53,8 @@ export async function onRequestGet({ request, env }) {
       delivery_date,
       delivery_time,
       subtotal,
-      total
+      total,
+      project_id
     FROM purchase_orders
     WHERE id = ?
   `).bind(id).first();
