@@ -13,11 +13,12 @@ export async function onRequestPost(context) {
     const body = await request.json();
     const {
       customer,
+      project_id,
       project_title,
       project_address,
       terms_id,
       discount = 0,
-      sections = [] // 确保前端传的是 sections 数组
+      sections = []
     } = body;
 
     if (!customer) return jsonError('Customer required', 400);
@@ -37,9 +38,9 @@ export async function onRequestPost(context) {
      * =============================== */
     // 1. 先插主表
     const qRes = await db.prepare(`
-      INSERT INTO quotations (quotation_no, customer, project_title, project_address, terms_id, terms_snapshot, discount, subtotal, grand_total, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
-    `).bind(quotationNo, customer, project_title, project_address, terms_id, termsSnapshot, discount).run();
+      INSERT INTO quotations (quotation_no, customer, project_id, project_title, project_address, terms_id, terms_snapshot, discount, subtotal, grand_total, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
+    `).bind(quotationNo, customer, project_id || null, project_title, project_address, terms_id, termsSnapshot, discount).run();
 
     const quotationId = qRes.meta.last_row_id;
     let subtotal = 0;

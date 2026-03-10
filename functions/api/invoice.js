@@ -48,7 +48,7 @@ export async function onRequestPost({ request, env }) {
     );
   }
 
-  const { customer, items } = data;
+  const { customer, items, project_id } = data;
 
   if (!customer || !Array.isArray(items) || items.length === 0) {
     return new Response(
@@ -89,10 +89,10 @@ export async function onRequestPost({ request, env }) {
      =============================== */
   const inv = await env.DB.prepare(`
     INSERT INTO invoices
-      (invoice_no, customer, amount, status, created_at)
+      (invoice_no, customer, amount, status, project_id, created_at)
     VALUES
-      (?, ?, ?, 'UNPAID', datetime('now'))
-  `).bind(invoiceNo, customer, total).run();
+      (?, ?, ?, 'UNPAID', ?, datetime('now'))
+  `).bind(invoiceNo, customer, total, project_id || null).run();
 
   const invoiceId = inv.meta.last_row_id;
 

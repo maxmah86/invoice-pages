@@ -41,7 +41,8 @@ export async function onRequestPost({ request, env }) {
 
   const {
     supplier_name,
-    po_date, // 用户前端选择的日期
+    project_id,
+    po_date,
     issued_by,
     delivery_address,
     delivery_date,
@@ -90,8 +91,8 @@ export async function onRequestPost({ request, env }) {
     // 插入 PO 主表
     const insertPO = await env.DB.prepare(`
       INSERT INTO purchase_orders (
-        po_no,           -- 显式插入对齐日期的单号
-        po_date,         -- 用户选择的日期
+        po_no,
+        po_date,
         supplier_name,
         issued_by,
         delivery_address,
@@ -100,8 +101,9 @@ export async function onRequestPost({ request, env }) {
         notes,
         subtotal,
         total,
+        project_id,
         status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
     `).bind(
       customPoNo,
       targetDate,
@@ -112,7 +114,8 @@ export async function onRequestPost({ request, env }) {
       delivery_time || "",
       notes || "",
       subtotal,
-      total
+      total,
+      project_id || null
     ).run();
 
     const poId = insertPO.meta.last_row_id;
