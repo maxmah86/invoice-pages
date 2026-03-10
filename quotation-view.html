@@ -229,30 +229,26 @@ fetch("/api/quotation-view?id=" + id, { credentials: "include" })
     qid("project_address").innerText = q.project_address || "";
     qid("terms").innerText = q.terms_snapshot || "";
 
+    /* ===== Home button: go back to project if linked ===== */
+    const homeTarget = q.project_id
+      ? '/project-view.html?id=' + q.project_id
+      : '/index.html';
+
     /* ===== Button visibility ===== */
     if (status === "OPEN") {
-      qid('homeBtn').addEventListener('click', () => {
-  // 改成你的首页路径
-  location.href = '/index.html';
-});
+      qid('homeBtn').addEventListener('click', () => location.href = homeTarget);
       qid("btn-edit").style.display = "";
       qid("btn-approve").style.display = "";
       qid("btn-convert").style.display = "";
       qid("btn-reject").style.display = "";
     } else if (status === "ACCEPTED") {
-      qid('homeBtn').addEventListener('click', () => {
-  // 改成你的首页路径
-  location.href = '/index.html';
-});
+      qid('homeBtn').addEventListener('click', () => location.href = homeTarget);
       qid("btn-edit").style.display = "none";
       qid("btn-approve").style.display = "none";
       qid("btn-reject").style.display = "none";
       qid("btn-convert").style.display = "";
     } else {
-      qid('homeBtn').addEventListener('click', () => {
-  // 改成你的首页路径
-  location.href = '/index.html';
-});
+      qid('homeBtn').addEventListener('click', () => location.href = homeTarget);
       qid("btn-edit").style.display = "none";
       qid("btn-approve").style.display = "none";
       qid("btn-convert").style.display = "none";

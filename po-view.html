@@ -154,7 +154,7 @@ button {
 </head>
 
 <body>
-   <button onclick="window.location.href='/index.html';">HOME</button>
+   <button id="homeBtn" onclick="window.location.href='/index.html';">HOME</button>
   <button onclick="window.print()">Print / Save PDF</button>
 
 <!-- ================= HEADER ================= -->
@@ -328,6 +328,13 @@ fetch(`/api/po-view?id=${id}`, { credentials: "include" })
   });
 
   document.getElementById("total").textContent = total.toFixed(2);
+
+  // Show "Back to Project" if PO belongs to a project
+  if (po.project_id) {
+    const btn = document.getElementById("homeBtn");
+    btn.textContent = "← Project";
+    btn.onclick = () => location.href = "/project-view.html?id=" + po.project_id;
+  }
 });
   
 </script>

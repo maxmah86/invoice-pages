@@ -349,6 +349,15 @@
 
           qid('total').textContent = formatCurrency(data.invoice.amount);
 
+          // Show "Back to Project" button if invoice belongs to a project
+          if (data.invoice.project_id) {
+            const homeBtn = qid('homeBtn');
+            homeBtn.textContent = '← Project';
+            homeBtn.addEventListener('click', () =>
+              location.href = '/project-view.html?id=' + data.invoice.project_id,
+            { once: true });
+          }
+
         } catch (err) {
           console.error(err);
           qid('items').innerHTML = '<tr><td colspan="5" style="color:red">Error loading data.</td></tr>';
