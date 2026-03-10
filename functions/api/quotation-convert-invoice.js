@@ -33,7 +33,7 @@ export async function onRequestPost({ request, env }) {
    * 1️⃣ Check quotation status
    * =============================== */
   const q = await db.prepare(`
-    SELECT *
+    SELECT id, customer, grand_total, project_id
     FROM quotations
     WHERE id = ?
       AND status = 'ACCEPTED'
@@ -44,7 +44,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   /* ===============================
-   * 2️⃣ Create invoice
+   * 2️⃣ Create invoice (carry project_id from quotation)
    * =============================== */
   await db.prepare(`
     INSERT INTO invoices (
@@ -53,19 +53,22 @@ export async function onRequestPost({ request, env }) {
       status,
       invoice_no,
       created_at,
-      quotation_id
+      quotation_id,
+      project_id
     )
     VALUES (
       ?, ?,
       'UNPAID',
       'INV' || strftime('%Y%m%d%H%M%S','now'),
       datetime('now'),
+      ?,
       ?
     )
   `).bind(
     q.customer,
     q.grand_total,
-    quotation_id
+    quotation_id,
+    q.project_id || null
   ).run();
 
   const invoiceId =

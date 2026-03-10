@@ -32,6 +32,7 @@ export async function onRequestGet({ request, env }) {
   const status = url.searchParams.get("status");
   const quotation_id = url.searchParams.get("quotation_id");
   const invoice_id = url.searchParams.get("invoice_id");
+  const project_id = url.searchParams.get("project_id");
   const month = url.searchParams.get("month");
   const q = url.searchParams.get("q");
 
@@ -65,6 +66,11 @@ export async function onRequestGet({ request, env }) {
   if (invoice_id) {
     sql += " AND invoice_id = ?";
     params.push(invoice_id);
+  }
+
+  if (project_id) {
+    sql += " AND project_id = ?";
+    params.push(project_id);
   }
 
   if (month) {

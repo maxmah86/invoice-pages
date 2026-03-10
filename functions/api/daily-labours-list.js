@@ -41,7 +41,10 @@ export async function onRequestGet({ request, env }) {
   /* ===============================
      QUERY DAILY LABOURS
      =============================== */
-  const result = await env.DB.prepare(`
+  const url = new URL(request.url);
+  const project_id = url.searchParams.get("project_id");
+
+  let sql = `
     SELECT
       id,
       slip_no,
@@ -53,10 +56,22 @@ export async function onRequestGet({ request, env }) {
       paid_by,
       paid_at,
       status,
+      project_id,
       created_at
     FROM daily_labours
-    ORDER BY labour_date DESC, id DESC
-  `).all();
+    WHERE 1 = 1
+  `;
+
+  const params = [];
+
+  if (project_id) {
+    sql += " AND project_id = ?";
+    params.push(project_id);
+  }
+
+  sql += " ORDER BY labour_date DESC, id DESC";
+
+  const result = await env.DB.prepare(sql).bind(...params).all();
 
   /* ===============================
      RESPONSE (JSON ONLY)
