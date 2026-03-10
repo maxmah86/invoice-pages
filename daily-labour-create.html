@@ -70,6 +70,10 @@ input, textarea, select {
 
 <h2>Create Payslip</h2>
 
+<div id="projectBanner" style="display:none; background:#2c3e50; color:#fff; padding:10px 15px; border-radius:6px; margin-bottom:12px; font-size:14px;">
+  📁 Project: <strong id="projectLabel"></strong>
+</div>
+
 <!-- ===== BASIC INFO ===== -->
 <div class="box">
   <label>Labour Date</label>
@@ -124,6 +128,23 @@ fetch("/api/auth-check", { credentials: "include" })
   })
   .catch(() => location.replace("/login.html"));
 
+/* ===== READ PROJECT_ID FROM URL ===== */
+const _params    = new URLSearchParams(window.location.search);
+const _projectId = _params.get("project_id");
+
+if (_projectId) {
+  fetch("/api/project-view?id=" + _projectId, { credentials: "include" })
+    .then(r => r.json())
+    .then(d => {
+      if (d.project) {
+        document.getElementById("projectBanner").style.display = "block";
+        document.getElementById("projectLabel").textContent =
+          d.project.project_name + " (" + d.project.client_name + ")";
+      }
+    })
+    .catch(() => {});
+}
+
 /* ===== DEFAULT DATE ===== */
 document.getElementById("labour_date").value =
   new Date().toISOString().slice(0,10);
@@ -158,7 +179,8 @@ async function save() {
       status,
       payment_method,
       paid_by,
-      notes
+      notes,
+      project_id: _projectId ? Number(_projectId) : null
     })
   });
 
@@ -168,7 +190,9 @@ async function save() {
   }
 
   alert("Daily labour payslip saved");
-  location.href = "/daily-labours.html";
+  location.href = _projectId
+    ? "/project-view.html?id=" + _projectId
+    : "/daily-labours.html";
 }
 
 function cancel() {
