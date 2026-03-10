@@ -29,7 +29,11 @@ export async function onRequestGet({ request, env }) {
     /* ===============================
        QUERY PO LIST
        =============================== */
-    const { results } = await env.DB.prepare(`
+    const url = new URL(request.url);
+    const project_id = url.searchParams.get("project_id");
+    const status     = url.searchParams.get("status");
+
+    let sql = `
       SELECT
         id,
         po_no,
@@ -39,10 +43,27 @@ export async function onRequestGet({ request, env }) {
         delivery_time,
         total,
         status,
+        project_id,
         created_at
       FROM purchase_orders
-      ORDER BY created_at DESC
-    `).all();
+      WHERE 1 = 1
+    `;
+
+    const params = [];
+
+    if (project_id) {
+      sql += " AND project_id = ?";
+      params.push(project_id);
+    }
+
+    if (status) {
+      sql += " AND status = ?";
+      params.push(status);
+    }
+
+    sql += " ORDER BY created_at DESC";
+
+    const { results } = await env.DB.prepare(sql).bind(...params).all();
 
     /* ===============================
        RESPONSE
