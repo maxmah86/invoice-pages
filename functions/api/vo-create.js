@@ -38,6 +38,7 @@ export async function onRequestPost({ request, env }) {
   const {
     quotation_id,
     invoice_id,
+    project_id,
     title,
     reason,
     notes,
@@ -90,6 +91,7 @@ export async function onRequestPost({ request, env }) {
       vo_no,
       quotation_id,
       invoice_id,
+      project_id,
       title,
       reason,
       amount,
@@ -97,11 +99,12 @@ export async function onRequestPost({ request, env }) {
       notes,
       created_at,
       created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, 'DRAFT', ?, datetime('now'), ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?, datetime('now'), ?)
   `).bind(
     vo_no,
     quotation_id || null,
     invoice_id || null,
+    project_id || null,
     title || "Variation Order",
     reason || "",
     amount,
