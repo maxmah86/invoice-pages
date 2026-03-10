@@ -89,6 +89,10 @@ input, select {
 
 <h2>Create Quotation</h2>
 
+<div id="projectBanner" style="display:none; background:#2c3e50; color:#fff; padding:10px 15px; border-radius:6px; margin-bottom:12px; font-size:14px;">
+  📁 Project: <strong id="projectLabel"></strong>
+</div>
+
 <script>
 fetch("/api/auth-check", { credentials:"include" })
   .then(r => r.ok ? r.json() : Promise.reject())
@@ -96,6 +100,26 @@ fetch("/api/auth-check", { credentials:"include" })
     if (d.role !== "admin") location.replace("/index.html");
   })
   .catch(() => location.replace("/login.html"));
+
+// Read project_id from URL
+const _params = new URLSearchParams(window.location.search);
+const _projectId = _params.get("project_id");
+
+if (_projectId) {
+  fetch("/api/project-view?id=" + _projectId, { credentials: "include" })
+    .then(r => r.json())
+    .then(d => {
+      if (d.project) {
+        document.getElementById("projectBanner").style.display = "block";
+        document.getElementById("projectLabel").textContent =
+          d.project.project_name + " (" + d.project.client_name + ")";
+        // Auto-fill customer and project title
+        document.getElementById("customer").value = d.project.client_name || "";
+        document.getElementById("project_title").value = d.project.project_name || "";
+      }
+    })
+    .catch(() => {});
+}
 </script>
 
 <div class="box">
@@ -280,6 +304,7 @@ async function save() {
 
   const payload = {
     customer,
+    project_id: _projectId ? Number(_projectId) : null,
     project_title,
     project_address,
     terms_id,
@@ -302,7 +327,9 @@ async function save() {
     }
 
     alert("Quotation Saved!");
-    location.href = "/quotation-view.html?id=" + json.data.id;
+    location.href = _projectId
+      ? "/project-view.html?id=" + _projectId
+      : "/quotation-view.html?id=" + json.data.id;
 
   } catch (e) {
     alert("Network error, please try again.");

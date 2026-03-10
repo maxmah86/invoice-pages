@@ -92,6 +92,10 @@ button {
 
 <h1>Create Purchase Order</h1>
 
+<div id="projectBanner" style="display:none; background:#2c3e50; color:#fff; padding:10px 15px; border-radius:6px; margin-bottom:12px; font-size:14px;">
+  📁 Project: <strong id="projectLabel"></strong>
+</div>
+
 <!-- ===== BASIC INFO ===== -->
 <div class="form-group">
   <label>Supplier Name *</label>
@@ -219,6 +223,7 @@ async function submitPO() {
 
   const payload = {
     supplier_name: document.getElementById("supplier_name").value,
+    project_id: _projectId ? Number(_projectId) : null,
     po_date: document.getElementById("po_date").value,
     issued_by: document.getElementById("issued_by").value,
     delivery_address: document.getElementById("delivery_address").value,
@@ -246,7 +251,9 @@ async function submitPO() {
     }
 
     alert("PO created successfully");
-    location.href = "/pos.html";
+    location.href = _projectId
+      ? "/project-view.html?id=" + _projectId
+      : "/pos.html";
 
   } catch (err) {
     errorBox.style.display = "block";
@@ -255,6 +262,26 @@ async function submitPO() {
 }
 
 /* Init */
+const _params = new URLSearchParams(window.location.search);
+const _projectId = _params.get("project_id");
+
+if (_projectId) {
+  fetch("/api/project-view?id=" + _projectId, { credentials: "include" })
+    .then(r => r.json())
+    .then(d => {
+      if (d.project) {
+        document.getElementById("projectBanner").style.display = "block";
+        document.getElementById("projectLabel").textContent =
+          d.project.project_name + " (" + d.project.client_name + ")";
+        // Auto-fill delivery address from project notes if available
+        if (d.project.notes) {
+          document.getElementById("delivery_address").value = d.project.notes;
+        }
+      }
+    })
+    .catch(() => {});
+}
+
 addRow();
 </script>
 
