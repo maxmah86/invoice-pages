@@ -75,10 +75,14 @@ color:#2c7be5;
 
 
 <script>
+// Auth check
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => { if (!r.ok) location.replace("/login.html"); })
+  .catch(() => location.replace("/login.html"));
 
 async function loadProjects(){
 
-const res = await fetch('/api/project-list');
+const res = await fetch('/api/project-list', { credentials: "include" });
 const data = await res.json();
 
 const container = document.getElementById("projectList");

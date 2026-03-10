@@ -97,6 +97,11 @@ background:#1a5fd0;
 
 
 <script>
+// Auth check — admin only
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(d => { if (d.role !== "admin") location.replace("/index.html"); })
+  .catch(() => location.replace("/login.html"));
 
 async function createProject(){
 
@@ -111,9 +116,15 @@ notes: document.getElementById("notes").value
 
 };
 
+if (!data.project_name || !data.client_name) {
+  alert("Project Name and Client Name are required");
+  return;
+}
+
 const res = await fetch("/api/project-create",{
 
 method:"POST",
+credentials: "include",
 headers:{
 "Content-Type":"application/json"
 },
@@ -128,11 +139,11 @@ if(result.success){
 
 alert("Project created");
 
-window.location="project-list.html";
+window.location = "/project-view.html?id=" + result.id;
 
 }else{
 
-alert("Error creating project");
+alert("Error: " + (result.error || "Failed to create project"));
 
 }
 
