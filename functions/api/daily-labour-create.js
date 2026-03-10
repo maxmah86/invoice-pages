@@ -34,7 +34,8 @@ export async function onRequestPost({ request, env }) {
     status,
     payment_method,
     paid_by,
-    notes
+    notes,
+    project_id
   } = body;
 
   if (!labour_date || !worker_name || amount == null) {
@@ -71,8 +72,9 @@ export async function onRequestPost({ request, env }) {
       paid_by,
       paid_at,
       notes,
-      status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ${paidAt ? "datetime('now')" : "NULL"}, ?, ?)
+      status,
+      project_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ${paidAt ? "datetime('now')" : "NULL"}, ?, ?, ?)
   `;
 
   const r = await env.DB.prepare(sql).bind(
@@ -84,7 +86,8 @@ export async function onRequestPost({ request, env }) {
     payment_method || "",
     paid_by || "",
     notes || "",
-    finalStatus
+    finalStatus,
+    project_id || null
   ).run();
 
   return Response.json({
