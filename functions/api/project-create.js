@@ -60,15 +60,22 @@ export async function onRequestPost({ request, env }) {
      e.g. PROJ-20250520-0001
      =============================== */
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const prefix = `PROJ-${today}-`;
 
-  const countRow = await env.DB.prepare(`
-    SELECT COUNT(*) AS cnt
+  // Use MAX to find the highest existing seq for today — safe against retries
+  const maxRow = await env.DB.prepare(`
+    SELECT MAX(project_no) AS max_no
     FROM projects
-    WHERE substr(created_at, 1, 10) = date('now')
-  `).first();
+    WHERE project_no LIKE ?
+  `).bind(prefix + "%").first();
 
-  const seq = String((countRow?.cnt || 0) + 1).padStart(4, "0");
-  const project_no = `PROJ-${today}-${seq}`;
+  let seq = 1;
+  if (maxRow?.max_no) {
+    const lastSeq = parseInt(maxRow.max_no.slice(-4), 10);
+    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  }
+
+  const project_no = `${prefix}${String(seq).padStart(4, "0")}`;
 
   /* ===============================
      4. INSERT
