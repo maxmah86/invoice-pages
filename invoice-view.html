@@ -146,14 +146,46 @@
 
     /* PRINT MODE */
     @media print {
-      button, .invoice-actions {
+      @page {
+        size: A4 portrait;
+        margin: 15mm 15mm 15mm 15mm;
+      }
+
+      html, body {
+        width: 210mm;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 12pt;
+        color: #000;
+        background: #fff;
+      }
+
+      /* Hide UI chrome */
+      button, .invoice-actions, #homeBtn, #printBtn, #editBtn, #voidBtn {
         display: none !important;
       }
       .status-badge, #statusBadge {
         display: none !important;
       }
-      body {
-        margin: 0;
+
+      /* Keep invoice on one page if possible */
+      .invoice-wrapper {
+        page-break-inside: avoid;
+      }
+
+      /* Table should not break mid-row */
+      tr {
+        page-break-inside: avoid;
+      }
+
+      /* Prevent orphaned rows */
+      thead {
+        display: table-header-group;
+      }
+
+      /* Bank info and stamp stay together */
+      .bank-info, .signature {
+        page-break-inside: avoid;
       }
     }
 
