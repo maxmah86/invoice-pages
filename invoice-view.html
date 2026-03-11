@@ -148,45 +148,70 @@
     @media print {
       @page {
         size: A4 portrait;
-        margin: 15mm 15mm 15mm 15mm;
+        margin: 12mm 12mm 12mm 12mm;
       }
 
       html, body {
-        width: 210mm;
         margin: 0 !important;
         padding: 0 !important;
-        font-size: 12pt;
-        color: #000;
-        background: #fff;
+        width: 100% !important;
+        font-size: 11pt !important;
+        background: #fff !important;
+        color: #000 !important;
       }
 
-      /* Hide UI chrome */
-      button, .invoice-actions, #homeBtn, #printBtn, #editBtn, #voidBtn {
-        display: none !important;
-      }
+      /* Hide all UI buttons */
+      button,
+      .invoice-actions,
+      #homeBtn, #printBtn, #editBtn, #voidBtn,
       .status-badge, #statusBadge {
         display: none !important;
       }
 
-      /* Keep invoice on one page if possible */
-      .invoice-wrapper {
-        page-break-inside: avoid;
+      /* Tighten up spacing for print */
+      .section {
+        margin-top: 10px !important;
       }
 
-      /* Table should not break mid-row */
-      tr {
-        page-break-inside: avoid;
+      .signature {
+        margin-top: 20px !important;
       }
 
-      /* Prevent orphaned rows */
-      thead {
-        display: table-header-group;
+      .bank-info {
+        margin-top: 14px !important;
+        font-size: 10pt !important;
       }
 
-      /* Bank info and stamp stay together */
-      .bank-info, .signature {
-        page-break-inside: avoid;
+      th, td {
+        font-size: 10pt !important;
+        padding: 5px !important;
       }
+
+      .total {
+        font-size: 12pt !important;
+        margin-top: 8px !important;
+      }
+
+      .company {
+        font-size: 11pt !important;
+      }
+
+      .company-text h1 {
+        font-size: 18pt !important;
+      }
+
+      .invoice-title {
+        font-size: 18pt !important;
+      }
+
+      .invoice-meta {
+        font-size: 10pt !important;
+      }
+
+      /* Prevent rows from splitting across pages */
+      tr { page-break-inside: avoid; }
+      thead { display: table-header-group; }
+      .bank-info, .signature { page-break-inside: avoid; }
     }
 
     @media (max-width: 720px) {
