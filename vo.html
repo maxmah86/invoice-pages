@@ -141,6 +141,7 @@ th {
         <th width="60">Qty</th>
         <th width="90">Price</th>
         <th width="90">Amount</th>
+        <th width="40"></th>
       </tr>
     </thead>
     <tbody id="items"></tbody>
@@ -171,6 +172,12 @@ th {
 const tbody = document.getElementById("items");
 const totalEl = document.getElementById("total");
 
+/* ===== AUTH CHECK ===== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => { if (!d.loggedIn) location.replace("/login.html"); })
+  .catch(() => location.replace("/login.html"));
+
 /* ===== READ PROJECT_ID FROM URL ===== */
 const _params    = new URLSearchParams(window.location.search);
 const _projectId = _params.get("project_id");
@@ -191,10 +198,11 @@ if (_projectId) {
 function addItem() {
   const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td><input></td>
-    <td><input type="number" value="1" min="1" onchange="calc()"></td>
-    <td><input type="number" step="0.01" value="0" onchange="calc()"></td>
+    <td><input style="width:100%;box-sizing:border-box;"></td>
+    <td><input type="number" value="1" min="1" oninput="calc()"></td>
+    <td><input type="number" step="0.01" value="0" oninput="calc()"></td>
     <td class="right">0.00</td>
+    <td><button onclick="this.closest('tr').remove();calc()" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;">✕</button></td>
   `;
   tbody.appendChild(tr);
 }
@@ -202,12 +210,14 @@ function addItem() {
 function calc() {
   let total = 0;
   [...tbody.rows].forEach(r => {
-    const qty = Number(r.cells[1].children[0].value || 0);
+    const qty   = Number(r.cells[1].children[0].value || 0);
     const price = Number(r.cells[2].children[0].value || 0);
-    const amt = qty * price;
+    const amt   = qty * price;
     r.cells[3].innerText = amt.toFixed(2);
     total += amt;
   });
+  totalEl.innerText = total.toFixed(2);
+}
   totalEl.innerText = total.toFixed(2);
 }
 

@@ -172,12 +172,31 @@ button {
   <span id="notes"></span>
 </div>
 
-<button onclick="printVO()">Print / Save PDF</button>
+<button id="backBtn" onclick="location.href='/vos.html'">← Back</button>
+<button onclick="printVO()" style="margin-left:6px;">Print / Save PDF</button>
+<span id="adminBtns" style="display:none;">
+  <button id="approveBtn" onclick="approveVO()" style="margin-left:6px;background:#27ae60;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;">✓ Approve</button>
+  <button id="rejectBtn"  onclick="rejectVO()"  style="margin-left:6px;background:#c0392b;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;">✗ Reject</button>
+  <button id="convertBtn" onclick="convertVO()" style="margin-left:6px;background:#2980b9;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;display:none;">→ Convert to Invoice</button>
+</span>
 
 <img src="/mmac-chop.png" class="company-chop">
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
+
+// Auth check
+let _userRole = null;
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) { location.replace("/login.html"); return; }
+    _userRole = d.role;
+    if (d.role === "admin") {
+      document.getElementById("adminBtns").style.display = "inline";
+    }
+  })
+  .catch(() => location.replace("/login.html"));
 
 function printVO() {
   const t = document.title;
@@ -186,25 +205,80 @@ function printVO() {
   setTimeout(() => document.title = t, 500);
 }
 
+async function approveVO() {
+  if (!confirm("Approve this Variation Order?")) return;
+  const res = await fetch("/api/vo-approve", {
+    method: "POST", credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, action: "APPROVE" })
+  });
+  const data = await res.json();
+  if (data.success) { alert("VO Approved"); location.reload(); }
+  else alert("Failed: " + (data.error || ""));
+}
+
+async function rejectVO() {
+  if (!confirm("Reject this Variation Order?")) return;
+  const res = await fetch("/api/vo-approve", {
+    method: "POST", credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, action: "REJECT" })
+  });
+  const data = await res.json();
+  if (data.success) { alert("VO Rejected"); location.reload(); }
+  else alert("Failed: " + (data.error || ""));
+}
+
+async function convertVO() {
+  if (!confirm("Convert this VO to an Invoice?")) return;
+  const res = await fetch("/api/vo-convert", {
+    method: "POST", credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ vo_id: id })
+  });
+  const data = await res.json();
+  if (data.success) {
+    alert("Invoice created: " + data.invoice_no);
+    location.href = "/invoice-view.html?id=" + data.invoice_id;
+  } else alert("Failed: " + (data.error || ""));
+}
+
 fetch(`/api/vo-view?id=${id}`, { credentials: "include" })
 .then(r => {
-  if (r.status === 401) {
-    location.replace("/login.html");
-    throw new Error();
-  }
+  if (r.status === 401) { location.replace("/login.html"); throw new Error(); }
   return r.json();
 })
 .then(data => {
   const vo = data.vo;
 
-  document.getElementById("voNo").innerText = vo.vo_no;
-  document.getElementById("voDate").innerText = vo.created_at.split(" ")[0];
-  document.getElementById("status").innerText = vo.status;
+  // Back button — go to project if linked, else vos list
+  const backBtn = document.getElementById("backBtn");
+  if (vo.project_id) {
+    backBtn.textContent = "← Project";
+    backBtn.onclick = () => location.href = "/project-view.html?id=" + vo.project_id;
+  }
+
+  document.getElementById("voNo").innerText        = vo.vo_no;
+  document.getElementById("voDate").innerText      = vo.created_at.split(" ")[0];
+  document.getElementById("status").innerText      = vo.status;
   document.getElementById("quotationId").innerText = vo.quotation_id || "-";
-  document.getElementById("invoiceId").innerText = vo.invoice_id || "-";
-  document.getElementById("title").innerText = vo.title;
-  document.getElementById("reason").innerText = vo.reason;
-  document.getElementById("notes").innerText = vo.notes || "";
+  document.getElementById("invoiceId").innerText   = vo.invoice_id || "-";
+  document.getElementById("title").innerText       = vo.title;
+  document.getElementById("reason").innerText      = vo.reason;
+  document.getElementById("notes").innerText       = vo.notes || "";
+
+  // Show approve/reject only for DRAFT, convert only for APPROVED
+  if (vo.status === "DRAFT") {
+    document.getElementById("approveBtn").style.display = "";
+    document.getElementById("rejectBtn").style.display  = "";
+  } else if (vo.status === "APPROVED") {
+    document.getElementById("approveBtn").style.display = "none";
+    document.getElementById("rejectBtn").style.display  = "none";
+    document.getElementById("convertBtn").style.display = "";
+  } else {
+    document.getElementById("approveBtn").style.display = "none";
+    document.getElementById("rejectBtn").style.display  = "none";
+  }
 
   let total = 0;
   const tbody = document.getElementById("items");
