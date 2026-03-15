@@ -62,9 +62,6 @@ export async function onRequestPost({ request, env }) {
     return Response.json({ error: "VO must link to a project, quotation or invoice" }, { status: 400 });
   }
 
-  /* ===============================
-     CALCULATE AMOUNT
-     =============================== */
   let amount = 0;
   for (const i of items) {
     amount += (Number(i.qty) || 0) * (Number(i.unit_price) || 0);
@@ -75,8 +72,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   /* ===============================
-     DB OPERATIONS — wrapped in try-catch
-     so any DB error returns JSON, not HTML
+     DB OPERATIONS
      =============================== */
   try {
 
@@ -99,7 +95,7 @@ export async function onRequestPost({ request, env }) {
 
     const vo_no = `${prefix}${String(seq).padStart(4, "0")}`;
 
-    /* Insert VO header */
+    /* Insert VO header — only columns that exist in DB */
     const r = await env.DB.prepare(`
       INSERT INTO variation_orders (
         vo_no,
@@ -111,9 +107,8 @@ export async function onRequestPost({ request, env }) {
         amount,
         status,
         notes,
-        created_at,
-        created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?, datetime('now'), ?)
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?, datetime('now'))
     `).bind(
       vo_no,
       quotation_id || null,
@@ -122,8 +117,7 @@ export async function onRequestPost({ request, env }) {
       title.trim(),
       reason || "",
       amount,
-      notes  || "",
-      user.username
+      notes  || ""
     ).run();
 
     const vo_id = r.meta.last_row_id;
@@ -148,12 +142,10 @@ export async function onRequestPost({ request, env }) {
     return Response.json({
       success: true,
       vo_id,
-      vo_no,
-      created_by: user.username
+      vo_no
     });
 
   } catch (err) {
-    /* Return the REAL error as JSON so we can debug it */
     return Response.json({
       error: "Database error: " + err.message
     }, { status: 500 });
