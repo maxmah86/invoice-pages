@@ -126,6 +126,9 @@ export async function onRequestPost({ request, env }) {
   for (const it of items.results) {
     total += Number(it.qty) * Number(it.unit_price);
   }
+
+  /* ===============================
+     GENERATE INVOICE NO
      =============================== */
   const d = new Date();
   const date = d.toISOString().slice(0,10).replace(/-/g,"");
