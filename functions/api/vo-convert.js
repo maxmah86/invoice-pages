@@ -86,13 +86,46 @@ export async function onRequestPost({ request, env }) {
     return new Response("VO has no items", { status: 400 });
   }
 
+  /* ===============================
+     GET CUSTOMER NAME from linked docs
+     =============================== */
+  let customerName = "VO Customer";
+
+  // Try project → quotation → invoice for customer name
+  if (vo.project_id) {
+    const proj = await env.DB.prepare(
+      `SELECT client_name FROM projects WHERE id = ?`
+    ).bind(vo.project_id).first();
+    if (proj?.client_name) customerName = proj.client_name;
+  }
+
+  if (customerName === "VO Customer" && vo.quotation_id) {  // fallback: quotation
+    // vo.quotation_id exists but we need to query it — body has vo_id only, use vo object
+  }
+
+  // Try quotation_id linked on the VO
+  const voFull = await env.DB.prepare(
+    `SELECT quotation_id, invoice_id FROM variation_orders WHERE id = ?`
+  ).bind(vo_id).first();
+
+  if (customerName === "VO Customer" && voFull?.quotation_id) {
+    const quot = await env.DB.prepare(
+      `SELECT customer FROM quotations WHERE id = ?`
+    ).bind(voFull.quotation_id).first();
+    if (quot?.customer) customerName = quot.customer;
+  }
+
+  if (customerName === "VO Customer" && voFull?.invoice_id) {
+    const inv0 = await env.DB.prepare(
+      `SELECT customer FROM invoices WHERE id = ?`
+    ).bind(voFull.invoice_id).first();
+    if (inv0?.customer) customerName = inv0.customer;
+  }
+
   let total = 0;
   for (const it of items.results) {
     total += Number(it.qty) * Number(it.unit_price);
   }
-
-  /* ===============================
-     GENERATE INVOICE NO
      =============================== */
   const d = new Date();
   const date = d.toISOString().slice(0,10).replace(/-/g,"");
@@ -126,7 +159,7 @@ export async function onRequestPost({ request, env }) {
     ) VALUES (?, ?, ?, 'UNPAID', ?, datetime('now'), 'VO', ?)
   `).bind(
     invoice_no,
-    vo.customer || "VO Customer",
+    customerName,
     total,
     vo.project_id || null,
     vo_id
