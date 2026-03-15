@@ -224,19 +224,35 @@ addItem();
 async function submitVO() {
   document.getElementById("errorBox").style.display = "none";
 
+  const titleVal  = document.getElementById("title").value.trim();
+  const reasonVal = document.getElementById("reason").value.trim();
+  const notesVal  = document.getElementById("notes").value.trim();
+  const quotId    = document.getElementById("quotation_id").value.trim() || null;
+  const invId     = document.getElementById("invoice_id").value.trim() || null;
+
+  if (!titleVal) {
+    alert("Please enter a VO title");
+    return;
+  }
+
   const items = [...tbody.rows].map(r => ({
-    description: r.cells[0].children[0].value,
-    qty: r.cells[1].children[0].value,
-    unit_price: r.cells[2].children[0].value
+    description: r.cells[0].children[0].value.trim(),
+    qty:         r.cells[1].children[0].value,
+    unit_price:  r.cells[2].children[0].value
   })).filter(i => i.description);
 
+  if (items.length === 0) {
+    alert("Please add at least one item with a description");
+    return;
+  }
+
   const payload = {
-    quotation_id: quotation_id.value || null,
-    invoice_id: invoice_id.value || null,
-    project_id: _projectId ? Number(_projectId) : null,
-    title: title.value,
-    reason: reason.value,
-    notes: notes.value,
+    quotation_id: quotId,
+    invoice_id:   invId,
+    project_id:   _projectId ? Number(_projectId) : null,
+    title:        titleVal,
+    reason:       reasonVal,
+    notes:        notesVal,
     items
   };
 
@@ -251,17 +267,17 @@ async function submitVO() {
     const data = await res.json();
 
     if (!res.ok) {
-      throw data;
+      throw new Error(data.error || data.message || res.statusText);
     }
 
-    alert("VO created");
+    alert("VO created: " + data.vo_no);
     location.href = _projectId
       ? "/project-view.html?id=" + _projectId
       : "/vos.html";
 
   } catch (e) {
     document.getElementById("errorBox").style.display = "block";
-    document.getElementById("errorText").innerText = JSON.stringify(e, null, 2);
+    document.getElementById("errorText").innerText = e.message || String(e);
   }
 }
 </script>
