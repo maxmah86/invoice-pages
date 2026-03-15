@@ -232,6 +232,13 @@ body {
   <div class="pnl-card income">
     <div class="label">Contract Value</div>
     <div class="value" id="plContract">RM 0.00</div>
+    <div class="sub" style="margin-top:8px;">
+      <button onclick="syncContractValue()" style="
+        font-size:11px; padding:4px 10px; border:none;
+        background:#2c3e50; color:#fff; border-radius:4px;
+        cursor:pointer; white-space:nowrap;
+      ">⟳ Sync from Quotations + VO</button>
+    </div>
   </div>
   <div class="pnl-card income">
     <div class="label">Total Invoiced</div>
@@ -514,6 +521,56 @@ function renderLabours(list) {
       </div>
     </div>
   `).join("");
+}
+
+/* ===== SYNC CONTRACT VALUE ===== */
+async function syncContractValue() {
+  try {
+    // Get latest data from API
+    const res  = await fetch("/api/project-view?id=" + projectId, { credentials: "include" });
+    const data = await res.json();
+
+    if (!data.project) { alert("Project not found"); return; }
+
+    // Sum all quotations grand_total
+    const sumQuotations = (data.quotations || [])
+      .reduce((sum, q) => sum + (Number(q.grand_total) || 0), 0);
+
+    // Sum APPROVED VOs only
+    const sumVO = (data.variation_orders || [])
+      .filter(v => (v.status || "").toUpperCase() === "APPROVED")
+      .reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
+
+    const newValue = sumQuotations + sumVO;
+
+    const confirmMsg =
+      "Update Contract Value to:\n\n" +
+      "  Quotations total : RM " + sumQuotations.toFixed(2) + "\n" +
+      "  Approved VO total: RM " + sumVO.toFixed(2) + "\n" +
+      "  ─────────────────────\n" +
+      "  New Contract Value: RM " + newValue.toFixed(2) + "\n\n" +
+      "Confirm?";
+
+    if (!confirm(confirmMsg)) return;
+
+    // Save to DB
+    const saveRes = await fetch("/api/project-update-value", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId, contract_value: newValue })
+    });
+
+    const saveData = await saveRes.json();
+    if (!saveData.success) { alert("Update failed: " + (saveData.error || "")); return; }
+
+    // Update display immediately
+    document.getElementById("plContract").textContent = RM(newValue);
+    alert("Contract Value updated to RM " + newValue.toFixed(2));
+
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
 }
 
 /* ===== INIT ===== */
