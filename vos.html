@@ -109,7 +109,7 @@ const monthEl = document.getElementById("month");
 const qEl = document.getElementById("q");
 const listEl = document.getElementById("list");
 
-monthEl.value = new Date().toISOString().slice(0,7);
+monthEl.value = ""; // show all months by default
 
 async function load() {
   listEl.innerHTML = "Loading...";
