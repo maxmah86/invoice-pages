@@ -49,10 +49,10 @@ export async function onRequestPost({ request, env }) {
     return new Response("Invalid items", { status: 400 });
   }
 
-  /* ===== MUST LINK TO ONE SOURCE ===== */
-  if (!quotation_id && !invoice_id) {
+  /* ===== PROJECT OR DOCUMENT LINK — at least one required ===== */
+  if (!quotation_id && !invoice_id && !project_id) {
     return new Response(
-      "VO must link to quotation or invoice",
+      "VO must link to a project, quotation or invoice",
       { status: 400 }
     );
   }
@@ -70,18 +70,25 @@ export async function onRequestPost({ request, env }) {
   }
 
   /* ===============================
-     GENERATE VO NO
+     GENERATE VO NO (safe — uses MAX)
      =============================== */
   const d = new Date();
   const date = d.toISOString().slice(0,10).replace(/-/g,"");
+  const prefix = `VO-${date}-`;
 
-  const cnt = await env.DB.prepare(`
-    SELECT COUNT(*) AS c
+  const maxRow = await env.DB.prepare(`
+    SELECT MAX(vo_no) AS max_no
     FROM variation_orders
-    WHERE date(created_at) = date('now')
-  `).first();
+    WHERE vo_no LIKE ?
+  `).bind(prefix + "%").first();
 
-  const vo_no = `VO-${date}-${String(cnt.c + 1).padStart(4,"0")}`;
+  let seq = 1;
+  if (maxRow?.max_no) {
+    const lastSeq = parseInt(maxRow.max_no.slice(-4), 10);
+    if (!isNaN(lastSeq)) seq = lastSeq + 1;
+  }
+
+  const vo_no = `${prefix}${String(seq).padStart(4, "0")}`;
 
   /* ===============================
      INSERT VO HEADER

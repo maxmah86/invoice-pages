@@ -43,7 +43,7 @@ export async function onRequestPost({ request, env }) {
      LOAD VO
      =============================== */
   const vo = await env.DB.prepare(`
-    SELECT id, title, customer, status
+    SELECT id, title, customer, status, project_id
     FROM variation_orders
     WHERE id = ?
   `).bind(vo_id).first();
@@ -96,14 +96,19 @@ export async function onRequestPost({ request, env }) {
      =============================== */
   const d = new Date();
   const date = d.toISOString().slice(0,10).replace(/-/g,"");
+  const invPrefix = `INV-${date}-`;
 
-  const cnt = await env.DB.prepare(`
-    SELECT COUNT(*) AS c
-    FROM invoices
-    WHERE date(created_at) = date('now')
-  `).first();
+  const maxInv = await env.DB.prepare(`
+    SELECT MAX(invoice_no) AS max_no FROM invoices WHERE invoice_no LIKE ?
+  `).bind(invPrefix + "%").first();
 
-  const invoice_no = `INV-${date}-${String(cnt.c + 1).padStart(4,"0")}`;
+  let invSeq = 1;
+  if (maxInv?.max_no) {
+    const last = parseInt(maxInv.max_no.slice(-4), 10);
+    if (!isNaN(last)) invSeq = last + 1;
+  }
+
+  const invoice_no = `${invPrefix}${String(invSeq).padStart(4,"0")}`;
 
   /* ===============================
      INSERT INVOICE
@@ -114,14 +119,16 @@ export async function onRequestPost({ request, env }) {
       customer,
       amount,
       status,
+      project_id,
       created_at,
       source_type,
       source_id
-    ) VALUES (?, ?, ?, 'UNPAID', datetime('now'), 'VO', ?)
+    ) VALUES (?, ?, ?, 'UNPAID', ?, datetime('now'), 'VO', ?)
   `).bind(
     invoice_no,
     vo.customer || "VO Customer",
     total,
+    vo.project_id || null,
     vo_id
   ).run();
 
