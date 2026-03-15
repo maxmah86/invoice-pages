@@ -1,28 +1,30 @@
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
-     AUTH CHECK (session_token)
+     AUTH CHECK
      =============================== */
   const cookie = request.headers.get("Cookie") || "";
   const token = cookie.match(/session=([^;]+)/)?.[1];
 
   if (!token) {
-    return new Response("Unauthorized", { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await env.DB.prepare(`
-    SELECT id, username, role
-    FROM users
-    WHERE session_token = ?
-  `).bind(token).first();
+  let user;
+  try {
+    user = await env.DB.prepare(`
+      SELECT id, username, role FROM users WHERE session_token = ?
+    `).bind(token).first();
+  } catch (err) {
+    return Response.json({ error: "DB error: " + err.message }, { status: 500 });
+  }
 
   if (!user) {
-    return new Response("Unauthorized", { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  /* ===== ADMIN / STAFF ONLY ===== */
   if (!["admin", "staff"].includes(user.role)) {
-    return new Response("Forbidden", { status: 403 });
+    return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
   /* ===============================
@@ -32,7 +34,7 @@ export async function onRequestPost({ request, env }) {
   try {
     body = await request.json();
   } catch {
-    return new Response("Invalid JSON", { status: 400 });
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   const {
@@ -45,16 +47,19 @@ export async function onRequestPost({ request, env }) {
     items
   } = body;
 
-  if (!Array.isArray(items) || items.length === 0) {
-    return new Response("Invalid items", { status: 400 });
+  /* ===============================
+     VALIDATION
+     =============================== */
+  if (!title || !title.trim()) {
+    return Response.json({ error: "Title is required" }, { status: 400 });
   }
 
-  /* ===== PROJECT OR DOCUMENT LINK — at least one required ===== */
+  if (!Array.isArray(items) || items.length === 0) {
+    return Response.json({ error: "At least one item is required" }, { status: 400 });
+  }
+
   if (!quotation_id && !invoice_id && !project_id) {
-    return new Response(
-      "VO must link to a project, quotation or invoice",
-      { status: 400 }
-    );
+    return Response.json({ error: "VO must link to a project, quotation or invoice" }, { status: 400 });
   }
 
   /* ===============================
@@ -66,94 +71,91 @@ export async function onRequestPost({ request, env }) {
   }
 
   if (amount <= 0) {
-    return new Response("Invalid amount", { status: 400 });
+    return Response.json({ error: "Total amount must be greater than 0" }, { status: 400 });
   }
 
   /* ===============================
-     GENERATE VO NO (safe — uses MAX)
+     DB OPERATIONS — wrapped in try-catch
+     so any DB error returns JSON, not HTML
      =============================== */
-  const d = new Date();
-  const date = d.toISOString().slice(0,10).replace(/-/g,"");
-  const prefix = `VO-${date}-`;
+  try {
 
-  const maxRow = await env.DB.prepare(`
-    SELECT MAX(vo_no) AS max_no
-    FROM variation_orders
-    WHERE vo_no LIKE ?
-  `).bind(prefix + "%").first();
+    /* Generate VO No using MAX (no duplicate risk) */
+    const d = new Date();
+    const date = d.toISOString().slice(0, 10).replace(/-/g, "");
+    const prefix = `VO-${date}-`;
 
-  let seq = 1;
-  if (maxRow?.max_no) {
-    const lastSeq = parseInt(maxRow.max_no.slice(-4), 10);
-    if (!isNaN(lastSeq)) seq = lastSeq + 1;
-  }
+    const maxRow = await env.DB.prepare(`
+      SELECT MAX(vo_no) AS max_no
+      FROM variation_orders
+      WHERE vo_no LIKE ?
+    `).bind(prefix + "%").first();
 
-  const vo_no = `${prefix}${String(seq).padStart(4, "0")}`;
+    let seq = 1;
+    if (maxRow?.max_no) {
+      const lastSeq = parseInt(maxRow.max_no.slice(-4), 10);
+      if (!isNaN(lastSeq)) seq = lastSeq + 1;
+    }
 
-  /* ===============================
-     INSERT VO HEADER
-     =============================== */
-  const r = await env.DB.prepare(`
-    INSERT INTO variation_orders (
+    const vo_no = `${prefix}${String(seq).padStart(4, "0")}`;
+
+    /* Insert VO header */
+    const r = await env.DB.prepare(`
+      INSERT INTO variation_orders (
+        vo_no,
+        quotation_id,
+        invoice_id,
+        project_id,
+        title,
+        reason,
+        amount,
+        status,
+        notes,
+        created_at,
+        created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?, datetime('now'), ?)
+    `).bind(
       vo_no,
-      quotation_id,
-      invoice_id,
-      project_id,
-      title,
-      reason,
+      quotation_id || null,
+      invoice_id   || null,
+      project_id   || null,
+      title.trim(),
+      reason || "",
       amount,
-      status,
-      notes,
-      created_at,
-      created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?, datetime('now'), ?)
-  `).bind(
-    vo_no,
-    quotation_id || null,
-    invoice_id || null,
-    project_id || null,
-    title || "Variation Order",
-    reason || "",
-    amount,
-    notes || "",
-    user.username
-  ).run();
-
-  const vo_id = r.meta.last_row_id;
-
-  /* ===============================
-     INSERT VO ITEMS
-     =============================== */
-  const stmt = env.DB.prepare(`
-    INSERT INTO variation_order_items (
-      variation_order_id,
-      description,
-      qty,
-      unit_price,
-      line_total
-    ) VALUES (?, ?, ?, ?, ?)
-  `);
-
-  for (const i of items) {
-    const qty = Number(i.qty) || 0;
-    const price = Number(i.unit_price) || 0;
-
-    await stmt.bind(
-      vo_id,
-      i.description || "",
-      qty,
-      price,
-      qty * price
+      notes  || "",
+      user.username
     ).run();
-  }
 
-  /* ===============================
-     RESPONSE
-     =============================== */
-  return Response.json({
-    success: true,
-    vo_id,
-    vo_no,
-    created_by: user.username
-  });
+    const vo_id = r.meta.last_row_id;
+
+    /* Insert VO items */
+    const stmt = env.DB.prepare(`
+      INSERT INTO variation_order_items (
+        variation_order_id,
+        description,
+        qty,
+        unit_price,
+        line_total
+      ) VALUES (?, ?, ?, ?, ?)
+    `);
+
+    for (const i of items) {
+      const qty   = Number(i.qty)        || 0;
+      const price = Number(i.unit_price) || 0;
+      await stmt.bind(vo_id, i.description || "", qty, price, qty * price).run();
+    }
+
+    return Response.json({
+      success: true,
+      vo_id,
+      vo_no,
+      created_by: user.username
+    });
+
+  } catch (err) {
+    /* Return the REAL error as JSON so we can debug it */
+    return Response.json({
+      error: "Database error: " + err.message
+    }, { status: 500 });
+  }
 }
