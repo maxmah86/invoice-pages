@@ -4,246 +4,477 @@
 <meta charset="UTF-8" />
 <title>Work Checklist</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="/js/config.js"></script>
+<script src="/js/company-settings.js"></script>
 
 <style>
+/* ===================================================
+   SCREEN STYLES
+   =================================================== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
   font-family: Arial, sans-serif;
   background: #f4f6f8;
-  margin: 0;
   padding: 14px;
+  color: #000;
 }
 
-h1 {
-  margin-bottom: 12px;
+/* ── Top action bar (screen only) ── */
+.action-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
-/* ===== Header ===== */
-.subtitle {
+.btn {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.btn-home   { background: #7f8c8d; color: #fff; }
+.btn-back   { background: #34495e; color: #fff; }
+.btn-print  { background: #2980b9; color: #fff; }
+.btn-delete { background: #e74c3c; color: #fff; }
+
+/* ── Printable document wrapper ── */
+.doc {
   background: #fff;
-  padding: 12px;
   border-radius: 8px;
-  border-left: 5px solid #3498db;
+  padding: 24px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ── Company header ── */
+.company-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #2c3e50;
   margin-bottom: 16px;
-  font-size: 14px;
+}
+
+.company-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.company-logo {
+  width: 56px;
+  height: auto;
+}
+
+.company-name {
+  font-size: 20px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.company-detail {
+  font-size: 11px;
+  color: #555;
   line-height: 1.6;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-top: 2px;
 }
 
-.project-title {
+.doc-title-box {
+  text-align: right;
+}
+
+.doc-title {
+  font-size: 22px;
   font-weight: bold;
-  font-size: 16px;
   color: #2c3e50;
+  letter-spacing: 1px;
 }
 
-/* ===== Card ===== */
-.card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+.doc-meta {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.8;
+  margin-top: 4px;
 }
 
-/* ===== Section ===== */
-.section-row {
-  margin: 18px 0 10px;
-  padding: 10px 12px;
-  background: #f7f9fb;
+/* ── Project info bar ── */
+.project-info {
+  background: #f0f4f8;
   border-left: 4px solid #3498db;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.project-info .proj-name {
+  font-size: 15px;
   font-weight: bold;
   color: #2c3e50;
 }
 
-/* ===== Item ===== */
-.item {
-  border-bottom: 1px solid #eee;
-  padding: 14px 0;
-}
-.item:last-child {
-  border-bottom: none;
+/* ── Progress summary ── */
+.progress-bar-wrap {
+  margin-bottom: 18px;
 }
 
-.desc {
-  font-size: 15px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #333;
+.progress-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
 }
 
-/* ===== Status button ===== */
-.status-btn {
-  display: inline-block;
-  padding: 8px 16px;
-  border-radius: 20px;
+.progress-track {
+  background: #e0e0e0;
+  border-radius: 10px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 10px;
+  border-radius: 10px;
+  background: #27ae60;
+  transition: width 0.3s;
+}
+
+/* ── Checklist table ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 13px;
+}
+
+thead tr {
+  background: #2c3e50;
+  color: #fff;
+}
+
+thead th {
+  padding: 9px 10px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+tbody tr:nth-child(even) { background: #f8f9fa; }
+tbody tr:hover { background: #eaf3fb; }
+
+/* Section header row */
+tr.section-row td {
+  background: #dce8f5;
+  color: #1a3a5c;
+  font-weight: bold;
+  padding: 8px 10px;
+  font-size: 13px;
+  border-top: 1px solid #b0cde8;
+}
+
+td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+}
+
+td.no-col  { width: 40px; text-align: center; color: #999; }
+td.desc-col { }
+td.status-col { width: 120px; text-align: center; }
+td.remarks-col { width: 200px; }
+
+/* Status badge */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: bold;
   cursor: pointer;
-  min-width: 110px;
+  user-select: none;
+  white-space: nowrap;
+}
+.badge.NOT_STARTED { background: #e0e0e0; color: #555; }
+.badge.IN_PROGRESS { background: #f39c12; color: #fff; }
+.badge.DONE        { background: #27ae60; color: #fff; }
+
+/* Remarks input */
+.remarks-input {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px 7px;
+  font-size: 12px;
+  resize: vertical;
+  min-height: 32px;
+  font-family: Arial, sans-serif;
+}
+
+/* ── Signature area ── */
+.signature-area {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid #ddd;
+}
+
+.sig-box {
   text-align: center;
+  min-width: 180px;
 }
 
-.NOT_STARTED { background: #e0e0e0; color: #666; }
-.IN_PROGRESS { background: #f39c12; color: #fff; }
-.DONE { background: #27ae60; color: #fff; }
-
-/* ===== Remarks ===== */
-.remarks {
-  margin-top: 12px;
-}
-textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
+.sig-chop {
+  width: 100px;
+  opacity: 0.85;
+  margin-bottom: -20px;
 }
 
-/* ===== Buttons ===== */
-.btn-back {
-  width: 100%;
-  margin-top: 18px;
-  padding: 14px;
-  font-size: 16px;
-  border-radius: 6px;
-  border: none;
-  background: #34495e;
-  color: #fff;
-  cursor: pointer;
+.sig-line {
+  border-top: 1px solid #000;
+  margin-top: 30px;
+  padding-top: 6px;
+  font-size: 12px;
 }
 
-.btn-remove-checklist {
-  width: 100%;
-  margin-bottom: 12px;
-  padding: 14px;
-  font-size: 15px;
-  border-radius: 6px;
-  border: none;
-  background: #e74c3c;
-  color: #fff;
-  cursor: pointer;
+/* ===================================================
+   PRINT STYLES
+   =================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 12mm 12mm 12mm;
+  }
+
+  html { zoom: 0.9; }
+
+  body {
+    background: #fff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide all screen-only UI */
+  .action-bar,
+  .badge,            /* hide clickable badges — show text instead */
+  .remarks-input {
+    display: none !important;
+  }
+
+  /* Show print-only elements */
+  .print-status,
+  .print-remarks {
+    display: block !important;
+  }
+
+  .doc {
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+  }
+
+  table { page-break-inside: auto; }
+  tr    { page-break-inside: avoid; }
+  thead { display: table-header-group; }
+
+  .progress-bar-wrap { display: none; }
 }
+
+/* Print-only elements (hidden on screen) */
+.print-status  { display: none; font-size: 11px; font-weight: bold; }
+.print-remarks { display: none; font-size: 11px; color: #444; }
+
+/* Status dot for print */
+.dot-NS { color: #999; }
+.dot-IP { color: #e67e00; }
+.dot-DN { color: #27ae60; }
 </style>
 </head>
 
 <body>
 
-<h1>Work Checklist</h1>
-<button onclick="window.location.href='/index.html';">HOME</button>
-
-<!-- admin-only action -->
-<div id="adminActions"></div>
-
-<div class="subtitle" id="headerInfo">
-  Loading project details...
+<!-- ── Action bar (screen only) ── -->
+<div class="action-bar">
+  <button class="btn btn-home"  onclick="location.href='/index.html'">Home</button>
+  <button class="btn btn-back"  onclick="history.back()">← Back</button>
+  <button class="btn btn-print" onclick="window.print()">🖨 Print / PDF</button>
+  <div id="adminActions" style="display:contents;"></div>
 </div>
 
-<div class="card" id="itemsBox">
-  <div style="text-align:center;padding:20px;">Loading items...</div>
-</div>
+<!-- ── Printable document ── -->
+<div class="doc" id="doc">
 
-<button class="btn-back" onclick="history.back()">Back</button>
+  <!-- Company Header -->
+  <div class="company-header">
+    <div class="company-left">
+      <img id="company-logo" src="" alt="" class="company-logo">
+      <div>
+        <div class="company-name" id="comp-name"></div>
+        <div class="company-detail" id="comp-reg"></div>
+        <div class="company-detail" id="comp-address"></div>
+        <div class="company-detail" id="comp-contact"></div>
+      </div>
+    </div>
+    <div class="doc-title-box">
+      <div class="doc-title">WORK CHECKLIST</div>
+      <div class="doc-meta" id="docMeta">—</div>
+    </div>
+  </div>
+
+  <!-- Project Info -->
+  <div class="project-info" id="projectInfo">Loading...</div>
+
+  <!-- Progress Bar (screen only) -->
+  <div class="progress-bar-wrap" id="progressWrap" style="display:none;">
+    <div class="progress-label">
+      <span id="progressText">Progress</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Checklist Table -->
+  <table id="checklistTable">
+    <thead>
+      <tr>
+        <th class="no-col">No</th>
+        <th class="desc-col">Description</th>
+        <th class="status-col">Status</th>
+        <th class="remarks-col">Remarks</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td colspan="4" style="text-align:center;padding:20px;color:#999;">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Signature -->
+  <div class="signature-area">
+    <div class="sig-box">
+      <img id="company-chop" src="/chop.png" class="sig-chop"
+           onerror="this.style.display='none'">
+      <div class="sig-line">Authorised Signature</div>
+    </div>
+  </div>
+
+</div><!-- /doc -->
 
 <script>
-const checklistId = Number(
-  new URLSearchParams(location.search).get("id")
-);
+const checklistId = Number(new URLSearchParams(location.search).get("id"));
 let IS_ADMIN = false;
 
-/* ===============================
- * Check role
- * =============================== */
+/* ── Auth ── */
 async function checkRole() {
-  const res = await fetch("/api/auth-check", { credentials: "include" });
+  const res  = await fetch("/api/auth-check", { credentials: "include" });
   const data = await res.json();
-
-  if (!data.loggedIn) {
-    location.replace("/login.html");
-    return;
-  }
+  if (!data.loggedIn) { location.replace("/login.html"); return; }
 
   IS_ADMIN = data.role === "admin";
-
   if (IS_ADMIN) {
     document.getElementById("adminActions").innerHTML = `
-      <button
-        class="btn-remove-checklist"
-        onclick="removeChecklist()"
-      >
-        🗑 Remove Checklist
-      </button>
+      <button class="btn btn-delete" onclick="removeChecklist()">🗑 Delete</button>
     `;
   }
 }
 
-/* ===============================
- * Load checklist
- * =============================== */
+/* ── Load ── */
 async function loadChecklist() {
-  const res = await fetch(
-    `/api/work-checklist-view?id=${checklistId}`,
-    { credentials: "include" }
-  );
+  const res = await fetch(`/api/work-checklist-view?id=${checklistId}`, {
+    credentials: "include"
+  });
 
   if (!res.ok) {
-    document.getElementById("itemsBox").innerHTML =
-      "<div style='color:red;text-align:center;'>Failed to load checklist</div>";
+    document.getElementById("tableBody").innerHTML =
+      `<tr><td colspan="4" style="color:red;text-align:center;padding:20px;">Failed to load</td></tr>`;
     return;
   }
 
   const data = await res.json();
+  const cl   = data.checklist;
+  const items = data.items || [];
 
-  document.getElementById("headerInfo").innerHTML = `
-    <div>Quotation: <b>${data.checklist.quotation_no}</b></div>
-    <div class="project-title">📍 ${data.checklist.project_title || "-"}</div>
-    <div style="color:#7f8c8d;">
-      ${data.checklist.project_address || ""}
-    </div>
-  `;
+  /* Doc meta */
+  document.title = `Checklist - ${cl.project_title || cl.quotation_no}`;
+  document.getElementById("docMeta").innerHTML =
+    `Quotation: <b>${cl.quotation_no}</b><br>` +
+    `Date: <b>${new Date().toLocaleDateString("en-MY")}</b>`;
 
-  const box = document.getElementById("itemsBox");
-  box.innerHTML = "";
+  /* Project info */
+  document.getElementById("projectInfo").innerHTML =
+    `<div class="proj-name">📍 ${cl.project_title || "—"}</div>` +
+    (cl.project_address ? `<div>${cl.project_address}</div>` : "") +
+    `<div style="color:#888;font-size:12px;margin-top:2px;">Quotation: ${cl.quotation_no}</div>`;
 
-  data.items.forEach(it => {
-    const div = document.createElement("div");
+  /* Progress */
+  const workItems = items.filter(i => i.status !== "SECTION");
+  const done      = workItems.filter(i => i.status === "DONE").length;
+  const total     = workItems.length;
+  const pct       = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  if (total > 0) {
+    document.getElementById("progressWrap").style.display = "block";
+    document.getElementById("progressText").textContent = `${done} / ${total} completed`;
+    document.getElementById("progressPct").textContent  = pct + "%";
+    document.getElementById("progressFill").style.width = pct + "%";
+    if (pct === 100) document.getElementById("progressFill").style.background = "#27ae60";
+    else if (pct > 0) document.getElementById("progressFill").style.background = "#f39c12";
+    else document.getElementById("progressFill").style.background = "#ccc";
+  }
+
+  /* Table rows */
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+  let rowNo = 0;
+
+  items.forEach(it => {
+    const tr = document.createElement("tr");
 
     if (it.status === "SECTION") {
-      div.className = "section-row";
-      div.textContent = it.description;
+      tr.className = "section-row";
+      tr.innerHTML = `<td colspan="4">▸ ${it.description}</td>`;
     } else {
-      div.className = "item";
-      div.innerHTML = `
-        <div class="desc">${it.description}</div>
+      rowNo++;
+      const statusLabel = it.status.replace("_", " ");
+      const printDot    = it.status === "DONE" ? "✓" : it.status === "IN_PROGRESS" ? "▶" : "○";
+      const dotClass    = it.status === "DONE" ? "dot-DN" : it.status === "IN_PROGRESS" ? "dot-IP" : "dot-NS";
 
-        <div
-          class="status-btn ${it.status}"
-          onclick="toggleStatus(${it.id}, '${it.status}')"
-        >
-          ${it.status.replace("_", " ")}
-        </div>
-
-        <div class="remarks">
-          <textarea
+      tr.innerHTML = `
+        <td class="no-col">${rowNo}</td>
+        <td class="desc-col">${it.description}</td>
+        <td class="status-col">
+          <span class="badge ${it.status}"
+                onclick="toggleStatus(${it.id}, '${it.status}')">
+            ${statusLabel}
+          </span>
+          <span class="print-status ${dotClass}">${printDot} ${statusLabel}</span>
+        </td>
+        <td class="remarks-col">
+          <textarea class="remarks-input"
             onblur="saveRemarks(${it.id}, this.value)"
-          >${it.remarks || ""}</textarea>
-        </div>
+            placeholder="Remarks...">${it.remarks || ""}</textarea>
+          <span class="print-remarks">${it.remarks || ""}</span>
+        </td>
       `;
     }
 
-    box.appendChild(div);
+    tbody.appendChild(tr);
   });
 }
 
-/* ===============================
- * Remove checklist (admin only)
- * =============================== */
+/* ── Delete ── */
 async function removeChecklist() {
-  if (
-    !confirm(
-      "This will permanently delete the entire checklist.\nAre you sure?"
-    )
-  ) return;
-
+  if (!confirm("Permanently delete this checklist?")) return;
   try {
     const res = await fetch("/api/work-checklist-delete", {
       method: "POST",
@@ -251,29 +482,12 @@ async function removeChecklist() {
       credentials: "include",
       body: JSON.stringify({ id: checklistId })
     });
-
-    const text = await res.text();
-
-    console.log("DELETE STATUS:", res.status);
-    console.log("DELETE RESPONSE:", text);
-
-    if (!res.ok) {
-      alert(`Delete failed (${res.status}):\n${text}`);
-      return;
-    }
-
-    // ✅ 只有成功才跳页
+    if (!res.ok) { alert("Delete failed"); return; }
     location.href = "/work-checklist.html";
-
-  } catch (err) {
-    console.error(err);
-    alert("Network / JS error");
-  }
+  } catch { alert("Network error"); }
 }
 
-/* ===============================
- * Status & remarks (existing)
- * =============================== */
+/* ── Status toggle ── */
 function getNextStatus(c) {
   if (c === "NOT_STARTED") return "IN_PROGRESS";
   if (c === "IN_PROGRESS") return "DONE";
@@ -285,14 +499,12 @@ async function toggleStatus(id, current) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({
-      item_id: id,
-      status: getNextStatus(current)
-    })
+    body: JSON.stringify({ item_id: id, status: getNextStatus(current) })
   });
   loadChecklist();
 }
 
+/* ── Save remarks ── */
 async function saveRemarks(id, remarks) {
   await fetch("/api/work-checklist-item-remarks", {
     method: "POST",
@@ -302,12 +514,14 @@ async function saveRemarks(id, remarks) {
   });
 }
 
-/* Init */
+/* ── Init ── */
 (async () => {
-  if (!Number.isInteger(checklistId)) {
-    alert("Invalid checklist id");
+  if (!Number.isInteger(checklistId) || checklistId <= 0) {
+    alert("Invalid checklist ID");
     return;
   }
+  // Apply company logo/name from settings
+  if (typeof applyCompanySettings === "function") applyCompanySettings();
   await checkRole();
   await loadChecklist();
 })();
