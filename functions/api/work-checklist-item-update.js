@@ -34,50 +34,55 @@ export async function onRequestPost({ request, env }) {
     return new Response("Invalid status", { status: 400 });
   }
 
-  const r = await env.DB.prepare(`
-    UPDATE work_checklist_items
-    SET status = ?
-    WHERE id = ?
-  `).bind(status, item_id).run();
-
-  if (r.meta.changes === 0) {
-    return new Response("Item not found", { status: 404 });
-  }
-
-  const parent = await env.DB.prepare(`
-    SELECT work_checklist_id
-    FROM work_checklist_items
-    WHERE id = ?
-  `).bind(item_id).first();
-
-  if (parent) {
-    const stats = await env.DB.prepare(`
-      SELECT
-        COUNT(*) AS total,
-        SUM(CASE WHEN status = 'DONE' THEN 1 ELSE 0 END) AS done
-      FROM work_checklist_items
-      WHERE work_checklist_id = ?
-    `).bind(parent.work_checklist_id).first();
-
-    let checklistStatus = "NOT_STARTED";
-    if (stats.done === stats.total) {
-      checklistStatus = "DONE";
-    } else if (stats.done > 0) {
-      checklistStatus = "IN_PROGRESS";
-    }
-
-    await env.DB.prepare(`
-      UPDATE work_checklists
+  try {
+    const r = await env.DB.prepare(`
+      UPDATE work_checklist_items
       SET status = ?
       WHERE id = ?
-    `).bind(checklistStatus, parent.work_checklist_id).run();
-  }
+    `).bind(status, item_id).run();
 
-  return Response.json({
-    success: true,
-    item_id,
-    status,
-    updated_by: user.username,
-    role: user.role
-  });
+    if (r.meta.changes === 0) {
+      return new Response("Item not found", { status: 404 });
+    }
+
+    const parent = await env.DB.prepare(`
+      SELECT work_checklist_id
+      FROM work_checklist_items
+      WHERE id = ?
+    `).bind(item_id).first();
+
+    if (parent) {
+      const stats = await env.DB.prepare(`
+        SELECT
+          COUNT(*) AS total,
+          SUM(CASE WHEN status = 'DONE' THEN 1 ELSE 0 END) AS done
+        FROM work_checklist_items
+        WHERE work_checklist_id = ?
+      `).bind(parent.work_checklist_id).first();
+
+      let checklistStatus = "NOT_STARTED";
+      if (stats.done === stats.total) {
+        checklistStatus = "DONE";
+      } else if (stats.done > 0) {
+        checklistStatus = "IN_PROGRESS";
+      }
+
+      await env.DB.prepare(`
+        UPDATE work_checklists
+        SET status = ?
+        WHERE id = ?
+      `).bind(checklistStatus, parent.work_checklist_id).run();
+    }
+
+    return Response.json({
+      success: true,
+      item_id,
+      status,
+      updated_by: user.username,
+      role: user.role
+    });
+
+  } catch (err) {
+    return Response.json({ error: "DB error: " + err.message }, { status: 500 });
+  }
 }

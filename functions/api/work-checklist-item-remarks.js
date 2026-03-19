@@ -29,22 +29,20 @@ export async function onRequestPost({ request, env }) {
     return new Response("Invalid data", { status: 400 });
   }
 
-  const r = await env.DB.prepare(`
-    UPDATE work_checklist_items
-    SET remarks = ?
-    WHERE id = ?
-  `).bind(
-    remarks || "",
-    id
-  ).run();
+  try {
+    const r = await env.DB.prepare(`
+      UPDATE work_checklist_items
+      SET remarks = ?
+      WHERE id = ?
+    `).bind(remarks || "", id).run();
 
-  if (r.meta.changes === 0) {
-    return new Response("Item not found", { status: 404 });
+    if (r.meta.changes === 0) {
+      return new Response("Item not found", { status: 404 });
+    }
+
+    return Response.json({ success: true, updated_by: user.username });
+
+  } catch (err) {
+    return Response.json({ error: "DB error: " + err.message }, { status: 500 });
   }
-
-  return Response.json({
-    success: true,
-    updated_by: user.username,
-    role: user.role
-  });
 }

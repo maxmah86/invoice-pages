@@ -7,7 +7,7 @@ export async function onRequestGet({ request, env }) {
   const token = cookie.match(/session=([^;]+)/)?.[1];
 
   if (!token) {
-    return new Response("Unauthorized", { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const user = await env.DB.prepare(`
@@ -17,7 +17,7 @@ export async function onRequestGet({ request, env }) {
   `).bind(token).first();
 
   if (!user) {
-    return new Response("Unauthorized", { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   /* ===============================

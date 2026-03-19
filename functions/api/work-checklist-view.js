@@ -1,8 +1,30 @@
 export async function onRequestGet({ request, env }) {
+
+  /* ===============================
+     AUTH CHECK
+     =============================== */
+  const cookie = request.headers.get("Cookie") || "";
+  const token = cookie.match(/session=([^;]+)/)?.[1];
+
+  if (!token) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await env.DB.prepare(`
+    SELECT id, role FROM users WHERE session_token = ?
+  `).bind(token).first();
+
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  /* ===============================
+     LOAD CHECKLIST
+     =============================== */
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
 
-  if (!id) return new Response("Missing ID", { status: 400 });
+  if (!id) return Response.json({ error: "Missing ID" }, { status: 400 });
 
   // 关联查询以获取项目标题和地址
   const checklist = await env.DB.prepare(`
@@ -16,7 +38,7 @@ export async function onRequestGet({ request, env }) {
     WHERE c.id = ?
   `).bind(id).first();
 
-  if (!checklist) return new Response("Not Found", { status: 404 });
+  if (!checklist) return Response.json({ error: "Not Found" }, { status: 404 });
 
   const items = await env.DB.prepare(`
     SELECT * FROM work_checklist_items 
