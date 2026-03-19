@@ -8,367 +8,497 @@
 <script src="/js/company-settings.js"></script>
 
 <style>
-/* ===================================================
-   SCREEN STYLES
-   =================================================== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* =============================================
+   SCREEN — MOBILE FIRST
+   ============================================= */
 body {
   font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  padding: 14px;
-  color: #000;
+  background: #f0f2f5;
+  color: #1a1a2e;
+  min-height: 100vh;
 }
 
-/* ── Top action bar (screen only) ── */
-.action-bar {
+/* ── Top sticky nav bar ── */
+.nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #1a2636;
+  padding: 10px 14px;
   display: flex;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-.btn {
-  padding: 9px 16px;
+.nav-btn {
+  padding: 8px 14px;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
+  font-size: 13px;
   font-weight: bold;
-}
-.btn-home   { background: #7f8c8d; color: #fff; }
-.btn-back   { background: #34495e; color: #fff; }
-.btn-print  { background: #2980b9; color: #fff; }
-.btn-delete { background: #e74c3c; color: #fff; }
-
-/* ── Printable document wrapper ── */
-.doc {
-  background: #fff;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-/* ── Company header ── */
-.company-header {
+  cursor: pointer;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding-bottom: 14px;
-  border-bottom: 2px solid #2c3e50;
-  margin-bottom: 16px;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.nav-btn.home   { background: #4a5568; color: #fff; }
+.nav-btn.back   { background: #2d3748; color: #eee; border: 1px solid #4a5568; }
+.nav-btn.print  { background: #2980b9; color: #fff; }
+.nav-btn.delete { background: #c0392b; color: #fff; margin-left: auto; }
+
+/* ── Project header card ── */
+.project-card {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  color: #fff;
+  padding: 18px 16px;
+  margin: 0;
 }
 
-.company-left {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+.project-card .label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #90b8d8;
+  margin-bottom: 4px;
 }
 
-.company-logo {
-  width: 56px;
-  height: auto;
-}
-
-.company-name {
+.project-card .project-name {
   font-size: 20px;
   font-weight: bold;
-  color: #2c3e50;
-}
-
-.company-detail {
-  font-size: 11px;
-  color: #555;
-  line-height: 1.6;
-  margin-top: 2px;
-}
-
-.doc-title-box {
-  text-align: right;
-}
-
-.doc-title {
-  font-size: 22px;
-  font-weight: bold;
-  color: #2c3e50;
-  letter-spacing: 1px;
-}
-
-.doc-meta {
-  font-size: 12px;
-  color: #555;
-  line-height: 1.8;
-  margin-top: 4px;
-}
-
-/* ── Project info bar ── */
-.project-info {
-  background: #f0f4f8;
-  border-left: 4px solid #3498db;
-  padding: 10px 14px;
-  border-radius: 4px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  line-height: 1.8;
-}
-
-.project-info .proj-name {
-  font-size: 15px;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-/* ── Progress summary ── */
-.progress-bar-wrap {
-  margin-bottom: 18px;
-}
-
-.progress-label {
-  font-size: 12px;
-  color: #666;
+  line-height: 1.3;
   margin-bottom: 4px;
+}
+
+.project-card .project-address {
+  font-size: 13px;
+  color: #b8d0e8;
+  margin-bottom: 12px;
+}
+
+.project-card .meta-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #90b8d8;
+}
+
+.project-card .meta-row span strong {
+  color: #fff;
+}
+
+/* ── Progress section ── */
+.progress-card {
+  background: #fff;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.progress-top {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-count {
+  font-size: 14px;
+  font-weight: bold;
+  color: #2d3748;
+}
+
+.progress-pct {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2980b9;
 }
 
 .progress-track {
-  background: #e0e0e0;
+  height: 8px;
+  background: #e2e8f0;
   border-radius: 10px;
-  height: 10px;
   overflow: hidden;
 }
 
 .progress-fill {
-  height: 10px;
+  height: 8px;
   border-radius: 10px;
   background: #27ae60;
-  transition: width 0.3s;
+  transition: width 0.4s ease;
 }
 
-/* ── Checklist table ── */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
+.progress-fill.mid { background: #f39c12; }
+.progress-fill.low { background: #bdc3c7; }
+
+/* ── Items list ── */
+.items-wrap {
+  padding: 12px 12px 80px;
 }
 
-thead tr {
-  background: #2c3e50;
-  color: #fff;
+/* Section header */
+.section-header {
+  background: #e8f0fe;
+  border-left: 4px solid #3b82f6;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-thead th {
-  padding: 9px 10px;
-  text-align: left;
+.section-header::before {
+  content: "▸";
   font-size: 12px;
-  font-weight: bold;
-  letter-spacing: 0.5px;
 }
 
-tbody tr:nth-child(even) { background: #f8f9fa; }
-tbody tr:hover { background: #eaf3fb; }
-
-/* Section header row */
-tr.section-row td {
-  background: #dce8f5;
-  color: #1a3a5c;
-  font-weight: bold;
-  padding: 8px 10px;
-  font-size: 13px;
-  border-top: 1px solid #b0cde8;
+/* Item card */
+.item-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border: 1px solid #e8edf3;
 }
 
-td {
-  padding: 9px 10px;
-  border-bottom: 1px solid #eee;
-  vertical-align: top;
+.item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-td.no-col  { width: 40px; text-align: center; color: #999; }
-td.desc-col { }
-td.status-col { width: 120px; text-align: center; }
-td.remarks-col { width: 200px; }
-
-/* Status badge */
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 12px;
+.item-no {
+  width: 24px;
+  height: 24px;
+  background: #e8f0fe;
+  color: #3b82f6;
+  border-radius: 50%;
   font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.item-desc {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #2d3748;
+}
+
+/* Status badge — tappable */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: bold;
   cursor: pointer;
   user-select: none;
+  transition: transform 0.1s, opacity 0.1s;
   white-space: nowrap;
+  border: none;
+  flex-shrink: 0;
 }
-.badge.NOT_STARTED { background: #e0e0e0; color: #555; }
-.badge.IN_PROGRESS { background: #f39c12; color: #fff; }
-.badge.DONE        { background: #27ae60; color: #fff; }
 
-/* Remarks input */
-.remarks-input {
+.status-badge:active { transform: scale(0.95); opacity: 0.8; }
+
+.status-badge.NOT_STARTED { background: #f1f3f4; color: #5f6368; }
+.status-badge.IN_PROGRESS { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.status-badge.DONE        { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.NOT_STARTED .status-dot { background: #9aa0a6; }
+.IN_PROGRESS .status-dot { background: #f39c12; }
+.DONE        .status-dot { background: #27ae60; }
+
+/* Remarks */
+.remarks-label {
+  font-size: 11px;
+  color: #90a0b0;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+
+.remarks-textarea {
   width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 5px 7px;
-  font-size: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #2d3748;
   resize: vertical;
-  min-height: 32px;
+  min-height: 38px;
   font-family: Arial, sans-serif;
+  background: #f8fafc;
+  transition: border-color 0.2s;
 }
 
-/* ── Signature area ── */
-.signature-area {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 40px;
-  padding-top: 16px;
-  border-top: 1px solid #ddd;
+.remarks-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
 }
 
-.sig-box {
-  text-align: center;
-  min-width: 180px;
-}
-
-.sig-chop {
-  width: 100px;
-  opacity: 0.85;
-  margin-bottom: -20px;
-}
-
-.sig-line {
-  border-top: 1px solid #000;
-  margin-top: 30px;
-  padding-top: 6px;
-  font-size: 12px;
-}
-
-/* ===================================================
+/* =============================================
    PRINT STYLES
-   =================================================== */
+   ============================================= */
 @media print {
   @page {
     size: A4 portrait;
     margin: 12mm 12mm 12mm 12mm;
   }
+  html { zoom: 0.85; }
 
-  html { zoom: 0.9; }
+  /* Reset screen layout */
+  body { background: #fff !important; }
+  .nav-bar, .progress-card, .items-wrap { display: none !important; }
 
-  body {
-    background: #fff !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Hide all screen-only UI */
-  .action-bar,
-  .badge,            /* hide clickable badges — show text instead */
-  .remarks-input {
-    display: none !important;
-  }
-
-  /* Show print-only elements */
-  .print-status,
-  .print-remarks {
-    display: block !important;
-  }
-
-  .doc {
-    box-shadow: none !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    max-width: 100% !important;
-  }
-
-  table { page-break-inside: auto; }
-  tr    { page-break-inside: avoid; }
-  thead { display: table-header-group; }
-
-  .progress-bar-wrap { display: none; }
+  /* Show print layout */
+  .print-doc { display: block !important; }
 }
 
-/* Print-only elements (hidden on screen) */
-.print-status  { display: none; font-size: 11px; font-weight: bold; }
-.print-remarks { display: none; font-size: 11px; color: #444; }
+/* ─── PRINT DOCUMENT (hidden on screen) ─── */
+.print-doc { display: none; }
 
-/* Status dot for print */
-.dot-NS { color: #999; }
-.dot-IP { color: #e67e00; }
-.dot-DN { color: #27ae60; }
+.print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #1e3a5f;
+  margin-bottom: 14px;
+}
+
+.print-company {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.print-logo { width: 50px; height: auto; }
+
+.print-company-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1e3a5f;
+}
+
+.print-company-detail {
+  font-size: 9px;
+  color: #555;
+  line-height: 1.6;
+  margin-top: 2px;
+}
+
+.print-title-box { text-align: right; }
+
+.print-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1e3a5f;
+  letter-spacing: 1px;
+}
+
+.print-meta {
+  font-size: 10px;
+  color: #444;
+  line-height: 1.8;
+  margin-top: 3px;
+}
+
+.print-project {
+  background: #f0f4f8;
+  border-left: 4px solid #2980b9;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.print-project-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #1e3a5f;
+}
+
+/* Print table */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.print-table thead tr {
+  background: #1e3a5f;
+  color: #fff;
+}
+
+.print-table th {
+  padding: 7px 8px;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.print-table td {
+  padding: 7px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: top;
+}
+
+.print-table tbody tr:nth-child(even) { background: #f8fafc; }
+
+.print-table tr.print-section td {
+  background: #dce8f5;
+  color: #1e3a5f;
+  font-weight: bold;
+  font-size: 11px;
+  padding: 6px 8px;
+  border-top: 1px solid #b0cde8;
+}
+
+.print-status-done { color: #155724; font-weight: bold; }
+.print-status-ip   { color: #856404; font-weight: bold; }
+.print-status-ns   { color: #666; }
+
+.print-sig {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 30px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+}
+
+.print-sig-box {
+  text-align: center;
+  min-width: 160px;
+}
+
+.print-sig-line {
+  border-top: 1px solid #000;
+  margin-top: 28px;
+  padding-top: 5px;
+  font-size: 10px;
+  color: #444;
+}
 </style>
 </head>
 
 <body>
 
-<!-- ── Action bar (screen only) ── -->
-<div class="action-bar">
-  <button class="btn btn-home"  onclick="location.href='/index.html'">Home</button>
-  <button class="btn btn-back"  onclick="history.back()">← Back</button>
-  <button class="btn btn-print" onclick="window.print()">🖨 Print / PDF</button>
-  <div id="adminActions" style="display:contents;"></div>
+<!-- ══════════════════════════════════
+     SCREEN UI
+     ══════════════════════════════════ -->
+
+<!-- Nav bar -->
+<div class="nav-bar">
+  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn back" onclick="history.back()">← Back</button>
+  <button class="nav-btn print" onclick="window.print()">🖨 Print</button>
+  <div id="adminActions"></div>
 </div>
 
-<!-- ── Printable document ── -->
-<div class="doc" id="doc">
+<!-- Project header -->
+<div class="project-card" id="projectCard">
+  <div class="label">Work Checklist</div>
+  <div class="project-name" id="screenProjName">Loading...</div>
+  <div class="project-address" id="screenProjAddr"></div>
+  <div class="meta-row">
+    <span>Quotation: <strong id="screenQuotNo">—</strong></span>
+    <span>Date: <strong id="screenDate">—</strong></span>
+  </div>
+</div>
 
-  <!-- Company Header -->
-  <div class="company-header">
-    <div class="company-left">
-      <img id="company-logo" src="" alt="" class="company-logo">
+<!-- Progress -->
+<div class="progress-card" id="progressCard" style="display:none;">
+  <div class="progress-top">
+    <div class="progress-count" id="progressCount">0 / 0 completed</div>
+    <div class="progress-pct" id="progressPct">0%</div>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill low" id="progressFill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- Items -->
+<div class="items-wrap" id="itemsWrap">
+  <div style="text-align:center;padding:40px;color:#90a0b0;">Loading...</div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     PRINT-ONLY DOCUMENT
+     ══════════════════════════════════ -->
+<div class="print-doc" id="printDoc">
+
+  <div class="print-header">
+    <div class="print-company">
+      <img id="print-logo" src="/icon-512.png" class="print-logo"
+           onerror="this.style.display='none'">
       <div>
-        <div class="company-name" id="comp-name"></div>
-        <div class="company-detail" id="comp-reg"></div>
-        <div class="company-detail" id="comp-address"></div>
-        <div class="company-detail" id="comp-contact"></div>
+        <div class="print-company-name" id="print-comp-name"></div>
+        <div class="print-company-detail" id="print-comp-reg"></div>
+        <div class="print-company-detail" id="print-comp-addr"></div>
+        <div class="print-company-detail" id="print-comp-contact"></div>
       </div>
     </div>
-    <div class="doc-title-box">
-      <div class="doc-title">WORK CHECKLIST</div>
-      <div class="doc-meta" id="docMeta">—</div>
+    <div class="print-title-box">
+      <div class="print-title">WORK CHECKLIST</div>
+      <div class="print-meta" id="printMeta">—</div>
     </div>
   </div>
 
-  <!-- Project Info -->
-  <div class="project-info" id="projectInfo">Loading...</div>
+  <div class="print-project" id="printProject">—</div>
 
-  <!-- Progress Bar (screen only) -->
-  <div class="progress-bar-wrap" id="progressWrap" style="display:none;">
-    <div class="progress-label">
-      <span id="progressText">Progress</span>
-      <span id="progressPct">0%</span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="progressFill" style="width:0%"></div>
-    </div>
-  </div>
-
-  <!-- Checklist Table -->
-  <table id="checklistTable">
+  <table class="print-table">
     <thead>
       <tr>
-        <th class="no-col">No</th>
-        <th class="desc-col">Description</th>
-        <th class="status-col">Status</th>
-        <th class="remarks-col">Remarks</th>
+        <th style="width:34px">No</th>
+        <th>Description</th>
+        <th style="width:90px">Status</th>
+        <th style="width:180px">Remarks</th>
       </tr>
     </thead>
-    <tbody id="tableBody">
-      <tr><td colspan="4" style="text-align:center;padding:20px;color:#999;">Loading...</td></tr>
+    <tbody id="printTableBody">
+      <tr><td colspan="4">Loading...</td></tr>
     </tbody>
   </table>
 
-  <!-- Signature -->
-  <div class="signature-area">
-    <div class="sig-box">
-      <img id="company-chop" src="/chop.png" class="sig-chop"
+  <div class="print-sig">
+    <div class="print-sig-box">
+      <img src="/chop.png" style="width:80px;opacity:0.85;display:block;margin:0 auto 4px;"
            onerror="this.style.display='none'">
-      <div class="sig-line">Authorised Signature</div>
+      <div class="print-sig-line">Authorised Signature</div>
     </div>
   </div>
 
-</div><!-- /doc -->
+</div><!-- /print-doc -->
+
 
 <script>
 const checklistId = Number(new URLSearchParams(location.search).get("id"));
@@ -379,11 +509,10 @@ async function checkRole() {
   const res  = await fetch("/api/auth-check", { credentials: "include" });
   const data = await res.json();
   if (!data.loggedIn) { location.replace("/login.html"); return; }
-
   IS_ADMIN = data.role === "admin";
   if (IS_ADMIN) {
     document.getElementById("adminActions").innerHTML = `
-      <button class="btn btn-delete" onclick="removeChecklist()">🗑 Delete</button>
+      <button class="nav-btn delete" onclick="removeChecklist()">🗑 Delete</button>
     `;
   }
 }
@@ -395,76 +524,124 @@ async function loadChecklist() {
   });
 
   if (!res.ok) {
-    document.getElementById("tableBody").innerHTML =
-      `<tr><td colspan="4" style="color:red;text-align:center;padding:20px;">Failed to load</td></tr>`;
+    document.getElementById("itemsWrap").innerHTML =
+      `<div style="color:#e53e3e;text-align:center;padding:40px;">Failed to load checklist</div>`;
     return;
   }
 
-  const data = await res.json();
-  const cl   = data.checklist;
+  const data  = await res.json();
+  const cl    = data.checklist;
   const items = data.items || [];
 
-  /* Doc meta */
-  document.title = `Checklist - ${cl.project_title || cl.quotation_no}`;
-  document.getElementById("docMeta").innerHTML =
-    `Quotation: <b>${cl.quotation_no}</b><br>` +
-    `Date: <b>${new Date().toLocaleDateString("en-MY")}</b>`;
+  document.title = `Checklist — ${cl.project_title || cl.quotation_no}`;
 
-  /* Project info */
-  document.getElementById("projectInfo").innerHTML =
-    `<div class="proj-name">📍 ${cl.project_title || "—"}</div>` +
-    (cl.project_address ? `<div>${cl.project_address}</div>` : "") +
-    `<div style="color:#888;font-size:12px;margin-top:2px;">Quotation: ${cl.quotation_no}</div>`;
+  const today = new Date().toLocaleDateString("en-MY", {
+    day: "2-digit", month: "short", year: "numeric"
+  });
 
-  /* Progress */
+  /* ─ Screen header ─ */
+  document.getElementById("screenProjName").textContent = cl.project_title || "—";
+  document.getElementById("screenProjAddr").textContent = cl.project_address || "";
+  document.getElementById("screenQuotNo").textContent   = cl.quotation_no || "—";
+  document.getElementById("screenDate").textContent     = today;
+
+  /* ─ Print header ─ */
+  if (typeof COMPANY_CONFIG !== "undefined") {
+    document.getElementById("print-comp-name").textContent    = COMPANY_CONFIG.name || "";
+    document.getElementById("print-comp-reg").textContent     = COMPANY_CONFIG.regNo || "";
+    document.getElementById("print-comp-addr").textContent    = COMPANY_CONFIG.address || "";
+    document.getElementById("print-comp-contact").textContent =
+      (COMPANY_CONFIG.phone ? "Tel: " + COMPANY_CONFIG.phone : "") +
+      (COMPANY_CONFIG.email ? " | " + COMPANY_CONFIG.email : "");
+    if (COMPANY_CONFIG.logoUrl) {
+      document.getElementById("print-logo").src = COMPANY_CONFIG.logoUrl;
+    }
+  }
+
+  document.getElementById("printMeta").innerHTML =
+    `Quotation: <b>${cl.quotation_no}</b><br>Date: <b>${today}</b>`;
+
+  document.getElementById("printProject").innerHTML =
+    `<div class="print-project-name">📍 ${cl.project_title || "—"}</div>` +
+    (cl.project_address ? `<div>${cl.project_address}</div>` : "");
+
+  /* ─ Progress ─ */
   const workItems = items.filter(i => i.status !== "SECTION");
   const done      = workItems.filter(i => i.status === "DONE").length;
   const total     = workItems.length;
   const pct       = total === 0 ? 0 : Math.round((done / total) * 100);
 
   if (total > 0) {
-    document.getElementById("progressWrap").style.display = "block";
-    document.getElementById("progressText").textContent = `${done} / ${total} completed`;
-    document.getElementById("progressPct").textContent  = pct + "%";
-    document.getElementById("progressFill").style.width = pct + "%";
-    if (pct === 100) document.getElementById("progressFill").style.background = "#27ae60";
-    else if (pct > 0) document.getElementById("progressFill").style.background = "#f39c12";
-    else document.getElementById("progressFill").style.background = "#ccc";
+    document.getElementById("progressCard").style.display = "block";
+    document.getElementById("progressCount").textContent = `${done} / ${total} completed`;
+    document.getElementById("progressPct").textContent   = pct + "%";
+    const fill = document.getElementById("progressFill");
+    fill.style.width = pct + "%";
+    fill.className   = "progress-fill " + (pct === 100 ? "" : pct > 0 ? "mid" : "low");
   }
 
-  /* Table rows */
-  const tbody = document.getElementById("tableBody");
-  tbody.innerHTML = "";
+  /* ─ Screen items ─ */
+  const wrap = document.getElementById("itemsWrap");
+  wrap.innerHTML = "";
   let rowNo = 0;
+
+  items.forEach(it => {
+    if (it.status === "SECTION") {
+      const el = document.createElement("div");
+      el.className = "section-header";
+      el.textContent = it.description;
+      wrap.appendChild(el);
+    } else {
+      rowNo++;
+      const card = document.createElement("div");
+      card.className = "item-card";
+
+      const statusLabel = {
+        NOT_STARTED: "Not Started",
+        IN_PROGRESS: "In Progress",
+        DONE: "Done"
+      }[it.status] || it.status;
+
+      card.innerHTML = `
+        <div class="item-top">
+          <div class="item-no">${rowNo}</div>
+          <div class="item-desc">${it.description}</div>
+          <button class="status-badge ${it.status}"
+                  onclick="toggleStatus(${it.id}, '${it.status}')">
+            <span class="status-dot"></span>
+            ${statusLabel}
+          </button>
+        </div>
+        <div class="remarks-label">Remarks</div>
+        <textarea class="remarks-textarea"
+                  placeholder="Add remarks..."
+                  onblur="saveRemarks(${it.id}, this.value)">${it.remarks || ""}</textarea>
+      `;
+
+      wrap.appendChild(card);
+    }
+  });
+
+  /* ─ Print table rows ─ */
+  const tbody = document.getElementById("printTableBody");
+  tbody.innerHTML = "";
+  rowNo = 0;
 
   items.forEach(it => {
     const tr = document.createElement("tr");
 
     if (it.status === "SECTION") {
-      tr.className = "section-row";
+      tr.className = "print-section";
       tr.innerHTML = `<td colspan="4">▸ ${it.description}</td>`;
     } else {
       rowNo++;
-      const statusLabel = it.status.replace("_", " ");
-      const printDot    = it.status === "DONE" ? "✓" : it.status === "IN_PROGRESS" ? "▶" : "○";
-      const dotClass    = it.status === "DONE" ? "dot-DN" : it.status === "IN_PROGRESS" ? "dot-IP" : "dot-NS";
-
+      const statusText  = { NOT_STARTED: "○ Not Started", IN_PROGRESS: "▶ In Progress", DONE: "✓ Done" }[it.status] || it.status;
+      const statusClass = { NOT_STARTED: "print-status-ns", IN_PROGRESS: "print-status-ip", DONE: "print-status-done" }[it.status] || "";
       tr.innerHTML = `
-        <td class="no-col">${rowNo}</td>
-        <td class="desc-col">${it.description}</td>
-        <td class="status-col">
-          <span class="badge ${it.status}"
-                onclick="toggleStatus(${it.id}, '${it.status}')">
-            ${statusLabel}
-          </span>
-          <span class="print-status ${dotClass}">${printDot} ${statusLabel}</span>
-        </td>
-        <td class="remarks-col">
-          <textarea class="remarks-input"
-            onblur="saveRemarks(${it.id}, this.value)"
-            placeholder="Remarks...">${it.remarks || ""}</textarea>
-          <span class="print-remarks">${it.remarks || ""}</span>
-        </td>
+        <td style="text-align:center;color:#999;">${rowNo}</td>
+        <td>${it.description}</td>
+        <td class="${statusClass}">${statusText}</td>
+        <td style="color:#444;">${it.remarks || ""}</td>
       `;
     }
 
@@ -474,7 +651,7 @@ async function loadChecklist() {
 
 /* ── Delete ── */
 async function removeChecklist() {
-  if (!confirm("Permanently delete this checklist?")) return;
+  if (!confirm("Permanently delete this entire checklist?\nThis cannot be undone.")) return;
   try {
     const res = await fetch("/api/work-checklist-delete", {
       method: "POST",
@@ -487,11 +664,9 @@ async function removeChecklist() {
   } catch { alert("Network error"); }
 }
 
-/* ── Status toggle ── */
-function getNextStatus(c) {
-  if (c === "NOT_STARTED") return "IN_PROGRESS";
-  if (c === "IN_PROGRESS") return "DONE";
-  return "IN_PROGRESS";
+/* ── Toggle status ── */
+function getNextStatus(s) {
+  return s === "NOT_STARTED" ? "IN_PROGRESS" : s === "IN_PROGRESS" ? "DONE" : "IN_PROGRESS";
 }
 
 async function toggleStatus(id, current) {
@@ -520,8 +695,6 @@ async function saveRemarks(id, remarks) {
     alert("Invalid checklist ID");
     return;
   }
-  // Apply company logo/name from settings
-  if (typeof applyCompanySettings === "function") applyCompanySettings();
   await checkRole();
   await loadChecklist();
 })();
