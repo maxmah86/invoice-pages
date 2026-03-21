@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Expenses</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+.nav-bar {
+  background: #1a2636;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: sticky; top: 0; z-index: 10;
+}
+.nav-btn {
+  padding: 8px 14px; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
+}
+.nav-btn.home   { background: #4a5568; }
+.nav-btn.add    { background: #27ae60; margin-left: auto; }
+
+/* Summary bar */
+.summary-bar {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  padding: 16px;
+  color: #fff;
+}
+.summary-bar .label { font-size: 11px; color: #90b8d8; letter-spacing: 1px; text-transform: uppercase; }
+.summary-bar .total-amount { font-size: 28px; font-weight: bold; margin: 4px 0 2px; }
+.summary-bar .sub { font-size: 12px; color: #b8d0e8; }
+
+/* Filter row */
+.filters {
+  padding: 12px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.filters input, .filters select {
+  flex: 1;
+  min-width: 120px;
+  padding: 9px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #f8fafc;
+}
+.filters input:focus, .filters select:focus {
+  outline: none; border-color: #3b82f6;
+}
+
+/* Category filter pills */
+.cat-scroll {
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #e8edf3;
+  scrollbar-width: none;
+}
+.cat-scroll::-webkit-scrollbar { display: none; }
+
+.cat-chip {
+  padding: 5px 12px;
+  border-radius: 16px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #4a5568;
+}
+.cat-chip.active {
+  background: #ebf5ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+/* List */
+.list-wrap { padding: 10px 12px 80px; }
+
+.expense-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid #e8edf3;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.expense-card:active { box-shadow: 0 0 0 2px #3b82f6; }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.card-left { flex: 1; min-width: 0; }
+
+.card-desc {
+  font-size: 15px;
+  font-weight: bold;
+  color: #1a2636;
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta {
+  font-size: 12px;
+  color: #718096;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.card-amount {
+  font-size: 17px;
+  font-weight: bold;
+  color: #c0392b;
+  white-space: nowrap;
+  margin-left: 10px;
+}
+
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Category badge */
+.cat-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: bold;
+  background: #e8f0fe;
+  color: #3b5bdb;
+}
+
+/* Status badge */
+.status-badge {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 9px;
+  border-radius: 10px;
+}
+.status-badge.PAID    { background: #d4edda; color: #155724; }
+.status-badge.PENDING { background: #fff3cd; color: #856404; }
+
+.empty-msg {
+  text-align: center;
+  color: #a0aec0;
+  padding: 50px 20px;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn add"  onclick="location.href='/expense.html'">+ Add Expense</button>
+</div>
+
+<div class="summary-bar">
+  <div class="label">Total Expenses</div>
+  <div class="total-amount" id="totalAmount">RM 0.00</div>
+  <div class="sub" id="totalSub">Loading...</div>
+</div>
+
+<div class="filters">
+  <input type="month" id="filterMonth">
+  <select id="filterStatus">
+    <option value="">All Status</option>
+    <option value="PAID">PAID</option>
+    <option value="PENDING">PENDING</option>
+  </select>
+  <input type="text" id="filterQ" placeholder="🔍 Search...">
+</div>
+
+<div class="cat-scroll" id="catScroll">
+  <div class="cat-chip active" data-val="">All</div>
+  <div class="cat-chip" data-val="Utilities">🔌 Utilities</div>
+  <div class="cat-chip" data-val="Rental">📦 Rental</div>
+  <div class="cat-chip" data-val="Services">🧹 Services</div>
+  <div class="cat-chip" data-val="Transport">🚗 Transport</div>
+  <div class="cat-chip" data-val="Meals">🍱 Meals</div>
+  <div class="cat-chip" data-val="Stationery">📎 Stationery</div>
+  <div class="cat-chip" data-val="Petty Cash">💰 Petty Cash</div>
+  <div class="cat-chip" data-val="Others">📋 Others</div>
+</div>
+
+<div class="list-wrap" id="listWrap">
+  <div class="empty-msg">Loading...</div>
+</div>
+
+<script>
+/* ── Auth ── */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => { if (!d.loggedIn) location.replace("/login.html"); })
+  .catch(() => location.replace("/login.html"));
+
+const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", {
+  minimumFractionDigits: 2, maximumFractionDigits: 2
+});
+
+/* ── Default month = current ── */
+document.getElementById("filterMonth").value = new Date().toISOString().slice(0, 7);
+
+let _category = "";
+
+/* ── Category chips ── */
+document.querySelectorAll(".cat-chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".cat-chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    _category = chip.dataset.val;
+    load();
+  });
+});
+
+/* ── Load ── */
+async function load() {
+  const month  = document.getElementById("filterMonth").value;
+  const status = document.getElementById("filterStatus").value;
+  const q      = document.getElementById("filterQ").value.trim();
+
+  const params = new URLSearchParams();
+  if (month)     params.set("month", month);
+  if (status)    params.set("status", status);
+  if (_category) params.set("category", _category);
+  if (q)         params.set("q", q);
+
+  const wrap = document.getElementById("listWrap");
+  wrap.innerHTML = `<div class="empty-msg">Loading...</div>`;
+
+  try {
+    const res  = await fetch("/api/expense-list?" + params, { credentials: "include" });
+    const data = await res.json();
+    const rows = data.rows || [];
+
+    document.getElementById("totalAmount").textContent = RM(data.total || 0);
+    document.getElementById("totalSub").textContent    = rows.length + " record" + (rows.length !== 1 ? "s" : "");
+
+    wrap.innerHTML = "";
+
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="empty-msg">No expenses found</div>`;
+      return;
+    }
+
+    rows.forEach(e => {
+      const card = document.createElement("div");
+      card.className = "expense-card";
+      card.onclick = () => location.href = "/expense-view.html?id=" + e.id;
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="card-left">
+            <div class="card-desc">${e.description}</div>
+            <div class="card-meta">
+              <span>📅 ${e.expense_date}</span>
+              ${e.vendor ? `<span>🏢 ${e.vendor}</span>` : ""}
+              ${e.project_name ? `<span>📁 ${e.project_name}</span>` : ""}
+            </div>
+          </div>
+          <div class="card-amount">${RM(e.amount)}</div>
+        </div>
+        <div class="card-bottom">
+          <span class="cat-badge">${e.category}</span>
+          <span class="status-badge ${e.status}">${e.status}</span>
+        </div>
+      `;
+      wrap.appendChild(card);
+    });
+
+  } catch (err) {
+    wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">Failed to load: ${err.message}</div>`;
+  }
+}
+
+/* ── Events ── */
+document.getElementById("filterMonth").onchange  = load;
+document.getElementById("filterStatus").onchange = load;
+document.getElementById("filterQ").oninput = () => setTimeout(load, 300);
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Expense</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="/js/config.js"></script>
+<script src="/js/company-settings.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+.nav-bar {
+  background: #1a2636; padding: 12px 16px;
+  display: flex; gap: 8px; align-items: center;
+  position: sticky; top: 0; z-index: 10;
+}
+.nav-btn {
+  padding: 8px 14px; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
+}
+.nav-btn.home  { background: #4a5568; }
+.nav-btn.back  { background: #2d3748; border: 1px solid #4a5568; }
+.nav-btn.print { background: #2980b9; }
+
+/* Header card */
+.header-card {
+  background: linear-gradient(135deg, #1e3a5f, #2c5282);
+  color: #fff;
+  padding: 20px 16px;
+}
+.exp-no   { font-size: 11px; color: #90b8d8; letter-spacing: 1px; margin-bottom: 4px; }
+.exp-desc { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+.exp-amount { font-size: 30px; font-weight: bold; color: #fff; margin-bottom: 8px; }
+.exp-status {
+  display: inline-block; padding: 4px 12px;
+  border-radius: 12px; font-size: 12px; font-weight: bold;
+}
+.exp-status.PAID    { background: #27ae60; }
+.exp-status.PENDING { background: #f39c12; color: #000; }
+
+/* Detail rows */
+.detail-section {
+  background: #fff; margin: 12px; border-radius: 10px;
+  padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+.detail-title {
+  font-size: 11px; font-weight: bold; text-transform: uppercase;
+  letter-spacing: 1px; color: #90a0b0; margin-bottom: 14px;
+}
+.detail-row {
+  display: flex; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid #f0f2f5;
+  font-size: 14px;
+}
+.detail-row:last-child { border-bottom: none; }
+.detail-label { color: #718096; }
+.detail-value { font-weight: bold; color: #1a2636; text-align: right; max-width: 60%; }
+.detail-value.cat-badge {
+  background: #e8f0fe; color: #3b5bdb;
+  padding: 3px 10px; border-radius: 10px; font-size: 12px;
+}
+
+/* Print */
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  html { zoom: 0.85; }
+  .nav-bar, .screen-only { display: none !important; }
+  .print-doc { display: block !important; }
+  body { background: #fff; }
+}
+.print-doc { display: none; }
+
+.print-header {
+  display: flex; justify-content: space-between;
+  padding-bottom: 12px; border-bottom: 2px solid #1e3a5f; margin-bottom: 16px;
+}
+.p-company { display: flex; gap: 10px; align-items: flex-start; }
+.p-logo { width: 48px; }
+.p-name { font-size: 15px; font-weight: bold; color: #1e3a5f; }
+.p-detail { font-size: 9px; color: #555; line-height: 1.6; }
+.p-title { font-size: 20px; font-weight: bold; color: #1e3a5f; text-align: right; }
+.p-meta { font-size: 10px; color: #555; line-height: 1.8; text-align: right; margin-top: 3px; }
+.p-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12px; }
+.p-table th { background: #1e3a5f; color: #fff; padding: 8px 10px; text-align: left; font-size: 10px; }
+.p-table td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; }
+.p-table tr:nth-child(even) td { background: #f8fafc; }
+</style>
+</head>
+<body>
+
+<!-- Screen nav -->
+<div class="nav-bar">
+  <button class="nav-btn home"  onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn back"  onclick="history.back()">← Back</button>
+  <button class="nav-btn print" onclick="window.print()">🖨 Print</button>
+</div>
+
+<!-- Screen view -->
+<div class="screen-only">
+  <div class="header-card">
+    <div class="exp-no" id="expNo">—</div>
+    <div class="exp-desc" id="expDesc">Loading...</div>
+    <div class="exp-amount" id="expAmount">RM —</div>
+    <span class="exp-status" id="expStatus">—</span>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-title">Details</div>
+    <div class="detail-row">
+      <span class="detail-label">Category</span>
+      <span class="detail-value cat-badge" id="dCat">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Date</span>
+      <span class="detail-value" id="dDate">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Vendor</span>
+      <span class="detail-value" id="dVendor">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Receipt No</span>
+      <span class="detail-value" id="dReceipt">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Payment</span>
+      <span class="detail-value" id="dPayment">—</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">Paid By</span>
+      <span class="detail-value" id="dPaidBy">—</span>
+    </div>
+    <div class="detail-row" id="dProjectRow" style="display:none;">
+      <span class="detail-label">Project</span>
+      <span class="detail-value" id="dProject">—</span>
+    </div>
+    <div class="detail-row" id="dNotesRow" style="display:none;">
+      <span class="detail-label">Notes</span>
+      <span class="detail-value" id="dNotes">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- Print document -->
+<div class="print-doc" id="printDoc">
+  <div class="print-header">
+    <div class="p-company">
+      <img id="p-logo" src="/icon-512.png" class="p-logo" onerror="this.style.display='none'">
+      <div>
+        <div class="p-name" id="p-name"></div>
+        <div class="p-detail" id="p-detail"></div>
+      </div>
+    </div>
+    <div>
+      <div class="p-title">EXPENSE RECEIPT</div>
+      <div class="p-meta" id="p-meta"></div>
+    </div>
+  </div>
+
+  <table class="p-table">
+    <thead>
+      <tr><th>Field</th><th>Details</th></tr>
+    </thead>
+    <tbody id="p-tbody"></tbody>
+  </table>
+</div>
+
+<script>
+const id = new URLSearchParams(location.search).get("id");
+const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2 });
+
+async function load() {
+  if (!id) { alert("Missing ID"); return; }
+
+  const res  = await fetch("/api/expense-view?id=" + id, { credentials: "include" });
+  if (res.status === 401) { location.replace("/login.html"); return; }
+
+  const data = await res.json();
+  if (!data.success) { alert(data.error || "Not found"); return; }
+
+  const e = data.expense;
+
+  document.title = "Expense — " + e.expense_no;
+
+  /* Screen */
+  document.getElementById("expNo").textContent     = e.expense_no;
+  document.getElementById("expDesc").textContent   = e.description;
+  document.getElementById("expAmount").textContent = RM(e.amount);
+  const statusEl = document.getElementById("expStatus");
+  statusEl.textContent  = e.status;
+  statusEl.className    = "exp-status " + e.status;
+
+  document.getElementById("dCat").textContent     = e.category;
+  document.getElementById("dDate").textContent    = e.expense_date;
+  document.getElementById("dVendor").textContent  = e.vendor || "—";
+  document.getElementById("dReceipt").textContent = e.receipt_no || "—";
+  document.getElementById("dPayment").textContent = e.payment_method;
+  document.getElementById("dPaidBy").textContent  = e.paid_by || "—";
+
+  if (e.project_name) {
+    document.getElementById("dProjectRow").style.display = "flex";
+    document.getElementById("dProject").textContent = e.project_name;
+  }
+  if (e.notes) {
+    document.getElementById("dNotesRow").style.display = "flex";
+    document.getElementById("dNotes").textContent = e.notes;
+  }
+
+  /* Print */
+  if (typeof COMPANY_CONFIG !== "undefined") {
+    document.getElementById("p-name").textContent   = COMPANY_CONFIG.name || "";
+    document.getElementById("p-detail").innerHTML   =
+      (COMPANY_CONFIG.regNo  ? COMPANY_CONFIG.regNo  + "<br>" : "") +
+      (COMPANY_CONFIG.address ? COMPANY_CONFIG.address + "<br>" : "") +
+      (COMPANY_CONFIG.phone  ? "Tel: " + COMPANY_CONFIG.phone : "");
+    if (COMPANY_CONFIG.logoUrl) document.getElementById("p-logo").src = COMPANY_CONFIG.logoUrl;
+  }
+
+  document.getElementById("p-meta").innerHTML =
+    `Expense No: <b>${e.expense_no}</b><br>Date: <b>${e.expense_date}</b>`;
+
+  const rows = [
+    ["Description", e.description],
+    ["Category",    e.category],
+    ["Amount",      RM(e.amount)],
+    ["Status",      e.status],
+    ["Vendor",      e.vendor || "—"],
+    ["Receipt No",  e.receipt_no || "—"],
+    ["Payment",     e.payment_method],
+    ["Paid By",     e.paid_by || "—"],
+  ];
+  if (e.project_name) rows.push(["Project", e.project_name]);
+  if (e.notes)        rows.push(["Notes", e.notes]);
+
+  document.getElementById("p-tbody").innerHTML = rows.map(([k, v]) =>
+    `<tr><td style="color:#555;font-weight:bold;">${k}</td><td>${v}</td></tr>`
+  ).join("");
+}
+
+load();
+</script>
+</body>
+</html>

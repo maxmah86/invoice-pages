@@ -267,6 +267,7 @@ body {
   <button class="tab-btn" onclick="switchTab('pos')">Purchase Orders</button>
   <button class="tab-btn" onclick="switchTab('vos')">Variation Orders</button>
   <button class="tab-btn" onclick="switchTab('labours')">Daily Labour</button>
+  <button class="tab-btn" onclick="switchTab('expenses')">Expenses</button>
 </div>
 
 <!-- TAB: QUOTATIONS -->
@@ -314,6 +315,15 @@ body {
   <div id="labourList"><div class="empty-msg">Loading...</div></div>
 </div>
 
+<!-- TAB: EXPENSES -->
+<div class="tab-content" id="tab-expenses">
+  <div class="tab-header">
+    <h3>Expenses</h3>
+    <button class="btn-create" onclick="go('expense.html')">+ Add Expense</button>
+  </div>
+  <div id="expenseList"><div class="empty-msg">Loading...</div></div>
+</div>
+
 <script>
 const params    = new URLSearchParams(window.location.search);
 const projectId = params.get("id");
@@ -349,7 +359,7 @@ function go(page) {
 }
 
 /* ===== TABS ===== */
-const TAB_NAMES = ["quotations", "invoices", "pos", "vos", "labours"];
+const TAB_NAMES = ["quotations", "invoices", "pos", "vos", "labours", "expenses"];
 
 function switchTab(name) {
   document.querySelectorAll(".tab-btn").forEach((b, i) => {
@@ -379,6 +389,9 @@ async function loadAll() {
     renderPOs(data.purchase_orders      || []);
     renderVOs(data.variation_orders     || []);
     renderLabours(data.daily_labours    || []);
+
+    // Load expenses separately (not in project-view.js yet)
+    loadExpenses();
 
   } catch (err) {
     alert("Failed to load project: " + err.message);
@@ -518,6 +531,38 @@ function renderLabours(list) {
       <div class="doc-right">
         <div class="doc-amount">${RM(d.amount)}</div>
         ${badge(d.status)}
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ===== LOAD EXPENSES ===== */
+async function loadExpenses() {
+  try {
+    const res  = await fetch("/api/expense-list?project_id=" + projectId, { credentials: "include" });
+    const data = await res.json();
+    renderExpenses(data.rows || []);
+  } catch {
+    document.getElementById("expenseList").innerHTML = '<div class="empty-msg">Failed to load expenses.</div>';
+  }
+}
+
+/* ===== RENDER: EXPENSES ===== */
+function renderExpenses(list) {
+  const el = document.getElementById("expenseList");
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-msg">No expenses yet. Click + Add Expense to record one.</div>';
+    return;
+  }
+  el.innerHTML = list.map(e => `
+    <div class="doc-item" onclick="location.href='/expense-view.html?id=${e.id}'">
+      <div class="doc-left">
+        <div class="doc-no">${e.description}</div>
+        <div class="doc-sub">${e.category} · ${fmtDate(e.expense_date)}${e.vendor ? " · " + e.vendor : ""}</div>
+      </div>
+      <div class="doc-right">
+        <div class="doc-amount">${RM(e.amount)}</div>
+        ${badge(e.status)}
       </div>
     </div>
   `).join("");
