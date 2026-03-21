@@ -94,6 +94,11 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   <button class="nav-btn home"  onclick="location.href='/index.html'">🏠 Home</button>
   <button class="nav-btn back"  onclick="history.back()">← Back</button>
   <button class="nav-btn print" onclick="window.print()">🖨 Print</button>
+  <button class="nav-btn" id="editBtn"
+          style="background:#27ae60;margin-left:auto;"
+          onclick="location.href='/expense-edit.html?id=' + new URLSearchParams(location.search).get('id')">
+    ✏️ Edit
+  </button>
 </div>
 
 <!-- Screen view -->

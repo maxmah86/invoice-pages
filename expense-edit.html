@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Edit Expense</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 0 0 40px; }
+
+.nav-bar {
+  background: #1a2636;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  position: sticky; top: 0; z-index: 10;
+}
+.nav-btn {
+  padding: 8px 14px; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
+}
+.nav-btn.home { background: #4a5568; }
+.nav-btn.back { background: #2d3748; border: 1px solid #4a5568; }
+
+.page-title {
+  padding: 0 16px 6px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #1a2636;
+}
+
+.exp-no-label {
+  padding: 0 16px 14px;
+  font-size: 12px;
+  color: #90a0b0;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.section {
+  background: #fff;
+  margin: 0 12px 12px;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #90a0b0;
+  margin-bottom: 14px;
+}
+
+.field { margin-bottom: 14px; }
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: bold;
+  color: #2d3748;
+  margin-bottom: 6px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 11px 13px;
+  font-size: 15px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-family: Arial, sans-serif;
+  transition: border-color 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+}
+
+textarea { min-height: 70px; resize: vertical; }
+
+.amount-input {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1a2636;
+  text-align: right;
+}
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Category pills */
+.cat-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cat-pill {
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #4a5568;
+  transition: all 0.15s;
+}
+
+.cat-pill.active {
+  border-color: #3b82f6;
+  background: #ebf5ff;
+  color: #1d4ed8;
+}
+
+/* Buttons */
+.btn-submit {
+  width: calc(100% - 24px);
+  margin: 4px 12px;
+  padding: 16px;
+  background: #2980b9;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+}
+.btn-submit:active { opacity: 0.85; }
+
+.error-box {
+  display: none;
+  background: #fff0f0;
+  border: 1px solid #f87171;
+  color: #c0392b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 0 12px 12px;
+  font-size: 13px;
+}
+
+.loading-overlay {
+  padding: 60px 20px;
+  text-align: center;
+  color: #90a0b0;
+  font-size: 15px;
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn back" onclick="history.back()">← Back</button>
+</div>
+
+<div id="loadingState">
+  <div class="loading-overlay">Loading expense...</div>
+</div>
+
+<div id="formState" style="display:none;">
+  <div class="page-title">Edit Expense</div>
+  <div class="exp-no-label" id="expNoLabel"></div>
+
+  <!-- Category -->
+  <div class="section">
+    <div class="section-title">Category</div>
+    <div class="cat-pills" id="catPills">
+      <div class="cat-pill" data-val="Utilities">🔌 Utilities</div>
+      <div class="cat-pill" data-val="Rental">📦 Rental</div>
+      <div class="cat-pill" data-val="Services">🧹 Services</div>
+      <div class="cat-pill" data-val="Transport">🚗 Transport</div>
+      <div class="cat-pill" data-val="Meals">🍱 Meals</div>
+      <div class="cat-pill" data-val="Stationery">📎 Stationery</div>
+      <div class="cat-pill" data-val="Petty Cash">💰 Petty Cash</div>
+      <div class="cat-pill" data-val="Others">📋 Others</div>
+    </div>
+    <input type="hidden" id="category" value="">
+  </div>
+
+  <!-- Details -->
+  <div class="section">
+    <div class="section-title">Details</div>
+
+    <div class="field">
+      <label>Description *</label>
+      <input id="description" placeholder="e.g. Monthly internet subscription">
+    </div>
+
+    <div class="field">
+      <label>Amount (RM) *</label>
+      <input id="amount" type="number" step="0.01" placeholder="0.00" class="amount-input">
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label>Date *</label>
+        <input id="expense_date" type="date">
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="status">
+          <option value="PAID">PAID</option>
+          <option value="PENDING">PENDING</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vendor & Payment -->
+  <div class="section">
+    <div class="section-title">Vendor & Payment</div>
+
+    <div class="field">
+      <label>Vendor / Payee</label>
+      <input id="vendor" placeholder="e.g. TM Unifi, Cleaning Pro Sdn Bhd">
+    </div>
+
+    <div class="row-2">
+      <div class="field">
+        <label>Receipt No</label>
+        <input id="receipt_no" placeholder="Optional">
+      </div>
+      <div class="field">
+        <label>Payment Method</label>
+        <select id="payment_method">
+          <option value="CASH">Cash</option>
+          <option value="TRANSFER">Bank Transfer</option>
+          <option value="CARD">Card</option>
+          <option value="CHEQUE">Cheque</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Paid By</label>
+      <input id="paid_by" placeholder="e.g. Ahmad, Site Supervisor">
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="section">
+    <div class="section-title">Notes (Optional)</div>
+    <textarea id="notes" placeholder="Any additional details..."></textarea>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <button class="btn-submit" onclick="submitEdit()">Save Changes</button>
+</div>
+
+<script>
+const expenseId = new URLSearchParams(location.search).get("id");
+
+/* ── Auth ── */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) location.replace("/login.html");
+    if (d.role !== "admin") location.replace("/index.html");
+  })
+  .catch(() => location.replace("/login.html"));
+
+/* ── Category pills ── */
+function setCategory(val) {
+  document.getElementById("category").value = val;
+  document.querySelectorAll(".cat-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.val === val);
+  });
+}
+
+document.querySelectorAll(".cat-pill").forEach(pill => {
+  pill.addEventListener("click", () => setCategory(pill.dataset.val));
+});
+
+/* ── Load existing expense ── */
+async function loadExpense() {
+  if (!expenseId) { alert("Missing expense ID"); return; }
+
+  try {
+    const res  = await fetch("/api/expense-view?id=" + expenseId, { credentials: "include" });
+    const data = await res.json();
+
+    if (!data.success) { alert(data.error || "Not found"); return; }
+
+    const e = data.expense;
+
+    /* Populate fields */
+    document.getElementById("expNoLabel").textContent = e.expense_no;
+    document.getElementById("description").value    = e.description   || "";
+    document.getElementById("amount").value         = e.amount        || "";
+    document.getElementById("expense_date").value   = e.expense_date  || "";
+    document.getElementById("status").value         = e.status        || "PAID";
+    document.getElementById("vendor").value         = e.vendor        || "";
+    document.getElementById("receipt_no").value     = e.receipt_no    || "";
+    document.getElementById("payment_method").value = e.payment_method || "CASH";
+    document.getElementById("paid_by").value        = e.paid_by       || "";
+    document.getElementById("notes").value          = e.notes         || "";
+
+    setCategory(e.category || "Others");
+
+    /* Show form */
+    document.getElementById("loadingState").style.display = "none";
+    document.getElementById("formState").style.display    = "block";
+
+  } catch (err) {
+    alert("Failed to load expense: " + err.message);
+  }
+}
+
+/* ── Submit edit ── */
+async function submitEdit() {
+  const errorBox = document.getElementById("errorBox");
+  errorBox.style.display = "none";
+
+  const description    = document.getElementById("description").value.trim();
+  const amount         = document.getElementById("amount").value;
+  const expense_date   = document.getElementById("expense_date").value;
+  const category       = document.getElementById("category").value;
+  const vendor         = document.getElementById("vendor").value.trim()      || null;
+  const receipt_no     = document.getElementById("receipt_no").value.trim()  || null;
+  const payment_method = document.getElementById("payment_method").value;
+  const paid_by        = document.getElementById("paid_by").value.trim()     || null;
+  const notes          = document.getElementById("notes").value.trim()       || null;
+  const status         = document.getElementById("status").value;
+
+  if (!description) { showError("Description is required"); return; }
+  if (!amount || Number(amount) <= 0) { showError("Please enter a valid amount"); return; }
+  if (!expense_date) { showError("Date is required"); return; }
+
+  const payload = {
+    id: Number(expenseId),
+    expense_date, category, description, vendor, receipt_no,
+    amount: Number(amount), payment_method, paid_by, notes, status
+  };
+
+  try {
+    const res  = await fetch("/api/expense-edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showError(data.error || "Failed to save");
+      return;
+    }
+
+    location.href = "/expense-view.html?id=" + expenseId;
+
+  } catch (err) {
+    showError("Network error: " + err.message);
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById("errorBox");
+  el.textContent = msg;
+  el.style.display = "block";
+  el.scrollIntoView({ behavior: "smooth" });
+}
+
+loadExpense();
+</script>
+</body>
+</html>
