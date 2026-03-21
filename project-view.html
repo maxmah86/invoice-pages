@@ -229,6 +229,8 @@ body {
 
 <!-- P&L SUMMARY -->
 <div class="pnl-grid">
+
+  <!-- Row 1: Contract Value + Total Invoiced -->
   <div class="pnl-card income">
     <div class="label">Contract Value</div>
     <div class="value" id="plContract">RM 0.00</div>
@@ -245,19 +247,53 @@ body {
     <div class="value" id="plInvoiced">RM 0.00</div>
     <div class="sub" id="plCollected"></div>
   </div>
+
+  <!-- Row 2: Approved VO + (spacer) -->
+  <div class="pnl-card" style="border-left:3px solid #8e44ad;">
+    <div class="label" style="color:#8e44ad;">Approved VO</div>
+    <div class="value" style="color:#8e44ad;" id="plVO">RM 0.00</div>
+    <div class="sub" id="plVOSub"></div>
+  </div>
+  <div class="pnl-card" style="background:#f8f9fa; border:1px dashed #ddd;">
+    <div class="label">Outstanding</div>
+    <div class="value" style="color:#e67e22;" id="plOutstanding">RM 0.00</div>
+    <div class="sub" id="plOutstandingSub"></div>
+  </div>
+
+  <!-- Row 3: PO Cost + Labour Cost -->
   <div class="pnl-card cost">
-    <div class="label">Total PO Cost</div>
+    <div class="label">PO Cost</div>
     <div class="value" id="plPO">RM 0.00</div>
   </div>
   <div class="pnl-card cost">
-    <div class="label">Daily Labour Cost</div>
+    <div class="label">Labour Cost</div>
     <div class="value" id="plLabour">RM 0.00</div>
   </div>
+
+  <!-- Row 4: Expenses + Total Cost -->
+  <div class="pnl-card cost">
+    <div class="label">Expenses</div>
+    <div class="value" id="plExpenses">RM 0.00</div>
+  </div>
+  <div class="pnl-card" style="border-left:3px solid #c0392b;">
+    <div class="label" style="color:#c0392b;">Total Cost</div>
+    <div class="value" style="color:#c0392b;" id="plTotalCost">RM 0.00</div>
+    <div class="sub">PO + Labour + Expenses</div>
+  </div>
+
+  <!-- Row 5: Gross Profit (full width) -->
   <div class="pnl-card profit" id="plProfitCard" style="grid-column: span 2;">
     <div class="label">Gross Profit</div>
     <div class="value" id="plProfit">RM 0.00</div>
     <div class="sub" id="plProfitSub"></div>
   </div>
+
+  <!-- Row 6: Notes (full width, if any) -->
+  <div class="pnl-card" id="plNotesCard" style="grid-column: span 2; display:none; background:#fffbf0; border-left:3px solid #f39c12;">
+    <div class="label" style="color:#e67e22;">Project Notes</div>
+    <div class="sub" id="plNotes" style="color:#555; font-size:13px; margin-top:4px; white-space:pre-wrap;"></div>
+  </div>
+
 </div>
 
 <!-- TABS -->
@@ -389,9 +425,7 @@ async function loadAll() {
     renderPOs(data.purchase_orders      || []);
     renderVOs(data.variation_orders     || []);
     renderLabours(data.daily_labours    || []);
-
-    // Load expenses separately (not in project-view.js yet)
-    loadExpenses();
+    renderExpenses(data.expenses        || []);
 
   } catch (err) {
     alert("Failed to load project: " + err.message);
@@ -408,23 +442,41 @@ function renderHeader(p) {
   document.getElementById("projType").textContent       = (p.project_type || "").replace(/_/g, " ");
   document.getElementById("projStart").textContent      = fmtDate(p.start_date);
   document.getElementById("projStatusWrap").innerHTML   = "Status: " + badge(p.status);
+
+  // Show notes if present
+  if (p.notes && p.notes.trim()) {
+    document.getElementById("plNotesCard").style.display = "block";
+    document.getElementById("plNotes").textContent = p.notes.trim();
+  }
 }
 
 /* ===== RENDER: P&L ===== */
 function renderFinancials(f) {
   if (!f) return;
-  document.getElementById("plContract").textContent  = RM(f.contract_value);
-  document.getElementById("plInvoiced").textContent  = RM(f.total_invoiced);
-  document.getElementById("plCollected").textContent =
-    "Collected: " + RM(f.total_collected) + "  ·  Outstanding: " + RM(f.total_outstanding);
+
+  document.getElementById("plContract").textContent    = RM(f.contract_value);
+  document.getElementById("plInvoiced").textContent    = RM(f.total_invoiced);
+  document.getElementById("plCollected").textContent   =
+    "Collected: " + RM(f.total_collected) + "  ·  Pending: " + RM(f.total_outstanding);
+
+  document.getElementById("plOutstanding").textContent = RM(f.total_outstanding);
+  document.getElementById("plOutstandingSub").textContent =
+    f.total_outstanding > 0 ? "Uncollected invoices" : "All collected ✓";
+
+  document.getElementById("plVO").textContent    = RM(f.total_vo);
+  document.getElementById("plVOSub").textContent =
+    f.total_vo > 0 ? "Approved variation orders" : "No approved VOs";
+
   document.getElementById("plPO").textContent        = RM(f.total_po);
   document.getElementById("plLabour").textContent    = RM(f.total_labour);
+  document.getElementById("plExpenses").textContent  = RM(f.total_expenses);
+  document.getElementById("plTotalCost").textContent = RM(f.total_cost);
 
   const profit = Number(f.gross_profit || 0);
-  document.getElementById("plProfit").textContent    = RM(profit);
+  document.getElementById("plProfit").textContent = RM(profit);
 
   const margin = f.total_invoiced > 0
-    ? ((profit / f.total_invoiced) * 100).toFixed(1) + "% margin"
+    ? ((profit / f.total_invoiced) * 100).toFixed(1) + "% margin on invoiced"
     : "No invoices yet";
   document.getElementById("plProfitSub").textContent = margin;
 
@@ -534,17 +586,6 @@ function renderLabours(list) {
       </div>
     </div>
   `).join("");
-}
-
-/* ===== LOAD EXPENSES ===== */
-async function loadExpenses() {
-  try {
-    const res  = await fetch("/api/expense-list?project_id=" + projectId, { credentials: "include" });
-    const data = await res.json();
-    renderExpenses(data.rows || []);
-  } catch {
-    document.getElementById("expenseList").innerHTML = '<div class="empty-msg">Failed to load expenses.</div>';
-  }
 }
 
 /* ===== RENDER: EXPENSES ===== */
