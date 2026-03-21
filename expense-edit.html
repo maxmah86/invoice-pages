@@ -258,6 +258,7 @@ textarea { min-height: 70px; resize: vertical; }
 
 <script>
 const expenseId = new URLSearchParams(location.search).get("id");
+let _originalProjectId = null;  // preserve original project_id
 
 /* ── Auth ── */
 fetch("/api/auth-check", { credentials: "include" })
@@ -291,6 +292,9 @@ async function loadExpense() {
     if (!data.success) { alert(data.error || "Not found"); return; }
 
     const e = data.expense;
+
+    /* Preserve original project_id */
+    _originalProjectId = e.project_id || null;
 
     /* Populate fields */
     document.getElementById("expNoLabel").textContent = e.expense_no;
@@ -338,7 +342,8 @@ async function submitEdit() {
   const payload = {
     id: Number(expenseId),
     expense_date, category, description, vendor, receipt_no,
-    amount: Number(amount), payment_method, paid_by, notes, status
+    amount: Number(amount), payment_method, paid_by, notes, status,
+    project_id: _originalProjectId  // always preserve original project_id
   };
 
   try {
@@ -356,7 +361,12 @@ async function submitEdit() {
       return;
     }
 
-    location.href = "/expense-view.html?id=" + expenseId;
+    // Redirect back to project-view if expense belongs to a project
+    if (_originalProjectId) {
+      location.href = "/project-view.html?id=" + _originalProjectId;
+    } else {
+      location.href = "/expense-view.html?id=" + expenseId;
+    }
 
   } catch (err) {
     showError("Network error: " + err.message);
