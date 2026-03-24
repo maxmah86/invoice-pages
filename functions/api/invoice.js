@@ -48,7 +48,7 @@ export async function onRequestPost({ request, env }) {
     );
   }
 
-  const { customer, items, project_id } = data;
+  const { customer, items, project_id, invoice_date } = data;
 
   if (!customer || !Array.isArray(items) || items.length === 0) {
     return new Response(
@@ -68,21 +68,32 @@ export async function onRequestPost({ request, env }) {
 
   /* ===============================
      GENERATE INVOICE NO
+     Use user-selected date if provided, else today
      =============================== */
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  const dateStr = `${y}${m}${d}`;
+  const targetDate = invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(invoice_date)
+    ? invoice_date
+    : new Date().toISOString().slice(0, 10);
 
-  const countRow = await env.DB.prepare(`
-    SELECT COUNT(*) AS cnt
+  const dateStr = targetDate.replace(/-/g, "");
+  const prefix  = `INV-${dateStr}-`;
+
+  // Use MAX to avoid duplicates on same date
+  const maxRow = await env.DB.prepare(`
+    SELECT MAX(invoice_no) AS max_no
     FROM invoices
-    WHERE date(created_at) = date('now')
-  `).first();
+    WHERE invoice_no LIKE ?
+  `).bind(prefix + "%").first();
 
-  const seq = String((countRow.cnt || 0) + 1).padStart(4, "0");
-  const invoiceNo = `INV-${dateStr}-${seq}`;
+  let seq = 1;
+  if (maxRow?.max_no) {
+    const last = parseInt(maxRow.max_no.slice(-4), 10);
+    if (!isNaN(last)) seq = last + 1;
+  }
+
+  const invoiceNo = `${prefix}${String(seq).padStart(4, "0")}`;
+
+  // created_at uses the selected date at midnight
+  const createdAt = targetDate + " 00:00:00";
 
   /* ===============================
      INSERT INVOICE
@@ -91,8 +102,8 @@ export async function onRequestPost({ request, env }) {
     INSERT INTO invoices
       (invoice_no, customer, amount, status, project_id, created_at)
     VALUES
-      (?, ?, ?, 'UNPAID', ?, datetime('now'))
-  `).bind(invoiceNo, customer, total, project_id || null).run();
+      (?, ?, ?, 'UNPAID', ?, ?)
+  `).bind(invoiceNo, customer, total, project_id || null, createdAt).run();
 
   const invoiceId = inv.meta.last_row_id;
 
