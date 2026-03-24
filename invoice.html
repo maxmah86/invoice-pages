@@ -101,6 +101,9 @@
 <div class="box">
   <label>Customer</label>
   <input id="customer" placeholder="Customer name">
+
+  <label>Invoice Date</label>
+  <input id="invoice_date" type="date">
 </div>
 
 <div class="box">
@@ -117,6 +120,9 @@
 <script>
 const params = new URLSearchParams(window.location.search);
 const projectId = params.get("project_id");
+
+// Default invoice date to today
+document.getElementById("invoice_date").value = new Date().toISOString().slice(0, 10);
 
 // Show project banner if coming from a project
 if (projectId) {
@@ -195,6 +201,12 @@ if (!projectId) {
     return;
   }
 
+  const invoice_date = document.getElementById("invoice_date").value;
+  if (!invoice_date) {
+    alert("Please select an invoice date");
+    return;
+  }
+
   const itemsData = [];
   document.querySelectorAll(".item").forEach(item => {
     const desc = item.querySelector(".desc").value.trim();
@@ -218,6 +230,7 @@ if (!projectId) {
     body: JSON.stringify({
   project_id: projectId,
   customer,
+  invoice_date,
   items: itemsData
 })
   });
