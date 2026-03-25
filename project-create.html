@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-
 body{
 font-family: Arial, sans-serif;
 margin:20px;
@@ -25,6 +24,12 @@ label{
 display:block;
 margin-bottom:5px;
 font-size:14px;
+}
+
+/* 增加必填星号样式 */
+label.required::after {
+  content: " *";
+  color: #e53e3e;
 }
 
 input, select, textarea{
@@ -49,9 +54,7 @@ cursor:pointer;
 button:hover{
 background:#1a5fd0;
 }
-
 </style>
-
 </head>
 
 <body>
@@ -59,13 +62,13 @@ background:#1a5fd0;
 <h2>Create Project</h2>
 
 <div class="form-group">
-<label>Project Name</label>
-<input id="project_name">
+<label class="required">Project Name</label>
+<input id="project_name" placeholder="Enter project name">
 </div>
 
 <div class="form-group">
-<label>Client Name</label>
-<input id="client_name">
+<label class="required">Client Name</label>
+<input id="client_name" placeholder="Enter client name">
 </div>
 
 <div class="form-group">
@@ -80,21 +83,20 @@ background:#1a5fd0;
 
 <div class="form-group">
 <label>Contract Value (RM)</label>
-<input id="contract_value" type="number">
+<input id="contract_value" type="number" value="0">
 </div>
 
 <div class="form-group">
-<label>Start Date</label>
+<label class="required">Start Date</label>
 <input id="start_date" type="date">
 </div>
 
 <div class="form-group">
 <label>Notes</label>
-<textarea id="notes"></textarea>
+<textarea id="notes" placeholder="Optional notes..."></textarea>
 </div>
 
 <button onclick="createProject()">Create Project</button>
-
 
 <script>
 // Auth check — admin only
@@ -104,51 +106,39 @@ fetch("/api/auth-check", { credentials: "include" })
   .catch(() => location.replace("/login.html"));
 
 async function createProject(){
+  const data = {
+    project_name: document.getElementById("project_name").value.trim(),
+    client_name: document.getElementById("client_name").value.trim(),
+    project_type: document.getElementById("project_type").value,
+    contract_value: document.getElementById("contract_value").value,
+    start_date: document.getElementById("start_date").value,
+    notes: document.getElementById("notes").value
+  };
 
-const data = {
+  // 增加 start_date 的非空校验
+  if (!data.project_name || !data.client_name || !data.start_date) {
+    alert("Project Name, Client Name, and Start Date are required.");
+    return;
+  }
 
-project_name: document.getElementById("project_name").value,
-client_name: document.getElementById("client_name").value,
-project_type: document.getElementById("project_type").value,
-contract_value: document.getElementById("contract_value").value,
-start_date: document.getElementById("start_date").value,
-notes: document.getElementById("notes").value
+  const res = await fetch("/api/project-create",{
+    method:"POST",
+    credentials: "include",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify(data)
+  });
 
-};
+  const result = await res.json();
 
-if (!data.project_name || !data.client_name) {
-  alert("Project Name and Client Name are required");
-  return;
+  if(result.success){
+    alert("Project created");
+    window.location = "/project-view.html?id=" + result.id;
+  } else {
+    alert("Error: " + (result.error || "Failed to create project"));
+  }
 }
-
-const res = await fetch("/api/project-create",{
-
-method:"POST",
-credentials: "include",
-headers:{
-"Content-Type":"application/json"
-},
-
-body: JSON.stringify(data)
-
-});
-
-const result = await res.json();
-
-if(result.success){
-
-alert("Project created");
-
-window.location = "/project-view.html?id=" + result.id;
-
-}else{
-
-alert("Error: " + (result.error || "Failed to create project"));
-
-}
-
-}
-
 </script>
 
 </body>
