@@ -38,7 +38,7 @@ body { font-family: Arial, sans-serif; background: #f4f6f8; padding: 16px; color
 .stat-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .stat-card .label { font-size: 12px; color: #7f8c8d; margin-bottom: 5px; }
 .stat-card .value { font-size: 18px; font-weight: bold; color: #2c3e50; }
-.stat-card .sub { font-size: 11px; color: #95a5a6; margin-top: 4px; }
+.stat-card .sub { font-size: 11px; color: #95a5a6; margin-top: 4px; line-height: 1.4; }
 
 /* ===== SECTION CARDS ===== */
 .section-card { background: #fff; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
@@ -84,31 +84,35 @@ td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middl
     </div>
     <div class="sub" id="statVO">Incl. Approved VO: RM 0.00</div>
   </div>
+  
   <div class="stat-card">
     <div class="label">Total Invoiced</div>
     <div class="value" id="statInvoiced">RM 0.00</div>
-    <div class="sub" id="statInvoicePct">0%</div>
+    <div class="sub" id="statInvoicePct">0% of contract</div>
   </div>
+  
   <div class="stat-card">
-    <div class="label">Collected</div>
+    <div class="label">Total Collected</div>
     <div class="value" id="statCollected" style="color: #27ae60;">RM 0.00</div>
     <div class="sub" id="statOutstanding">---</div>
   </div>
+
   <div class="stat-card">
     <div class="label">Total Costs</div>
     <div class="value" id="statCost" style="color: #e67e22;">RM 0.00</div>
     <div id="statCostSub" class="sub">PO + Labour + Exp</div>
   </div>
+
   <div class="stat-card">
     <div class="label">Gross Profit</div>
     <div class="value" id="statProfit">RM 0.00</div>
-    <div class="sub">Invoiced - Costs</div>
+    <div class="sub">Based on Invoiced amount</div>
   </div>
 </div>
 
 <div class="section-card" id="plNotesCard" style="display:none;">
   <div class="section-header"><h2>Project Notes</h2></div>
-  <div style="padding: 16px; font-size: 13px; white-space: pre-wrap;" id="plNotes"></div>
+  <div style="padding: 16px; font-size: 13px; white-space: pre-wrap; color: #444;" id="plNotes"></div>
 </div>
 
 <div class="section-card">
@@ -145,27 +149,29 @@ td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middl
 const urlParams = new URLSearchParams(window.location.search);
 const projectId = urlParams.get("id");
 
-if (!projectId) { alert("No Project ID"); location.href = "/project-list.html"; }
+if (!projectId) { alert("Project ID missing"); location.href = "/project-list.html"; }
 
 let projectData = null;
 
 async function loadAll() {
   try {
     const res = await fetch(`/api/project-view?id=${projectId}`, { credentials: "include" });
+    if (!res.ok) throw new Error("Load failed");
     const data = await res.json();
     projectData = data;
 
     renderHeader(data.project);
     renderFinancials(data.financials);
     
-    renderTable("listQuotations", data.quotations, q => `<tr onclick="location.href='/quotation-view.html?id=${q.id}'" style="cursor:pointer"><td>${q.quotation_no}</td><td>${fmtDate(q.quotation_date)}</td><td class="text-right">${RM(q.grand_total)}</td></tr>`, "No quotations");
-    renderTable("listVO", data.variation_orders, v => `<tr onclick="location.href='/vo-view.html?id=${v.id}'" style="cursor:pointer"><td>${v.vo_no || "VO-"+v.id}</td><td>${badge(v.status)}</td><td class="text-right">${RM(v.amount)}</td></tr>`, "No variation orders");
-    renderTable("listInvoices", data.invoices, i => `<tr onclick="location.href='/invoice-view.html?id=${i.id}'" style="cursor:pointer"><td>${i.invoice_no}</td><td>${badge(i.status)}</td><td class="text-right">${RM(i.amount)}</td></tr>`, "No invoices");
-    renderTable("listPO", data.purchase_orders, p => `<tr onclick="location.href='/po-view.html?id=${p.id}'" style="cursor:pointer"><td>${p.po_no}</td><td>${p.vendor_name || "-"}</td><td class="text-right">${RM(p.total)}</td></tr>`, "No POs");
-    renderTable("listLabour", data.daily_labours, l => `<tr onclick="location.href='/daily-labour-view.html?id=${l.id}'" style="cursor:pointer"><td>${fmtDate(l.work_date)}</td><td>${l.description || "-"}</td><td class="text-right">${RM(l.amount)}</td></tr>`, "No labour records");
-    renderTable("listExpenses", data.expenses, e => `<tr onclick="location.href='/expense-view.html?id=${e.id}'" style="cursor:pointer"><td>${fmtDate(e.expense_date)}</td><td>${e.category}</td><td class="text-right">${RM(e.amount)}</td></tr>`, "No expenses");
+    // 渲染各个板块表格
+    renderQuotations(data.quotations);
+    renderVO(data.variation_orders);
+    renderInvoices(data.invoices);
+    renderPO(data.purchase_orders);
+    renderLabour(data.daily_labours);
+    renderExpenses(data.expenses);
 
-    /* ── 修复：对应你目录结构的 Add 按钮跳转 ── */
+    // 绑定所有的 Add 按钮跳转路径 (基于你的目录结构)
     document.getElementById("btnAddQuotation").href = `/quotation.html?project_id=${projectId}`;
     document.getElementById("btnAddVO").href        = `/vo.html?project_id=${projectId}`;
     document.getElementById("btnAddInvoice").href   = `/invoice.html?project_id=${projectId}`;
@@ -173,7 +179,7 @@ async function loadAll() {
     document.getElementById("btnAddLabour").href    = `/daily-labour-create.html?project_id=${projectId}`;
     document.getElementById("btnAddExpense").href   = `/expense.html?project_id=${projectId}`;
 
-  } catch (err) { console.error(err); }
+  } catch (err) { console.error(err); alert(err.message); }
 }
 
 function renderHeader(p) {
@@ -182,16 +188,26 @@ function renderHeader(p) {
   document.getElementById("projName").textContent = p.project_name;
   document.getElementById("projClient").textContent = p.client_name || "";
   document.getElementById("projType").textContent = (p.project_type || "").replace(/_/g, " ");
-  document.getElementById("projStart").textContent = fmtDate(p.start_date);
-  const s = p.status || "ACTIVE";
-  document.getElementById("projStatusWrap").innerHTML = `Status: <button class="status-toggle-btn" onclick="toggleStatus('${s}')">${badge(s)}</button>`;
-  if (p.notes) { document.getElementById("plNotesCard").style.display = "block"; document.getElementById("plNotes").textContent = p.notes; }
+  document.getElementById("projStart").textContent = p.start_date ? p.start_date.slice(0, 10) : "---";
+  
+  const status = p.status || "ACTIVE";
+  document.getElementById("projStatusWrap").innerHTML = `
+    Status: <button class="status-toggle-btn" onclick="toggleStatus('${status}')">
+      ${badge(status)}
+    </button>
+  `;
+
+  if (p.notes) {
+    document.getElementById("plNotesCard").style.display = "block";
+    document.getElementById("plNotes").textContent = p.notes;
+  }
 }
 
 async function toggleStatus(cur) {
   const cycle = ["ACTIVE", "ON_HOLD", "COMPLETED"];
   const next = cycle[(cycle.indexOf(cur.toUpperCase()) + 1) % cycle.length];
-  if (!confirm(`Change to ${next}?`)) return;
+  if (!confirm(`Change status to ${next}?`)) return;
+
   const res = await fetch("/api/project-update-status", {
     method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ project_id: projectId, status: next })
@@ -204,28 +220,110 @@ function renderFinancials(f) {
   document.getElementById("statVO").textContent = "Incl. Approved VO: " + RM(f.total_vo);
   document.getElementById("statInvoiced").textContent = RM(f.total_invoiced);
   document.getElementById("statCollected").textContent = RM(f.total_collected);
+  
   const pct = f.contract_value > 0 ? Math.round((f.total_invoiced / f.contract_value) * 100) : 0;
   document.getElementById("statInvoicePct").textContent = pct + "% of contract";
   document.getElementById("statOutstanding").textContent = "Unpaid: " + RM(f.total_outstanding);
+
   const cost = (f.total_po || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
   document.getElementById("statCost").textContent = RM(cost);
   document.getElementById("statCostSub").textContent = `PO:${RM(f.total_po)} | Lab:${RM(f.total_labour)} | Exp:${RM(f.total_expenses)}`;
   document.getElementById("statProfit").textContent = RM(f.total_invoiced - cost);
 }
 
-function renderTable(id, list, rowFn, emptyMsg) {
-  const wrap = document.getElementById(id);
-  if (!list || !list.length) { wrap.innerHTML = `<div class="empty-state">${emptyMsg}</div>`; return; }
+/* ===== TABLE RENDERING ===== */
+
+function renderQuotations(list) {
+  const wrap = document.getElementById("listQuotations");
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No quotations</div>'; return; }
   let html = '<table><tbody>';
-  list.forEach(item => html += rowFn(item));
+  list.forEach(q => {
+    html += `<tr onclick="location.href='/quotation-view.html?id=${q.id}'" style="cursor:pointer">
+      <td><div style="font-weight:bold">${q.quotation_no}</div><div style="font-size:11px;color:#999">${q.quotation_date?.slice(0,10)}</div></td>
+      <td class="text-right">${RM(q.grand_total)}</td>
+    </tr>`;
+  });
   wrap.innerHTML = html + '</tbody></table>';
 }
 
+function renderVO(list) {
+  const wrap = document.getElementById("listVO");
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No variation orders</div>'; return; }
+  let html = '<table><tbody>';
+  list.forEach(v => {
+    html += `<tr onclick="location.href='/vo-view.html?id=${v.id}'" style="cursor:pointer">
+      <td><div style="font-weight:bold">${v.vo_no || 'VO-'+v.id}</div>${badge(v.status)}</td>
+      <td class="text-right">${RM(v.amount)}</td>
+    </tr>`;
+  });
+  wrap.innerHTML = html + '</tbody></table>';
+}
+
+function renderInvoices(list) {
+  const wrap = document.getElementById("listInvoices");
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No invoices</div>'; return; }
+  let html = '<table><tbody>';
+  list.forEach(i => {
+    html += `<tr onclick="location.href='/invoice-view.html?id=${i.id}'" style="cursor:pointer">
+      <td><div style="font-weight:bold">${i.invoice_no}</div>${badge(i.status)}</td>
+      <td class="text-right">${RM(i.amount)}</td>
+    </tr>`;
+  });
+  wrap.innerHTML = html + '</tbody></table>';
+}
+
+function renderPO(list) {
+  const wrap = document.getElementById("listPO");
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No purchase orders</div>'; return; }
+  let html = '<table><tbody>';
+  list.forEach(p => {
+    html += `<tr onclick="location.href='/po-view.html?id=${p.id}'" style="cursor:pointer">
+      <td><div style="font-weight:bold">${p.po_no}</div><div style="font-size:11px;color:#999">${p.supplier_name || '-'}</div></td>
+      <td class="text-right">${RM(p.total)}</td>
+    </tr>`;
+  });
+  wrap.innerHTML = html + '</tbody></table>';
+}
+
+function renderLabour(list) {
+  const wrap = document.getElementById("listLabour");
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No labour logs</div>'; return; }
+  let html = '<table><tbody>';
+  list.forEach(l => {
+    html += `<tr onclick="location.href='/daily-labour-view.html?id=${l.id}'" style="cursor:pointer">
+      <td>
+        <div style="font-size:11px; color:#999">${l.labour_date?.slice(0,10)}</div>
+        <div style="font-weight:bold">${l.worker_name}</div>
+        <div style="font-size:11px; color:#7f8c8d">${l.job || ''}</div>
+      </td>
+      <td class="text-right">
+        <div style="font-weight:bold">${RM(l.amount)}</div>
+        ${badge(l.status)}
+      </td>
+    </tr>`;
+  });
+  wrap.innerHTML = html + '</tbody></table>';
+}
+
+function renderExpenses(list) {
+  const wrap = document.getElementById("listExpenses");
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No expenses</div>'; return; }
+  let html = '<table><tbody>';
+  list.forEach(e => {
+    html += `<tr onclick="location.href='/expense-view.html?id=${e.id}'" style="cursor:pointer">
+      <td><div style="font-weight:bold">${e.category}</div><div style="font-size:11px;color:#999">${e.expense_date?.slice(0,10)}</div></td>
+      <td class="text-right">${RM(e.amount)}</td>
+    </tr>`;
+  });
+  wrap.innerHTML = html + '</tbody></table>';
+}
+
+/* ===== UTILS ===== */
 function RM(n) { return "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2 }); }
-function fmtDate(d) { return d ? d.slice(0, 10) : "---"; }
 function badge(s) {
-  const m = { ACTIVE: "badge-active", COMPLETED: "badge-completed", ON_HOLD: "badge-on_hold", PAID: "badge-paid" };
-  return `<span class="badge ${m[s.toUpperCase()] || "badge-unpaid"}">${s}</span>`;
+  const m = { ACTIVE: "badge-active", COMPLETED: "badge-completed", ON_HOLD: "badge-on_hold", APPROVED: "badge-active", OPEN: "badge-unpaid", PAID: "badge-active" };
+  const cls = m[(s||"").toUpperCase()] || "badge-unpaid";
+  return `<span class="badge ${cls}">${s || 'N/A'}</span>`;
 }
 
 async function updateContractValue() {
@@ -233,12 +331,13 @@ async function updateContractValue() {
   const qSum = d.quotations.reduce((s, q) => s + Number(q.grand_total || 0), 0);
   const vSum = d.variation_orders.filter(v => v.status === "APPROVED").reduce((s, v) => s + Number(v.amount || 0), 0);
   const total = qSum + vSum;
-  if (!confirm(`Sync Contract Value to RM ${total.toFixed(2)}?`)) return;
-  await fetch("/api/project-update-value", {
+  if (!confirm(`Sync Contract Value to RM ${total.toFixed(2)}? (Quotations + Approved VO)`)) return;
+  
+  const res = await fetch("/api/project-update-value", {
     method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ project_id: projectId, contract_value: total })
   });
-  loadAll();
+  if ((await res.json()).success) loadAll();
 }
 
 loadAll();
