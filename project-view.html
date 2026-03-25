@@ -4,135 +4,53 @@
 <meta charset="UTF-8">
 <title>Project View</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  padding: 16px;
-  color: #000;
-}
+body { font-family: Arial, sans-serif; background: #f4f6f8; padding: 16px; color: #000; }
 
 /* ===== TOP NAV ===== */
-.top-nav {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.top-nav a {
-  font-size: 13px;
-  color: #2c7be5;
-  text-decoration: none;
-}
+.top-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.top-nav a { font-size: 13px; color: #2c7be5; text-decoration: none; }
 .top-nav span { color: #999; font-size: 13px; }
 
 /* ===== PROJECT HEADER ===== */
-.project-header {
-  background: #2c3e50;
-  color: #fff;
-  border-radius: 8px;
-  padding: 18px;
-  margin-bottom: 16px;
-}
-.project-header .proj-no {
-  font-size: 12px;
-  color: #aab;
-  margin-bottom: 4px;
-}
-.project-header h1 {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 4px;
-}
-.project-header .client {
-  font-size: 14px;
-  color: #bdc3c7;
-  margin-bottom: 12px;
-}
-.project-header .meta-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  font-size: 13px;
-}
+.project-header { background: #2c3e50; color: #fff; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+.project-header .proj-no { font-size: 12px; color: #aab; margin-bottom: 4px; }
+.project-header h1 { font-size: 20px; font-weight: bold; margin-bottom: 4px; }
+.project-header .client { font-size: 14px; color: #bdc3c7; margin-bottom: 12px; }
+.project-header .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
 
-/* ===== STATUS TOGGLE BUTTON ===== */
-.status-toggle-btn {
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
-  vertical-align: middle;
-  transition: opacity 0.2s;
-}
+/* ===== STATUS TOGGLE ===== */
+.status-toggle-btn { border: none; background: none; cursor: pointer; padding: 0; vertical-align: middle; transition: opacity 0.2s; }
 .status-toggle-btn:hover { opacity: 0.8; }
 
 /* ===== BADGES ===== */
-.badge {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
+.badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
 .badge-active    { background: #27ae60; color: #fff; }
 .badge-completed { background: #2980b9; color: #fff; }
 .badge-on_hold   { background: #f39c12; color: #fff; }
 .badge-void      { background: #e74c3c; color: #fff; }
 .badge-paid      { background: #27ae60; color: #fff; }
 .badge-unpaid    { background: #f1c40f; color: #000; }
-.badge-draft     { background: #95a5a6; color: #fff; }
 
 /* ===== STATS CARD ===== */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.stat-card {
-  background: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.stat-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 .stat-card .label { font-size: 12px; color: #7f8c8d; margin-bottom: 5px; }
 .stat-card .value { font-size: 18px; font-weight: bold; color: #2c3e50; }
-.stat-card .sub   { font-size: 11px; color: #95a5a6; margin-top: 4px; }
+.stat-card .sub { font-size: 11px; color: #95a5a6; margin-top: 4px; }
 
 /* ===== SECTION CARDS ===== */
-.section-card {
-  background: #fff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  overflow: hidden;
-}
-.section-header {
-  padding: 12px 16px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.section-card { background: #fff; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+.section-header { padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 .section-header h2 { font-size: 15px; font-weight: bold; color: #34495e; }
-.section-header .btn-add {
-  font-size: 12px;
-  color: #2c7be5;
-  text-decoration: none;
-  font-weight: bold;
-}
+.section-header .btn-add { font-size: 12px; color: #2c7be5; text-decoration: none; font-weight: bold; }
 
 /* ===== TABLES ===== */
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th { text-align: left; padding: 12px 16px; color: #7f8c8d; font-weight: normal; border-bottom: 1px solid #eee; }
 td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middle; }
 .text-right { text-align: right; }
-
 .empty-state { padding: 20px; text-align: center; color: #95a5a6; font-size: 13px; }
 </style>
 </head>
@@ -166,82 +84,60 @@ td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middl
     </div>
     <div class="sub" id="statVO">Incl. Approved VO: RM 0.00</div>
   </div>
-  
   <div class="stat-card">
     <div class="label">Total Invoiced</div>
     <div class="value" id="statInvoiced">RM 0.00</div>
-    <div class="sub" id="statInvoicePct">0% of contract</div>
+    <div class="sub" id="statInvoicePct">0%</div>
   </div>
-  
   <div class="stat-card">
-    <div class="label">Total Collected</div>
+    <div class="label">Collected</div>
     <div class="value" id="statCollected" style="color: #27ae60;">RM 0.00</div>
-    <div class="sub" id="statOutstanding">Outstanding: RM 0.00</div>
+    <div class="sub" id="statOutstanding">---</div>
   </div>
-
   <div class="stat-card">
     <div class="label">Total Costs</div>
     <div class="value" id="statCost" style="color: #e67e22;">RM 0.00</div>
-    <div id="statCostSub" class="sub">PO + Labour + Expenses</div>
+    <div id="statCostSub" class="sub">PO + Labour + Exp</div>
   </div>
-
   <div class="stat-card">
     <div class="label">Gross Profit</div>
     <div class="value" id="statProfit">RM 0.00</div>
-    <div class="sub">Based on Invoiced amount</div>
+    <div class="sub">Invoiced - Costs</div>
   </div>
 </div>
 
 <div class="section-card" id="plNotesCard" style="display:none;">
   <div class="section-header"><h2>Project Notes</h2></div>
-  <div style="padding: 16px; font-size: 13px; line-height: 1.5; color: #34495e; white-space: pre-wrap;" id="plNotes"></div>
+  <div style="padding: 16px; font-size: 13px; white-space: pre-wrap;" id="plNotes"></div>
 </div>
 
 <div class="section-card">
-  <div class="section-header">
-    <h2>Quotations</h2>
-    <a href="#" class="btn-add" id="btnAddQuotation">+ Add</a>
-  </div>
+  <div class="section-header"><h2>Quotations</h2><a href="#" class="btn-add" id="btnAddQuotation">+ Add</a></div>
   <div id="listQuotations"></div>
 </div>
 
 <div class="section-card">
-  <div class="section-header">
-    <h2>Variation Orders (VO)</h2>
-    <a href="#" class="btn-add" id="btnAddVO">+ Add</a>
-  </div>
+  <div class="section-header"><h2>Variation Orders (VO)</h2><a href="#" class="btn-add" id="btnAddVO">+ Add</a></div>
   <div id="listVO"></div>
 </div>
 
 <div class="section-card">
-  <div class="section-header">
-    <h2>Invoices</h2>
-    <a href="#" class="btn-add" id="btnAddInvoice">+ Add</a>
-  </div>
+  <div class="section-header"><h2>Invoices</h2><a href="#" class="btn-add" id="btnAddInvoice">+ Add</a></div>
   <div id="listInvoices"></div>
 </div>
 
 <div class="section-card">
-  <div class="section-header">
-    <h2>Purchase Orders (PO)</h2>
-    <a href="#" class="btn-add" id="btnAddPO">+ Add</a>
-  </div>
+  <div class="section-header"><h2>Purchase Orders (PO)</h2><a href="#" class="btn-add" id="btnAddPO">+ Add</a></div>
   <div id="listPO"></div>
 </div>
 
 <div class="section-card">
-  <div class="section-header">
-    <h2>Daily Labours</h2>
-    <a href="#" class="btn-add" id="btnAddLabour">+ Add</a>
-  </div>
+  <div class="section-header"><h2>Daily Labours</h2><a href="#" class="btn-add" id="btnAddLabour">+ Add</a></div>
   <div id="listLabour"></div>
 </div>
 
 <div class="section-card">
-  <div class="section-header">
-    <h2>Expenses</h2>
-    <a href="#" class="btn-add" id="btnAddExpense">+ Add</a>
-  </div>
+  <div class="section-header"><h2>Expenses</h2><a href="#" class="btn-add" id="btnAddExpense">+ Add</a></div>
   <div id="listExpenses"></div>
 </div>
 
@@ -249,198 +145,100 @@ td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middl
 const urlParams = new URLSearchParams(window.location.search);
 const projectId = urlParams.get("id");
 
-if (!projectId) {
-  alert("No Project ID provided");
-  location.href = "/project-list.html";
-}
+if (!projectId) { alert("No Project ID"); location.href = "/project-list.html"; }
 
 let projectData = null;
 
 async function loadAll() {
   try {
     const res = await fetch(`/api/project-view?id=${projectId}`, { credentials: "include" });
-    if (!res.ok) throw new Error("Failed to fetch project data");
-    
     const data = await res.json();
     projectData = data;
 
     renderHeader(data.project);
     renderFinancials(data.financials);
     
-    // 渲染各板块表格
-    renderQuotations(data.quotations);
-    renderVO(data.variation_orders);
-    renderInvoices(data.invoices);
-    renderPO(data.purchase_orders);
-    renderLabour(data.daily_labours);
-    renderExpenses(data.expenses);
+    renderTable("listQuotations", data.quotations, q => `<tr onclick="location.href='/quotation-view.html?id=${q.id}'" style="cursor:pointer"><td>${q.quotation_no}</td><td>${fmtDate(q.quotation_date)}</td><td class="text-right">${RM(q.grand_total)}</td></tr>`, "No quotations");
+    renderTable("listVO", data.variation_orders, v => `<tr onclick="location.href='/vo-view.html?id=${v.id}'" style="cursor:pointer"><td>${v.vo_no || "VO-"+v.id}</td><td>${badge(v.status)}</td><td class="text-right">${RM(v.amount)}</td></tr>`, "No variation orders");
+    renderTable("listInvoices", data.invoices, i => `<tr onclick="location.href='/invoice-view.html?id=${i.id}'" style="cursor:pointer"><td>${i.invoice_no}</td><td>${badge(i.status)}</td><td class="text-right">${RM(i.amount)}</td></tr>`, "No invoices");
+    renderTable("listPO", data.purchase_orders, p => `<tr onclick="location.href='/po-view.html?id=${p.id}'" style="cursor:pointer"><td>${p.po_no}</td><td>${p.vendor_name || "-"}</td><td class="text-right">${RM(p.total)}</td></tr>`, "No POs");
+    renderTable("listLabour", data.daily_labours, l => `<tr onclick="location.href='/daily-labour-view.html?id=${l.id}'" style="cursor:pointer"><td>${fmtDate(l.work_date)}</td><td>${l.description || "-"}</td><td class="text-right">${RM(l.amount)}</td></tr>`, "No labour records");
+    renderTable("listExpenses", data.expenses, e => `<tr onclick="location.href='/expense-view.html?id=${e.id}'" style="cursor:pointer"><td>${fmtDate(e.expense_date)}</td><td>${e.category}</td><td class="text-right">${RM(e.amount)}</td></tr>`, "No expenses");
 
-    /* ── 修复关键点：动态绑定所有 Add 按钮的链接 ── */
-    document.getElementById("btnAddQuotation").href = `/quotation-create.html?project_id=${projectId}`;
-    document.getElementById("btnAddVO").href        = `/vo-create.html?project_id=${projectId}`;
-    document.getElementById("btnAddInvoice").href   = `/invoice-create.html?project_id=${projectId}`;
-    document.getElementById("btnAddPO").href        = `/po-create.html?project_id=${projectId}`;
-    document.getElementById("btnAddLabour").href    = `/labour-create.html?project_id=${projectId}`;
-    document.getElementById("btnAddExpense").href   = `/expense-create.html?project_id=${projectId}`;
+    /* ── 修复：对应你目录结构的 Add 按钮跳转 ── */
+    document.getElementById("btnAddQuotation").href = `/quotation.html?project_id=${projectId}`;
+    document.getElementById("btnAddVO").href        = `/vo.html?project_id=${projectId}`;
+    document.getElementById("btnAddInvoice").href   = `/invoice.html?project_id=${projectId}`;
+    document.getElementById("btnAddPO").href        = `/po.html?project_id=${projectId}`;
+    document.getElementById("btnAddLabour").href    = `/daily-labour-create.html?project_id=${projectId}`;
+    document.getElementById("btnAddExpense").href   = `/expense.html?project_id=${projectId}`;
 
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
+  } catch (err) { console.error(err); }
 }
 
-/* ===== RENDER: HEADER & STATUS CYCLE ===== */
 function renderHeader(p) {
   document.getElementById("navProjectName").textContent = p.project_name;
-  document.getElementById("projNo").textContent         = p.project_no || "";
-  document.getElementById("projName").textContent       = p.project_name;
-  document.getElementById("projClient").textContent     = p.client_name || "";
-  document.getElementById("projType").textContent       = (p.project_type || "").replace(/_/g, " ");
-  document.getElementById("projStart").textContent      = p.start_date ? p.start_date.slice(0,10) : "---";
-  
-  const status = p.status || "ACTIVE";
-  document.getElementById("projStatusWrap").innerHTML = `
-    Status: <button class="status-toggle-btn" onclick="toggleStatus('${status}')" title="Click to cycle status">
-      ${badge(status)}
-    </button>
-  `;
-
-  if (p.notes && p.notes.trim()) {
-    document.getElementById("plNotesCard").style.display = "block";
-    document.getElementById("plNotes").textContent = p.notes.trim();
-  }
+  document.getElementById("projNo").textContent = p.project_no || "";
+  document.getElementById("projName").textContent = p.project_name;
+  document.getElementById("projClient").textContent = p.client_name || "";
+  document.getElementById("projType").textContent = (p.project_type || "").replace(/_/g, " ");
+  document.getElementById("projStart").textContent = fmtDate(p.start_date);
+  const s = p.status || "ACTIVE";
+  document.getElementById("projStatusWrap").innerHTML = `Status: <button class="status-toggle-btn" onclick="toggleStatus('${s}')">${badge(s)}</button>`;
+  if (p.notes) { document.getElementById("plNotesCard").style.display = "block"; document.getElementById("plNotes").textContent = p.notes; }
 }
 
-async function toggleStatus(currentStatus) {
-  const statusCycle = ["ACTIVE", "ON_HOLD", "COMPLETED"];
-  let currentIndex = statusCycle.indexOf(currentStatus.toUpperCase());
-  if (currentIndex === -1) currentIndex = 0;
-  
-  const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
-  
-  if (!confirm(`Change project status to ${nextStatus}?`)) return;
-
-  try {
-    const res = await fetch("/api/project-update-status", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, status: nextStatus })
-    });
-
-    const result = await res.json();
-    if (result.success) {
-      loadAll();
-    } else {
-      alert("Failed to update: " + (result.error || ""));
-    }
-  } catch (err) { alert("Error: " + err.message); }
+async function toggleStatus(cur) {
+  const cycle = ["ACTIVE", "ON_HOLD", "COMPLETED"];
+  const next = cycle[(cycle.indexOf(cur.toUpperCase()) + 1) % cycle.length];
+  if (!confirm(`Change to ${next}?`)) return;
+  const res = await fetch("/api/project-update-status", {
+    method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ project_id: projectId, status: next })
+  });
+  if ((await res.json()).success) loadAll();
 }
 
-/* ===== RENDER: FINANCIALS ===== */
 function renderFinancials(f) {
-  document.getElementById("statContract").textContent  = RM(f.contract_value);
-  document.getElementById("statVO").textContent        = "Incl. Approved VO: " + RM(f.total_vo);
-  document.getElementById("statInvoiced").textContent  = RM(f.total_invoiced);
+  document.getElementById("statContract").textContent = RM(f.contract_value);
+  document.getElementById("statVO").textContent = "Incl. Approved VO: " + RM(f.total_vo);
+  document.getElementById("statInvoiced").textContent = RM(f.total_invoiced);
   document.getElementById("statCollected").textContent = RM(f.total_collected);
-  
-  const invPct = f.contract_value > 0 ? Math.round((f.total_invoiced / f.contract_value) * 100) : 0;
-  document.getElementById("statInvoicePct").textContent = invPct + "% of contract";
-  document.getElementById("statOutstanding").textContent = "Outstanding: " + RM(f.total_outstanding);
-
-  const totalCost = (f.total_po || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
-  document.getElementById("statCost").textContent = RM(totalCost);
-  document.getElementById("statCostSub").textContent = `PO: ${RM(f.total_po)} | Labour: ${RM(f.total_labour)} | Exp: ${RM(f.total_expenses)}`;
-  document.getElementById("statProfit").textContent = RM(f.total_invoiced - totalCost);
+  const pct = f.contract_value > 0 ? Math.round((f.total_invoiced / f.contract_value) * 100) : 0;
+  document.getElementById("statInvoicePct").textContent = pct + "% of contract";
+  document.getElementById("statOutstanding").textContent = "Unpaid: " + RM(f.total_outstanding);
+  const cost = (f.total_po || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
+  document.getElementById("statCost").textContent = RM(cost);
+  document.getElementById("statCostSub").textContent = `PO:${RM(f.total_po)} | Lab:${RM(f.total_labour)} | Exp:${RM(f.total_expenses)}`;
+  document.getElementById("statProfit").textContent = RM(f.total_invoiced - cost);
 }
 
-/* ===== RENDER: TABLES (带点击跳转) ===== */
-function renderQuotations(list) {
-  const wrap = document.getElementById("listQuotations");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No quotations</div>'; return; }
-  let html = '<table><thead><tr><th>Ref</th><th>Date</th><th class="text-right">Total</th></tr></thead><tbody>';
-  list.forEach(q => {
-    html += `<tr onclick="location.href='/quotation-view.html?id=${q.id}'" style="cursor:pointer"><td>${q.quotation_no}</td><td>${q.quotation_date?.slice(0,10)}</td><td class="text-right">${RM(q.grand_total)}</td></tr>`;
-  });
+function renderTable(id, list, rowFn, emptyMsg) {
+  const wrap = document.getElementById(id);
+  if (!list || !list.length) { wrap.innerHTML = `<div class="empty-state">${emptyMsg}</div>`; return; }
+  let html = '<table><tbody>';
+  list.forEach(item => html += rowFn(item));
   wrap.innerHTML = html + '</tbody></table>';
 }
 
-function renderVO(list) {
-  const wrap = document.getElementById("listVO");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No VO</div>'; return; }
-  let html = '<table><thead><tr><th>Ref</th><th>Status</th><th class="text-right">Amount</th></tr></thead><tbody>';
-  list.forEach(v => {
-    html += `<tr onclick="location.href='/vo-view.html?id=${v.id}'" style="cursor:pointer"><td>${v.vo_no || "VO-"+v.id}</td><td>${badge(v.status)}</td><td class="text-right">${RM(v.amount)}</td></tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderInvoices(list) {
-  const wrap = document.getElementById("listInvoices");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No invoices</div>'; return; }
-  let html = '<table><thead><tr><th>Ref</th><th>Status</th><th class="text-right">Total</th></tr></thead><tbody>';
-  list.forEach(i => {
-    html += `<tr onclick="location.href='/invoice-view.html?id=${i.id}'" style="cursor:pointer"><td>${i.invoice_no}</td><td>${badge(i.status)}</td><td class="text-right">${RM(i.amount)}</td></tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderPO(list) {
-  const wrap = document.getElementById("listPO");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No PO</div>'; return; }
-  let html = '<table><thead><tr><th>Ref</th><th>Vendor</th><th class="text-right">Total</th></tr></thead><tbody>';
-  list.forEach(p => {
-    html += `<tr onclick="location.href='/po-view.html?id=${p.id}'" style="cursor:pointer"><td>${p.po_no}</td><td>${p.vendor_name || "-"}</td><td class="text-right">${RM(p.total)}</td></tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderLabour(list) {
-  const wrap = document.getElementById("listLabour");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No labour logs</div>'; return; }
-  let html = '<table><thead><tr><th>Date</th><th>Name</th><th class="text-right">Amount</th></tr></thead><tbody>';
-  list.forEach(l => {
-    html += `<tr><td>${l.work_date?.slice(0,10)}</td><td>${l.worker_name || l.description || "-"}</td><td class="text-right">${RM(l.amount)}</td></tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderExpenses(list) {
-  const wrap = document.getElementById("listExpenses");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No expenses</div>'; return; }
-  let html = '<table><thead><tr><th>Date</th><th>Cat</th><th class="text-right">Amount</th></tr></thead><tbody>';
-  list.forEach(e => {
-    html += `<tr><td>${e.expense_date?.slice(0,10)}</td><td>${e.category}</td><td class="text-right">${RM(e.amount)}</td></tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-/* ===== HELPERS ===== */
-function RM(n) { return "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function badge(status) {
-  const s = (status || "").toUpperCase();
-  const map = { ACTIVE: "badge-active", COMPLETED: "badge-completed", ON_HOLD: "badge-on_hold", VOID: "badge-void", PAID: "badge-paid", UNPAID: "badge-unpaid" };
-  return `<span class="badge ${map[s] || "badge-draft"}">${status || "-"}</span>`;
+function RM(n) { return "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2 }); }
+function fmtDate(d) { return d ? d.slice(0, 10) : "---"; }
+function badge(s) {
+  const m = { ACTIVE: "badge-active", COMPLETED: "badge-completed", ON_HOLD: "badge-on_hold", PAID: "badge-paid" };
+  return `<span class="badge ${m[s.toUpperCase()] || "badge-unpaid"}">${s}</span>`;
 }
 
 async function updateContractValue() {
-  if (!projectData) return;
   const d = projectData;
-  const sumQ = (d.quotations || []).reduce((s, q) => s + (Number(q.grand_total) || 0), 0);
-  const sumV = (d.variation_orders || []).filter(v => (v.status || "").toUpperCase() === "APPROVED").reduce((s, v) => s + (Number(v.amount) || 0), 0);
-  const total = sumQ + sumV;
-
-  if (!confirm(`Update Value to RM ${total.toFixed(2)}?\n(Q: ${sumQ.toFixed(2)} + VO: ${sumV.toFixed(2)})`)) return;
-
-  try {
-    const res = await fetch("/api/project-update-value", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, contract_value: total })
-    });
-    if ((await res.json()).success) loadAll();
-  } catch (err) { alert(err.message); }
+  const qSum = d.quotations.reduce((s, q) => s + Number(q.grand_total || 0), 0);
+  const vSum = d.variation_orders.filter(v => v.status === "APPROVED").reduce((s, v) => s + Number(v.amount || 0), 0);
+  const total = qSum + vSum;
+  if (!confirm(`Sync Contract Value to RM ${total.toFixed(2)}?`)) return;
+  await fetch("/api/project-update-value", {
+    method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ project_id: projectId, contract_value: total })
+  });
+  loadAll();
 }
 
 loadAll();
