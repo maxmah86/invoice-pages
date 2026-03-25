@@ -1,131 +1,446 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Project List</title>
-
+<title>Projects</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; }
 
-body{
-font-family: Arial, sans-serif;
-margin:20px;
-background:#f5f5f5;
+/* ── Nav ── */
+.nav-bar {
+  background: #1a2636;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: sticky; top: 0; z-index: 10;
+}
+.nav-btn {
+  padding: 8px 14px; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
+}
+.nav-btn.home { background: #4a5568; }
+.nav-btn.new  { background: #27ae60; margin-left: auto; }
+
+/* ── Dashboard ── */
+.dashboard {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  padding: 18px 16px 14px;
 }
 
-.header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:20px;
+.dash-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
 }
 
-button{
-padding:10px 16px;
-border:none;
-background:#2c7be5;
-color:white;
-border-radius:6px;
-cursor:pointer;
+.dash-label {
+  font-size: 11px;
+  color: #90b8d8;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
-.project-card{
-background:white;
-padding:15px;
-margin-bottom:10px;
-border-radius:8px;
-box-shadow:0 1px 3px rgba(0,0,0,0.1);
+.dash-value {
+  font-size: 26px;
+  font-weight: bold;
+  color: #fff;
 }
 
-.project-name{
-font-weight:bold;
-font-size:16px;
+.dash-sub {
+  font-size: 12px;
+  color: #90b8d8;
+  margin-top: 3px;
 }
 
-.project-info{
-color:#666;
-font-size:14px;
-margin-top:4px;
+/* Month filter inside dashboard */
+.month-filter {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 14px;
+  color: #fff;
+  cursor: pointer;
+  min-width: 130px;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-.contract{
-margin-top:8px;
-font-weight:bold;
-color:#2c7be5;
+.month-filter option { color: #000; background: #fff; }
+
+/* Stats row */
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
+.stat-box {
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.stat-box .s-val {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.stat-box .s-lbl {
+  font-size: 10px;
+  color: #90b8d8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+/* ── Search ── */
+.search-bar {
+  padding: 10px 12px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+}
+
+/* ── Status filter chips ── */
+.status-chips {
+  padding: 8px 12px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #e8edf3;
+  scrollbar-width: none;
+}
+.status-chips::-webkit-scrollbar { display: none; }
+
+.chip {
+  padding: 5px 13px;
+  border-radius: 16px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #4a5568;
+}
+.chip.active { background: #ebf5ff; border-color: #3b82f6; color: #1d4ed8; }
+
+/* ── List ── */
+.list-wrap { padding: 10px 12px 60px; }
+
+.project-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid #e8edf3;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.project-card:active { box-shadow: 0 0 0 2px #3b82f6; }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.proj-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1a2636;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.contract-val {
+  font-size: 16px;
+  font-weight: bold;
+  color: #2980b9;
+  white-space: nowrap;
+}
+
+.card-meta {
+  font-size: 12px;
+  color: #718096;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.proj-no { font-size: 11px; color: #a0aec0; font-weight: bold; }
+
+.status-badge {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 9px;
+  border-radius: 10px;
+}
+.status-badge.ACTIVE    { background: #d4edda; color: #155724; }
+.status-badge.COMPLETED { background: #cce5ff; color: #004085; }
+.status-badge.ON_HOLD   { background: #fff3cd; color: #856404; }
+
+/* Progress mini bar */
+.mini-progress {
+  margin-top: 8px;
+}
+.mini-bar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mini-fill {
+  height: 4px;
+  border-radius: 4px;
+  background: #27ae60;
+  transition: width 0.3s;
+}
+.mini-label {
+  font-size: 11px;
+  color: #a0aec0;
+  margin-top: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.empty-msg {
+  text-align: center;
+  color: #a0aec0;
+  padding: 50px 20px;
+  font-size: 14px;
+}
 </style>
-
 </head>
-
 <body>
 
-<div class="header">
-
-<h2>Projects</h2>
-
-<div style="display:flex; gap:8px;">
-<button onclick="window.location.href='/index.html'" style="background:#7f8c8d;">Home</button>
-<button onclick="createProject()">+ New Project</button>
+<!-- Nav -->
+<div class="nav-bar">
+  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn new"  onclick="location.href='/project-create.html'">+ New Project</button>
 </div>
 
+<!-- Dashboard -->
+<div class="dashboard">
+  <div class="dash-top">
+    <div>
+      <div class="dash-label">Total Contract Value</div>
+      <div class="dash-value" id="dashTotal">RM 0.00</div>
+      <div class="dash-sub" id="dashSub">Loading...</div>
+    </div>
+    <select class="month-filter" id="monthFilter">
+      <option value="">This Year</option>
+    </select>
+  </div>
+
+  <div class="dash-stats">
+    <div class="stat-box">
+      <div class="s-val" id="statCount">0</div>
+      <div class="s-lbl">Projects</div>
+    </div>
+    <div class="stat-box">
+      <div class="s-val" id="statInvoiced">RM 0</div>
+      <div class="s-lbl">Invoiced</div>
+    </div>
+    <div class="stat-box">
+      <div class="s-val" id="statCollected">RM 0</div>
+      <div class="s-lbl">Collected</div>
+    </div>
+  </div>
 </div>
 
-<div id="projectList"></div>
+<!-- Search -->
+<div class="search-bar">
+  <input type="text" id="searchQ" placeholder="🔍 Search project or client...">
+</div>
 
+<!-- Status chips -->
+<div class="status-chips">
+  <div class="chip active" data-val="">All</div>
+  <div class="chip" data-val="ACTIVE">Active</div>
+  <div class="chip" data-val="COMPLETED">Completed</div>
+  <div class="chip" data-val="ON_HOLD">On Hold</div>
+</div>
+
+<!-- List -->
+<div class="list-wrap" id="projectList">
+  <div class="empty-msg">Loading...</div>
+</div>
 
 <script>
-// Auth check
+/* ── Auth ── */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => { if (!r.ok) location.replace("/login.html"); })
   .catch(() => location.replace("/login.html"));
 
-async function loadProjects(){
+const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", {
+  minimumFractionDigits: 2, maximumFractionDigits: 2
+});
+const RMk = n => {
+  const v = Number(n || 0);
+  return v >= 1000 ? "RM " + (v / 1000).toFixed(1) + "k" : RM(v);
+};
 
-const res = await fetch('/api/project-list', { credentials: "include" });
-const data = await res.json();
+let _statusFilter = "";
 
-const container = document.getElementById("projectList");
+/* ── Build month dropdown (last 3 years) ── */
+function buildMonthOptions() {
+  const sel   = document.getElementById("monthFilter");
+  const now   = new Date();
+  const year  = now.getFullYear();
 
-container.innerHTML = "";
-
-data.forEach(p => {
-
-const div = document.createElement("div");
-div.className = "project-card";
-
-div.innerHTML = `
-<div class="project-name">${p.project_name}</div>
-
-<div class="project-info">
-${p.client_name || ""}
-</div>
-
-<div class="contract">
-RM ${Number(p.contract_value).toLocaleString()}
-</div>
-`;
-
-div.onclick = function(){
-window.location = "project-view.html?id=" + p.id;
+  for (let y = year; y >= year - 2; y--) {
+    for (let m = 12; m >= 1; m--) {
+      const val  = `${y}-${String(m).padStart(2, "0")}`;
+      const label = new Date(y, m - 1, 1).toLocaleDateString("en-MY", { month: "short", year: "numeric" });
+      const opt  = document.createElement("option");
+      opt.value  = val;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    }
+  }
 }
 
-container.appendChild(div);
+/* ── Load ── */
+async function load() {
+  const q      = document.getElementById("searchQ").value.trim();
+  const month  = document.getElementById("monthFilter").value;
+  const year   = new Date().getFullYear();
 
+  const params = new URLSearchParams();
+  if (_statusFilter) params.set("status", _statusFilter);
+  if (q)             params.set("q", q);
+
+  // Filter by month or full year
+  if (month) {
+    params.set("start_month", month);
+  } else {
+    params.set("start_year", String(year));
+  }
+
+  const wrap = document.getElementById("projectList");
+  wrap.innerHTML = `<div class="empty-msg">Loading...</div>`;
+
+  try {
+    const res  = await fetch("/api/project-list?" + params, { credentials: "include" });
+    const data = await res.json();
+    const rows = Array.isArray(data) ? data : [];
+
+    /* Dashboard */
+    const totalContract  = rows.reduce((s, p) => s + (Number(p.contract_value)  || 0), 0);
+    const totalInvoiced  = rows.reduce((s, p) => s + (Number(p.total_invoiced)  || 0), 0);
+    const totalCollected = rows.reduce((s, p) => s + (Number(p.total_collected) || 0), 0);
+
+    document.getElementById("dashTotal").textContent    = RM(totalContract);
+    document.getElementById("statCount").textContent    = rows.length;
+    document.getElementById("statInvoiced").textContent = RMk(totalInvoiced);
+    document.getElementById("statCollected").textContent = RMk(totalCollected);
+
+    const periodLabel = month
+      ? new Date(month + "-01").toLocaleDateString("en-MY", { month: "long", year: "numeric" })
+      : "Year " + year;
+    document.getElementById("dashSub").textContent =
+      rows.length + " project" + (rows.length !== 1 ? "s" : "") + " · " + periodLabel;
+
+    /* List */
+    wrap.innerHTML = "";
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="empty-msg">No projects found</div>`;
+      return;
+    }
+
+    rows.forEach(p => {
+      const invoicePct = p.contract_value > 0
+        ? Math.min(100, Math.round((p.total_invoiced / p.contract_value) * 100))
+        : 0;
+
+      const card = document.createElement("div");
+      card.className = "project-card";
+      card.onclick   = () => location.href = "/project-view.html?id=" + p.id;
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="proj-name">${p.project_name}</div>
+          <div class="contract-val">${RM(p.contract_value)}</div>
+        </div>
+        <div class="card-meta">
+          <span>👤 ${p.client_name || "—"}</span>
+          ${p.start_date ? `<span>📅 ${p.start_date.slice(0,10)}</span>` : ""}
+          ${p.project_type ? `<span>🏷 ${p.project_type.replace(/_/g," ")}</span>` : ""}
+        </div>
+        <div class="card-bottom">
+          <span class="proj-no">${p.project_no || ""}</span>
+          <span class="status-badge ${p.status || "ACTIVE"}">${p.status || "ACTIVE"}</span>
+        </div>
+        ${p.contract_value > 0 ? `
+        <div class="mini-progress">
+          <div class="mini-bar">
+            <div class="mini-fill" style="width:${invoicePct}%"></div>
+          </div>
+          <div class="mini-label">
+            <span>Invoiced ${RM(p.total_invoiced)}</span>
+            <span>${invoicePct}%</span>
+          </div>
+        </div>` : ""}
+      `;
+
+      wrap.appendChild(card);
+    });
+
+  } catch (err) {
+    wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">Failed to load: ${err.message}</div>`;
+  }
+}
+
+/* ── Status chips ── */
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    _statusFilter = chip.dataset.val;
+    load();
+  });
 });
 
-}
+/* ── Events ── */
+document.getElementById("monthFilter").onchange = load;
+document.getElementById("searchQ").oninput = () => setTimeout(load, 300);
 
-function createProject(){
-
-window.location = "project-create.html";
-
-}
-
-loadProjects();
-
+/* ── Init ── */
+buildMonthOptions();
+load();
 </script>
-
 </body>
 </html>

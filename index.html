@@ -7,6 +7,7 @@
 
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#2c3e50">
+<script src="/js/company-settings.js"></script>
 
 <style>
 body {
@@ -122,10 +123,8 @@ h1 {
 
 <body>
 
-<h1>MMAC CONSTRUCTION</h1>
-<div class="subtitle">
-Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labour • VO • PO • HR
-</div>
+<h1 id="comp-name">MMAC CONSTRUCTION</h1>
+<div class="subtitle" id="comp-reg"></div>
 
 <!-- ===== Monthly Summary ===== -->
 <div class="section">
@@ -152,7 +151,6 @@ Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labo
   <div class="card">
     <h2>Invoice</h2>
     <div class="actions">
-      <a class="btn-success" href="/invoice.html">Create Invoice</a>
       <a class="btn-primary" href="/invoices.html">Invoice List</a>
     </div>
   </div>
@@ -164,7 +162,6 @@ Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labo
     <h2>Quotation</h2>
     <p>Quotation creation, list and terms settings.</p>
     <div class="actions">
-      <a class="btn-info" href="/quotation.html">Create Quotation</a>
       <a class="btn-primary" href="/quotations.html">Quotation List</a>
       <a class="btn-gray" href="/quotation-terms.html">Quotation Terms</a>
     </div>
@@ -217,13 +214,13 @@ Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labo
   </div>
 </div>
 
-<!-- ===== Daily Labour ===== -->
+<!-- ===== Payslip ===== -->
 <div class="section">
   <div class="card">
-    <h2>Daily Labour / Payslip</h2>
+    <h2>Payslip</h2>
     <div class="actions">
-      <a class="btn-success" href="/daily-labour-create.html">Add Daily Labour</a>
-      <a class="btn-primary" href="/daily-labours.html">Daily Labour List</a>
+      <a class="btn-success" href="/daily-labour-create.html">Add Payslip</a>
+      <a class="btn-primary" href="/daily-labours.html">Payslip List</a>
     </div>
   </div>
 </div>
@@ -245,7 +242,6 @@ Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labo
   <div class="card">
     <h2>Variation Orders (VO)</h2>
     <div class="actions">
-      <a class="btn-warning" href="/vo.html">Create VO</a>
       <a class="btn-primary" href="/vos.html">VO List</a>
     </div>
   </div>
@@ -290,6 +286,16 @@ Invoice • Quotation • Statement • Item Catalog • Projects • Daily Labo
 </div>
 
 <script>
+// Apply company name from settings
+if (typeof applyCompanySettings === "function") applyCompanySettings();
+if (typeof COMPANY_CONFIG !== "undefined") {
+  // Update page title
+  document.title = COMPANY_CONFIG.name + " — Management System";
+  // Show reg number as subtitle
+  const regEl = document.getElementById("comp-reg");
+  if (regEl && COMPANY_CONFIG.regNo) regEl.textContent = COMPANY_CONFIG.regNo;
+}
+
 // 1. 身份验证与权限检查
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => {
