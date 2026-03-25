@@ -32,8 +32,10 @@ export async function onRequestGet({ request, env }) {
      ?q=keyword       (search project_name or client_name)
      =============================== */
   const url = new URL(request.url);
-  const status = url.searchParams.get("status");
-  const q      = url.searchParams.get("q");
+  const status      = url.searchParams.get("status");
+  const q           = url.searchParams.get("q");
+  const start_year  = url.searchParams.get("start_year");
+  const start_month = url.searchParams.get("start_month");
 
   let sql = `
     SELECT
@@ -80,6 +82,16 @@ export async function onRequestGet({ request, env }) {
   if (status) {
     sql += " AND p.status = ?";
     params.push(status);
+  }
+
+  if (start_month) {
+    // Filter by specific month e.g. "2026-03"
+    sql += " AND substr(p.start_date, 1, 7) = ?";
+    params.push(start_month);
+  } else if (start_year) {
+    // Filter by full year e.g. "2026"
+    sql += " AND substr(p.start_date, 1, 4) = ?";
+    params.push(start_year);
   }
 
   if (q) {
