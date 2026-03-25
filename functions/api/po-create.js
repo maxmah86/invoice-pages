@@ -1,149 +1,101 @@
 export async function onRequestPost({ request, env }) {
 
   /* ===============================
-     1. 身份验证 (AUTH CHECK)
+     1. AUTH CHECK (保持不变)
      =============================== */
   const cookie = request.headers.get("Cookie") || "";
   const token = cookie.match(/session=([^;]+)/)?.[1];
 
   if (!token) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
   const user = await env.DB.prepare(`
-    SELECT id, username, role
-    FROM users
-    WHERE session_token = ?
+    SELECT id, username, role FROM users WHERE session_token = ?
   `).bind(token).first();
 
   if (!user || user.role !== "admin") {
-    return new Response(
-      JSON.stringify({ error: user ? "Forbidden" : "Unauthorized" }),
-      { status: user ? 403 : 401, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
   }
 
   /* ===============================
-     2. 解析并验证数据
+     2. PARSE & VALIDATE BODY
      =============================== */
   let body;
   try {
     body = await request.json();
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
   }
 
   const {
-    supplier_name,
-    project_id,
-    po_date,
-    issued_by,
-    delivery_address,
-    delivery_date,
-    delivery_time,
-    notes,
-    items
+    project_name,
+    client_name,
+    project_type = "contract",
+    contract_value = 0,
+    start_date, // 必须获取此字段
+    notes
   } = body;
 
-  if (!supplier_name || !Array.isArray(items) || items.length === 0) {
+  // 后端强制校验：增加了 start_date 检查
+  if (!project_name || !client_name || !start_date) {
     return new Response(
-      JSON.stringify({ error: "Invalid data" }),
+      JSON.stringify({ error: "project_name, client_name, and start_date are required" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
   /* ===============================
-     3. 生成对齐日期的 PO 单号 (Core Logic)
+     3. GENERATE PROJECT NO (保持不变)
      =============================== */
-  // 如果用户没选日期，则默认为今天 (YYYY-MM-DD)
-  const targetDate = po_date || new Date().toISOString().split('T')[0];
-  
-  // 提取日期数字部分 (例如 2025-05-20 -> 20250520)
-  const dateStr = targetDate.replace(/-/g, "");
-  
-  // 生成随机 4 位数防止同一天内单号冲突
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000); 
-  
-  // 最终单号：PO202505209999
-  const customPoNo = `PO${dateStr}${randomSuffix}`;
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const prefix = `PROJ-${today}-`;
 
-  /* ===============================
-     4. 计算金额
-     =============================== */
-  let subtotal = 0;
-  for (const it of items) {
-    const qty = Number(it.qty) || 0;
-    const price = Number(it.price) || 0;
-    subtotal += qty * price;
+  const maxRow = await env.DB.prepare(`
+    SELECT MAX(project_no) AS max_no
+    FROM projects
+    WHERE project_no LIKE ?
+  `).bind(prefix + "%").first();
+
+  let seq = 1;
+  if (maxRow?.max_no) {
+    const lastSeq = parseInt(maxRow.max_no.slice(-4), 10);
+    if (!isNaN(lastSeq)) seq = lastSeq + 1;
   }
-  const total = subtotal;
+
+  const project_no = `${prefix}${String(seq).padStart(4, "0")}`;
 
   /* ===============================
-     5. 写入数据库 (使用事务思路)
+     4. INSERT
      =============================== */
   try {
-    // 插入 PO 主表
-    const insertPO = await env.DB.prepare(`
-      INSERT INTO purchase_orders (
-        po_no,
-        po_date,
-        supplier_name,
-        issued_by,
-        delivery_address,
-        delivery_date,
-        delivery_time,
+    const result = await env.DB.prepare(`
+      INSERT INTO projects (
+        project_no,
+        project_name,
+        client_name,
+        project_type,
+        contract_value,
+        start_date,
+        status,
         notes,
-        subtotal,
-        total,
-        project_id,
-        status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN')
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, datetime('now'))
     `).bind(
-      customPoNo,
-      targetDate,
-      supplier_name,
-      issued_by || user.username,
-      delivery_address || "",
-      delivery_date || "",
-      delivery_time || "",
-      notes || "",
-      subtotal,
-      total,
-      project_id || null
+      project_no,
+      project_name,
+      client_name,
+      project_type,
+      Number(contract_value) || 0,
+      start_date, // 这里现在确定是有值的字符串
+      notes || ""
     ).run();
-
-    const poId = insertPO.meta.last_row_id;
-
-    // 插入 PO 明细表
-    for (const it of items) {
-      await env.DB.prepare(`
-        INSERT INTO purchase_order_items (
-          purchase_order_id,
-          description,
-          qty,
-          unit_price,
-          line_total
-        ) VALUES (?, ?, ?, ?, ?)
-      `).bind(
-        poId,
-        it.description || "",
-        Number(it.qty) || 0,
-        Number(it.price) || 0,
-        (Number(it.qty) || 0) * (Number(it.price) || 0)
-      ).run();
-    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        po_no: customPoNo,
-        id: poId
+        id: result.meta.last_row_id,
+        project_no
       }),
       { headers: { "Content-Type": "application/json" } }
     );
