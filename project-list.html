@@ -57,7 +57,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   margin-top: 3px;
 }
 
-/* Month filter */
+/* Month filter inside dashboard */
 .month-filter {
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.2);
@@ -67,21 +67,13 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   color: #fff;
   cursor: pointer;
   min-width: 130px;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .month-filter option { color: #000; background: #fff; }
 
-.reset-btn {
-  padding: 7px 10px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: rgba(255,255,255,0.2);
-  color: #fff;
-  font-weight: bold;
-}
-
-/* Stats */
+/* Stats row */
 .dash-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -105,28 +97,44 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   font-size: 10px;
   color: #90b8d8;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin-top: 3px;
 }
 
-/* Search */
+/* ── Search ── */
 .search-bar {
   padding: 10px 12px;
   background: #fff;
-}
-.search-bar input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-/* Chips */
+.search-bar input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8fafc;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+}
+
+/* ── Status filter chips ── */
 .status-chips {
   padding: 8px 12px;
   display: flex;
   gap: 8px;
   overflow-x: auto;
   background: #fff;
+  border-bottom: 1px solid #e8edf3;
+  scrollbar-width: none;
 }
+.status-chips::-webkit-scrollbar { display: none; }
+
 .chip {
   padding: 5px 13px;
   border-radius: 16px;
@@ -135,34 +143,116 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   font-size: 12px;
   font-weight: bold;
   cursor: pointer;
+  white-space: nowrap;
+  color: #4a5568;
 }
-.chip.active { background: #ebf5ff; border-color: #3b82f6; }
+.chip.active { background: #ebf5ff; border-color: #3b82f6; color: #1d4ed8; }
 
-/* List */
+/* ── List ── */
 .list-wrap { padding: 10px 12px 60px; }
+
 .project-card {
   background: #fff;
   border-radius: 10px;
   padding: 14px;
   margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border: 1px solid #e8edf3;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.project-card:active { box-shadow: 0 0 0 2px #3b82f6; }
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
 }
 
-/* Empty */
+.proj-name {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1a2636;
+  flex: 1;
+  margin-right: 10px;
+}
+
+.contract-val {
+  font-size: 16px;
+  font-weight: bold;
+  color: #2980b9;
+  white-space: nowrap;
+}
+
+.card-meta {
+  font-size: 12px;
+  color: #718096;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.proj-no { font-size: 11px; color: #a0aec0; font-weight: bold; }
+
+.status-badge {
+  font-size: 11px;
+  font-weight: bold;
+  padding: 3px 9px;
+  border-radius: 10px;
+}
+.status-badge.ACTIVE    { background: #d4edda; color: #155724; }
+.status-badge.COMPLETED { background: #cce5ff; color: #004085; }
+.status-badge.ON_HOLD   { background: #fff3cd; color: #856404; }
+
+/* Progress mini bar */
+.mini-progress {
+  margin-top: 8px;
+}
+.mini-bar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.mini-fill {
+  height: 4px;
+  border-radius: 4px;
+  background: #27ae60;
+  transition: width 0.3s;
+}
+.mini-label {
+  font-size: 11px;
+  color: #a0aec0;
+  margin-top: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+
 .empty-msg {
   text-align: center;
-  color: #999;
-  padding: 40px;
+  color: #a0aec0;
+  padding: 50px 20px;
+  font-size: 14px;
 }
 </style>
 </head>
-
 <body>
 
+<!-- Nav -->
 <div class="nav-bar">
   <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
-  <button class="nav-btn new" onclick="location.href='/project-create.html'">+ New Project</button>
+  <button class="nav-btn new"  onclick="location.href='/project-create.html'">+ New Project</button>
 </div>
 
+<!-- Dashboard -->
 <div class="dashboard">
   <div class="dash-top">
     <div>
@@ -170,14 +260,9 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
       <div class="dash-value" id="dashTotal">RM 0.00</div>
       <div class="dash-sub" id="dashSub">Loading...</div>
     </div>
-
-    <div style="display:flex; gap:6px;">
-      <select class="month-filter" id="monthFilter">
-        <option value="">This Year</option>
-      </select>
-
-      <button class="reset-btn" onclick="resetFilters()">⟳ Reset</button>
-    </div>
+    <select class="month-filter" id="monthFilter">
+      <option value="">This Year</option>
+    </select>
   </div>
 
   <div class="dash-stats">
@@ -196,10 +281,12 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   </div>
 </div>
 
+<!-- Search -->
 <div class="search-bar">
-  <input type="text" id="searchQ" placeholder="Search...">
+  <input type="text" id="searchQ" placeholder="🔍 Search project or client...">
 </div>
 
+<!-- Status chips -->
 <div class="status-chips">
   <div class="chip active" data-val="">All</div>
   <div class="chip" data-val="ACTIVE">Active</div>
@@ -207,25 +294,137 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   <div class="chip" data-val="ON_HOLD">On Hold</div>
 </div>
 
+<!-- List -->
 <div class="list-wrap" id="projectList">
   <div class="empty-msg">Loading...</div>
 </div>
 
 <script>
+/* ── Auth ── */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => { if (!r.ok) location.replace("/login.html"); })
+  .catch(() => location.replace("/login.html"));
+
+const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", {
+  minimumFractionDigits: 2, maximumFractionDigits: 2
+});
+const RMk = n => {
+  const v = Number(n || 0);
+  return v >= 1000 ? "RM " + (v / 1000).toFixed(1) + "k" : RM(v);
+};
+
 let _statusFilter = "";
 
-function resetFilters() {
-  document.getElementById("searchQ").value = "";
-  document.getElementById("monthFilter").value = "";
-  _statusFilter = "";
+/* ── Build month dropdown (last 3 years) ── */
+function buildMonthOptions() {
+  const sel   = document.getElementById("monthFilter");
+  const now   = new Date();
+  const year  = now.getFullYear();
 
-  document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
-  document.querySelector('.chip[data-val=""]').classList.add("active");
-
-  load();
+  for (let y = year; y >= year - 2; y--) {
+    for (let m = 12; m >= 1; m--) {
+      const val  = `${y}-${String(m).padStart(2, "0")}`;
+      const label = new Date(y, m - 1, 1).toLocaleDateString("en-MY", { month: "short", year: "numeric" });
+      const opt  = document.createElement("option");
+      opt.value  = val;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    }
+  }
 }
 
-/* 原本逻辑保持 */
+/* ── Load ── */
+async function load() {
+  const q      = document.getElementById("searchQ").value.trim();
+  const month  = document.getElementById("monthFilter").value;
+  const year   = new Date().getFullYear();
+
+  const params = new URLSearchParams();
+  if (_statusFilter) params.set("status", _statusFilter);
+  if (q)             params.set("q", q);
+
+  // Filter by month or full year
+  if (month) {
+    params.set("start_month", month);
+  } else {
+    params.set("start_year", String(year));
+  }
+
+  const wrap = document.getElementById("projectList");
+  wrap.innerHTML = `<div class="empty-msg">Loading...</div>`;
+
+  try {
+    const res  = await fetch("/api/project-list?" + params, { credentials: "include" });
+    const data = await res.json();
+    const rows = Array.isArray(data) ? data : [];
+
+    /* Dashboard */
+    const totalContract  = rows.reduce((s, p) => s + (Number(p.contract_value)  || 0), 0);
+    const totalInvoiced  = rows.reduce((s, p) => s + (Number(p.total_invoiced)  || 0), 0);
+    const totalCollected = rows.reduce((s, p) => s + (Number(p.total_collected) || 0), 0);
+
+    document.getElementById("dashTotal").textContent    = RM(totalContract);
+    document.getElementById("statCount").textContent    = rows.length;
+    document.getElementById("statInvoiced").textContent = RMk(totalInvoiced);
+    document.getElementById("statCollected").textContent = RMk(totalCollected);
+
+    const periodLabel = month
+      ? new Date(month + "-01").toLocaleDateString("en-MY", { month: "long", year: "numeric" })
+      : "Year " + year;
+    document.getElementById("dashSub").textContent =
+      rows.length + " project" + (rows.length !== 1 ? "s" : "") + " · " + periodLabel;
+
+    /* List */
+    wrap.innerHTML = "";
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="empty-msg">No projects found</div>`;
+      return;
+    }
+
+    rows.forEach(p => {
+      const invoicePct = p.contract_value > 0
+        ? Math.min(100, Math.round((p.total_invoiced / p.contract_value) * 100))
+        : 0;
+
+      const card = document.createElement("div");
+      card.className = "project-card";
+      card.onclick   = () => location.href = "/project-view.html?id=" + p.id;
+
+      card.innerHTML = `
+        <div class="card-top">
+          <div class="proj-name">${p.project_name}</div>
+          <div class="contract-val">${RM(p.contract_value)}</div>
+        </div>
+        <div class="card-meta">
+          <span>👤 ${p.client_name || "—"}</span>
+          ${p.start_date ? `<span>📅 ${p.start_date.slice(0,10)}</span>` : ""}
+          ${p.project_type ? `<span>🏷 ${p.project_type.replace(/_/g," ")}</span>` : ""}
+        </div>
+        <div class="card-bottom">
+          <span class="proj-no">${p.project_no || ""}</span>
+          <span class="status-badge ${p.status || "ACTIVE"}">${p.status || "ACTIVE"}</span>
+        </div>
+        ${p.contract_value > 0 ? `
+        <div class="mini-progress">
+          <div class="mini-bar">
+            <div class="mini-fill" style="width:${invoicePct}%"></div>
+          </div>
+          <div class="mini-label">
+            <span>Invoiced ${RM(p.total_invoiced)}</span>
+            <span>${invoicePct}%</span>
+          </div>
+        </div>` : ""}
+      `;
+
+      wrap.appendChild(card);
+    });
+
+  } catch (err) {
+    wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">Failed to load: ${err.message}</div>`;
+  }
+}
+
+/* ── Status chips ── */
 document.querySelectorAll(".chip").forEach(chip => {
   chip.addEventListener("click", () => {
     document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
@@ -235,16 +434,13 @@ document.querySelectorAll(".chip").forEach(chip => {
   });
 });
 
+/* ── Events ── */
 document.getElementById("monthFilter").onchange = load;
 document.getElementById("searchQ").oninput = () => setTimeout(load, 300);
 
-/* 模拟 load（你原本有） */
-async function load() {
-  document.getElementById("projectList").innerHTML = "<div class='empty-msg'>Reloaded</div>";
-}
-
+/* ── Init ── */
+buildMonthOptions();
 load();
 </script>
-
 </body>
 </html>
