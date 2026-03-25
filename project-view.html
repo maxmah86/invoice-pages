@@ -182,7 +182,7 @@ td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middl
   <div class="stat-card">
     <div class="label">Total Costs</div>
     <div class="value" id="statCost" style="color: #e67e22;">RM 0.00</div>
-    <div class="sub" id="statCostBreakdown">PO + Labour + Expenses</div>
+    <div id="statCostSub" class="sub">PO + Labour + Expenses</div>
   </div>
 
   <div class="stat-card">
@@ -231,7 +231,7 @@ td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middl
 
 <div class="section-card">
   <div class="section-header">
-    <h2>Daily Labour Costs</h2>
+    <h2>Daily Labours</h2>
     <a href="#" class="btn-add" id="btnAddLabour">+ Add</a>
   </div>
   <div id="listLabour"></div>
@@ -239,7 +239,7 @@ td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middl
 
 <div class="section-card">
   <div class="section-header">
-    <h2>Expenses / Claims</h2>
+    <h2>Expenses</h2>
     <a href="#" class="btn-add" id="btnAddExpense">+ Add</a>
   </div>
   <div id="listExpenses"></div>
@@ -267,7 +267,7 @@ async function loadAll() {
     renderHeader(data.project);
     renderFinancials(data.financials);
     
-    // 渲染所有列表板块
+    // 渲染各板块表格
     renderQuotations(data.quotations);
     renderVO(data.variation_orders);
     renderInvoices(data.invoices);
@@ -275,7 +275,7 @@ async function loadAll() {
     renderLabour(data.daily_labours);
     renderExpenses(data.expenses);
 
-    // 设置所有添加按钮的链接
+    /* ── 修复关键点：动态绑定所有 Add 按钮的链接 ── */
     document.getElementById("btnAddQuotation").href = `/quotation-create.html?project_id=${projectId}`;
     document.getElementById("btnAddVO").href        = `/vo-create.html?project_id=${projectId}`;
     document.getElementById("btnAddInvoice").href   = `/invoice-create.html?project_id=${projectId}`;
@@ -289,14 +289,14 @@ async function loadAll() {
   }
 }
 
-/* ===== RENDER: HEADER & TOGGLE STATUS ===== */
+/* ===== RENDER: HEADER & STATUS CYCLE ===== */
 function renderHeader(p) {
   document.getElementById("navProjectName").textContent = p.project_name;
   document.getElementById("projNo").textContent         = p.project_no || "";
   document.getElementById("projName").textContent       = p.project_name;
   document.getElementById("projClient").textContent     = p.client_name || "";
   document.getElementById("projType").textContent       = (p.project_type || "").replace(/_/g, " ");
-  document.getElementById("projStart").textContent      = fmtDate(p.start_date);
+  document.getElementById("projStart").textContent      = p.start_date ? p.start_date.slice(0,10) : "---";
   
   const status = p.status || "ACTIVE";
   document.getElementById("projStatusWrap").innerHTML = `
@@ -332,11 +332,9 @@ async function toggleStatus(currentStatus) {
     if (result.success) {
       loadAll();
     } else {
-      alert("Failed to update status: " + (result.error || ""));
+      alert("Failed to update: " + (result.error || ""));
     }
-  } catch (err) {
-    alert("Error: " + err.message);
-  }
+  } catch (err) { alert("Error: " + err.message); }
 }
 
 /* ===== RENDER: FINANCIALS ===== */
@@ -352,24 +350,24 @@ function renderFinancials(f) {
 
   const totalCost = (f.total_po || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
   document.getElementById("statCost").textContent = RM(totalCost);
-  document.getElementById("statCostBreakdown").textContent = `PO: ${RM(f.total_po)} | Labour: ${RM(f.total_labour)} | Exp: ${RM(f.total_expenses)}`;
+  document.getElementById("statCostSub").textContent = `PO: ${RM(f.total_po)} | Labour: ${RM(f.total_labour)} | Exp: ${RM(f.total_expenses)}`;
   document.getElementById("statProfit").textContent = RM(f.total_invoiced - totalCost);
 }
 
-/* ===== RENDER: TABLES ===== */
+/* ===== RENDER: TABLES (带点击跳转) ===== */
 function renderQuotations(list) {
   const wrap = document.getElementById("listQuotations");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No quotations found</div>'; return; }
-  let html = '<table><thead><tr><th>Ref No</th><th>Date</th><th class="text-right">Total</th></tr></thead><tbody>';
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No quotations</div>'; return; }
+  let html = '<table><thead><tr><th>Ref</th><th>Date</th><th class="text-right">Total</th></tr></thead><tbody>';
   list.forEach(q => {
-    html += `<tr onclick="location.href='/quotation-view.html?id=${q.id}'" style="cursor:pointer"><td>${q.quotation_no}</td><td>${fmtDate(q.quotation_date)}</td><td class="text-right">${RM(q.grand_total)}</td></tr>`;
+    html += `<tr onclick="location.href='/quotation-view.html?id=${q.id}'" style="cursor:pointer"><td>${q.quotation_no}</td><td>${q.quotation_date?.slice(0,10)}</td><td class="text-right">${RM(q.grand_total)}</td></tr>`;
   });
   wrap.innerHTML = html + '</tbody></table>';
 }
 
 function renderVO(list) {
   const wrap = document.getElementById("listVO");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No variation orders found</div>'; return; }
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No VO</div>'; return; }
   let html = '<table><thead><tr><th>Ref</th><th>Status</th><th class="text-right">Amount</th></tr></thead><tbody>';
   list.forEach(v => {
     html += `<tr onclick="location.href='/vo-view.html?id=${v.id}'" style="cursor:pointer"><td>${v.vo_no || "VO-"+v.id}</td><td>${badge(v.status)}</td><td class="text-right">${RM(v.amount)}</td></tr>`;
@@ -379,8 +377,8 @@ function renderVO(list) {
 
 function renderInvoices(list) {
   const wrap = document.getElementById("listInvoices");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No invoices found</div>'; return; }
-  let html = '<table><thead><tr><th>Inv No</th><th>Status</th><th class="text-right">Amount</th></tr></thead><tbody>';
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No invoices</div>'; return; }
+  let html = '<table><thead><tr><th>Ref</th><th>Status</th><th class="text-right">Total</th></tr></thead><tbody>';
   list.forEach(i => {
     html += `<tr onclick="location.href='/invoice-view.html?id=${i.id}'" style="cursor:pointer"><td>${i.invoice_no}</td><td>${badge(i.status)}</td><td class="text-right">${RM(i.amount)}</td></tr>`;
   });
@@ -389,8 +387,8 @@ function renderInvoices(list) {
 
 function renderPO(list) {
   const wrap = document.getElementById("listPO");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No purchase orders found</div>'; return; }
-  let html = '<table><thead><tr><th>PO No</th><th>Vendor</th><th class="text-right">Total</th></tr></thead><tbody>';
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No PO</div>'; return; }
+  let html = '<table><thead><tr><th>Ref</th><th>Vendor</th><th class="text-right">Total</th></tr></thead><tbody>';
   list.forEach(p => {
     html += `<tr onclick="location.href='/po-view.html?id=${p.id}'" style="cursor:pointer"><td>${p.po_no}</td><td>${p.vendor_name || "-"}</td><td class="text-right">${RM(p.total)}</td></tr>`;
   });
@@ -399,27 +397,26 @@ function renderPO(list) {
 
 function renderLabour(list) {
   const wrap = document.getElementById("listLabour");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No labour entries</div>'; return; }
-  let html = '<table><thead><tr><th>Date</th><th>Description</th><th class="text-right">Amount</th></tr></thead><tbody>';
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No labour logs</div>'; return; }
+  let html = '<table><thead><tr><th>Date</th><th>Name</th><th class="text-right">Amount</th></tr></thead><tbody>';
   list.forEach(l => {
-    html += `<tr><td>${fmtDate(l.work_date)}</td><td>${l.description || "-"}</td><td class="text-right">${RM(l.amount)}</td></tr>`;
+    html += `<tr><td>${l.work_date?.slice(0,10)}</td><td>${l.worker_name || l.description || "-"}</td><td class="text-right">${RM(l.amount)}</td></tr>`;
   });
   wrap.innerHTML = html + '</tbody></table>';
 }
 
 function renderExpenses(list) {
   const wrap = document.getElementById("listExpenses");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No expenses found</div>'; return; }
-  let html = '<table><thead><tr><th>Date</th><th>Category</th><th class="text-right">Amount</th></tr></thead><tbody>';
+  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No expenses</div>'; return; }
+  let html = '<table><thead><tr><th>Date</th><th>Cat</th><th class="text-right">Amount</th></tr></thead><tbody>';
   list.forEach(e => {
-    html += `<tr><td>${fmtDate(e.expense_date)}</td><td>${e.category || "-"}</td><td class="text-right">${RM(e.amount)}</td></tr>`;
+    html += `<tr><td>${e.expense_date?.slice(0,10)}</td><td>${e.category}</td><td class="text-right">${RM(e.amount)}</td></tr>`;
   });
   wrap.innerHTML = html + '</tbody></table>';
 }
 
 /* ===== HELPERS ===== */
 function RM(n) { return "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function fmtDate(d) { return d ? d.slice(0, 10) : "---"; }
 function badge(status) {
   const s = (status || "").toUpperCase();
   const map = { ACTIVE: "badge-active", COMPLETED: "badge-completed", ON_HOLD: "badge-on_hold", VOID: "badge-void", PAID: "badge-paid", UNPAID: "badge-unpaid" };
@@ -428,27 +425,22 @@ function badge(status) {
 
 async function updateContractValue() {
   if (!projectData) return;
-  const data = projectData;
-  const sumQuotations = (data.quotations || []).reduce((sum, q) => sum + (Number(q.grand_total) || 0), 0);
-  const sumVO = (data.variation_orders || []).filter(v => (v.status || "").toUpperCase() === "APPROVED").reduce((sum, v) => sum + (Number(v.amount) || 0), 0);
-  const newValue = sumQuotations + sumVO;
+  const d = projectData;
+  const sumQ = (d.quotations || []).reduce((s, q) => s + (Number(q.grand_total) || 0), 0);
+  const sumV = (d.variation_orders || []).filter(v => (v.status || "").toUpperCase() === "APPROVED").reduce((s, v) => s + (Number(v.amount) || 0), 0);
+  const total = sumQ + sumV;
 
-  if (!confirm(`Update Contract Value to RM ${newValue.toFixed(2)}?\n(Quotations: ${sumQuotations.toFixed(2)} + VO: ${sumVO.toFixed(2)})`)) return;
+  if (!confirm(`Update Value to RM ${total.toFixed(2)}?\n(Q: ${sumQ.toFixed(2)} + VO: ${sumV.toFixed(2)})`)) return;
 
   try {
     const res = await fetch("/api/project-update-value", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId, contract_value: newValue })
+      body: JSON.stringify({ project_id: projectId, contract_value: total })
     });
-    const result = await res.json();
-    if (result.success) {
-      loadAll();
-    } else {
-      alert("Update failed: " + (result.error || ""));
-    }
-  } catch (err) { alert("Error: " + err.message); }
+    if ((await res.json()).success) loadAll();
+  } catch (err) { alert(err.message); }
 }
 
 loadAll();
