@@ -1,95 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Create Invoice</title>
-
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f4f6f8;
-    margin: 0;
-    padding: 15px;
-  }
-
-  h2 {
-    margin-top: 0;
-  }
-
-  .box {
-    background: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-  }
-
-  label {
-    font-size: 14px;
-    font-weight: bold;
-    display: block;
-    margin-top: 10px;
-  }
-
-  input {
-    width: 100%;
-    padding: 10px;
-    font-size: 16px;
-    margin-top: 5px;
-    box-sizing: border-box;
-  }
-
-  .item {
-    border: 1px solid #ddd;
-    padding: 10px;
-    border-radius: 6px;
-    margin-top: 10px;
-  }
-
-  .row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .row input {
-    flex: 1;
-  }
-
-  .subtotal {
-    text-align: right;
-    font-size: 14px;
-    margin-top: 6px;
-  }
-
-  .add-btn, .submit-btn {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    margin-top: 15px;
-    cursor: pointer;
-  }
-
-  .add-btn {
-    background: #3498db;
-    color: #fff;
-  }
-
-  .submit-btn {
-    background: #27ae60;
-    color: #fff;
-  }
-
-  .total {
-    font-size: 18px;
-    font-weight: bold;
-    text-align: right;
-    margin-top: 10px;
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Invoice</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 15px; }
+    .box { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    label { font-size: 14px; font-weight: bold; display: block; margin-top: 10px; }
+    input { width: 100%; padding: 10px; font-size: 16px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; }
+    .item { border: 1px solid #eee; padding: 15px; border-radius: 6px; margin-top: 10px; background: #fafafa; position: relative; }
+    .remove-btn { position: absolute; top: 10px; right: 10px; color: #e74c3c; cursor: pointer; font-size: 12px; font-weight: bold; }
+    .row { display: flex; gap: 8px; }
+    .row > div { flex: 1; }
+    .subtotal { text-align: right; font-size: 14px; margin-top: 8px; color: #7f8c8d; }
+    .add-btn { width: 100%; padding: 12px; background: #3498db; color: #fff; border: none; border-radius: 6px; margin-top: 15px; cursor: pointer; font-weight: bold; }
+    .submit-btn { width: 100%; padding: 16px; background: #27ae60; color: #fff; border: none; border-radius: 6px; margin-top: 20px; cursor: pointer; font-size: 18px; font-weight: bold; }
+    .submit-btn:disabled { background: #95a5a6; cursor: not-allowed; }
+    .total { font-size: 20px; font-weight: bold; text-align: right; margin-top: 15px; color: #2c3e50; }
+  </style>
 </head>
-
 <body>
 
 <h2>Create Invoice</h2>
@@ -99,8 +29,8 @@
 </div>
 
 <div class="box">
-  <label>Customer</label>
-  <input id="customer" placeholder="Customer name">
+  <label>Customer Name</label>
+  <input id="customer" placeholder="Enter customer or company name">
 
   <label>Invoice Date</label>
   <input id="invoice_date" type="date">
@@ -108,145 +38,127 @@
 
 <div class="box">
   <h3>Items</h3>
-  <div id="items"></div>
-
-  <button class="add-btn" onclick="addItem()">+ Add Item</button>
-
-  <div class="total" id="total">Total: RM 0.00</div>
+  <div id="items-container"></div>
+  <button type="button" class="add-btn" onclick="addItem()">+ Add Line Item</button>
+  <div class="total" id="totalDisplay">Total: RM 0.00</div>
 </div>
 
-<button class="submit-btn" onclick="submitInvoice()">Submit Invoice</button>
+<button id="submitBtn" class="submit-btn" onclick="submitInvoice()">Submit & Save Invoice</button>
 
 <script>
 const params = new URLSearchParams(window.location.search);
 const projectId = params.get("project_id");
+const itemsContainer = document.getElementById("items-container");
 
-// Default invoice date to today
+// 初始化日期为今天
 document.getElementById("invoice_date").value = new Date().toISOString().slice(0, 10);
 
-// Show project banner if coming from a project
+// 加载项目信息
 if (projectId) {
-  fetch("/api/project-view?id=" + projectId, { credentials: "include" })
+  fetch("/api/project-view?id=" + projectId)
     .then(r => r.json())
     .then(d => {
       if (d.project) {
         document.getElementById("projectBanner").style.display = "block";
-        document.getElementById("projectLabel").textContent =
-          d.project.project_name + " (" + d.project.client_name + ")";
+        document.getElementById("projectLabel").textContent = `${d.project.project_name} (${d.project.client_name})`;
+        // 自动填充客户名（可选）
+        if(!document.getElementById("customer").value) {
+            document.getElementById("customer").value = d.project.client_name;
+        }
       }
-    })
-    .catch(() => {});
+    }).catch(console.error);
 }
 
 function addItem(desc = "", qty = 1, price = 0) {
   const div = document.createElement("div");
   div.className = "item";
-
   div.innerHTML = `
+    <span class="remove-btn" onclick="this.parentElement.remove(); updateTotal();">REMOVE</span>
     <label>Description</label>
-    <input class="desc" placeholder="Item description" value="${desc}">
-
+    <input class="desc" placeholder="Service or product description" value="${desc}">
     <div class="row">
       <div>
         <label>Qty</label>
-        <input class="qty" type="number" value="${qty}">
+        <input class="qty" type="number" step="any" value="${qty}">
       </div>
       <div>
-        <label>Price</label>
-        <input class="price" type="number" value="${price}">
+        <label>Unit Price (RM)</label>
+        <input class="price" type="number" step="0.01" value="${price}">
       </div>
     </div>
-
-    <div class="subtotal">Subtotal: RM <span>0.00</span></div>
+    <div class="subtotal">Subtotal: RM <span class="sub-val">0.00</span></div>
   `;
-
-  items.appendChild(div);
-
-  div.querySelectorAll("input").forEach(i => {
-    i.addEventListener("input", updateTotal);
+  itemsContainer.appendChild(div);
+  
+  // 绑定事件
+  div.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", updateTotal);
   });
-
   updateTotal();
 }
 
-// 默认一行
+// 默认添加一行
 addItem();
 
 function updateTotal() {
-  let total = 0;
-
+  let grandTotal = 0;
   document.querySelectorAll(".item").forEach(item => {
-    const qty = Number(item.querySelector(".qty").value) || 0;
-    const price = Number(item.querySelector(".price").value) || 0;
-    const sub = qty * price;
-
-    item.querySelector(".subtotal span").innerText = sub.toFixed(2);
-    total += sub;
+    const q = parseFloat(item.querySelector(".qty").value) || 0;
+    const p = parseFloat(item.querySelector(".price").value) || 0;
+    const sub = q * p;
+    item.querySelector(".sub-val").innerText = sub.toFixed(2);
+    grandTotal += sub;
   });
-
-  document.getElementById("total").innerText =
-    "Total: RM " + total.toFixed(2);
+  document.getElementById("totalDisplay").innerText = "Total: RM " + grandTotal.toFixed(2);
 }
 
 async function submitInvoice() {
-
-if (!projectId) {
-  alert("Project not selected");
-  return;
-}
-
+  const btn = document.getElementById("submitBtn");
   const customer = document.getElementById("customer").value.trim();
-  if (!customer) {
-    alert("Please enter customer name");
-    return;
-  }
-
   const invoice_date = document.getElementById("invoice_date").value;
-  if (!invoice_date) {
-    alert("Please select an invoice date");
-    return;
-  }
+
+  if (!projectId) return alert("Error: No Project ID found.");
+  if (!customer) return alert("Please enter customer name.");
+  if (!invoice_date) return alert("Please select a date.");
 
   const itemsData = [];
   document.querySelectorAll(".item").forEach(item => {
     const desc = item.querySelector(".desc").value.trim();
-    const qty = Number(item.querySelector(".qty").value);
-    const price = Number(item.querySelector(".price").value);
-
+    const qty = parseFloat(item.querySelector(".qty").value) || 0;
+    const price = parseFloat(item.querySelector(".price").value) || 0;
     if (desc && qty > 0) {
       itemsData.push({ description: desc, qty, price });
     }
   });
 
-  if (itemsData.length === 0) {
-    alert("Please add at least one item");
-    return;
+  if (itemsData.length === 0) return alert("Please add at least one valid item.");
+
+  // 防止重复提交
+  btn.disabled = true;
+  btn.innerText = "Processing...";
+
+  try {
+    const res = await fetch("/api/invoice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        project_id: projectId,
+        customer,
+        invoice_date,
+        items: itemsData
+      })
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    alert("Invoice created successfully!");
+    location.href = "/project-view.html?id=" + projectId;
+  } catch (err) {
+    alert("Failed: " + err.message);
+    btn.disabled = false;
+    btn.innerText = "Submit Invoice";
   }
-
-  const res = await fetch("/api/invoice", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-  project_id: projectId,
-  customer,
-  invoice_date,
-  items: itemsData
-})
-  });
-
-  if (!res.ok) {
-    alert("Failed to create invoice");
-    return;
-  }
-
-  alert("Invoice created");
-  location.href = projectId
-    ? "/project-view.html?id=" + projectId
-    : "/invoices.html";
 }
 </script>
-
 </body>
 </html>
-
