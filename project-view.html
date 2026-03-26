@@ -6,164 +6,284 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #f4f6f8; padding: 16px; color: #000; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; color: #000; }
 
-/* ===== TOP NAV ===== */
-.top-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.top-nav a { font-size: 13px; color: #2c7be5; text-decoration: none; }
-.top-nav span { color: #999; font-size: 13px; }
+/* ── Nav bar ── */
+.nav-bar {
+  background: #1a2636;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: sticky; top: 0; z-index: 20;
+}
+.nav-btn {
+  padding: 7px 13px; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
+  white-space: nowrap;
+}
+.nav-btn.home { background: #4a5568; }
+.nav-btn.back { background: #2d3748; border: 1px solid #4a5568; }
 
-/* ===== PROJECT HEADER ===== */
-.project-header { background: #2c3e50; color: #fff; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
-.project-header .proj-no { font-size: 12px; color: #aab; margin-bottom: 4px; }
-.project-header h1 { font-size: 20px; font-weight: bold; margin-bottom: 4px; }
-.project-header .client { font-size: 14px; color: #bdc3c7; margin-bottom: 12px; }
-.project-header .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
+/* ── Project header ── */
+.project-header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+  color: #fff;
+  padding: 18px 16px 16px;
+}
+.proj-no { font-size: 11px; color: #90b8d8; letter-spacing: 1px; margin-bottom: 4px; }
+.proj-name { font-size: 21px; font-weight: bold; margin-bottom: 3px; }
+.proj-client { font-size: 14px; color: #b8d0e8; margin-bottom: 12px; }
+.meta-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  font-size: 12px; color: #90b8d8;
+}
+.meta-row strong { color: #fff; }
 
-/* ===== STATUS TOGGLE ===== */
-.status-toggle-btn { border: none; background: none; cursor: pointer; padding: 0; vertical-align: middle; transition: opacity 0.2s; }
-.status-toggle-btn:hover { opacity: 0.8; }
+/* ── Status toggle ── */
+.status-btn {
+  border: none; cursor: pointer; padding: 3px 10px; border-radius: 12px;
+  font-size: 11px; font-weight: bold; text-transform: uppercase;
+  transition: opacity 0.2s;
+}
+.status-btn:active { opacity: 0.7; }
+.s-active    { background: #27ae60; color: #fff; }
+.s-on_hold   { background: #f39c12; color: #fff; }
+.s-completed { background: #2980b9; color: #fff; }
 
-/* ===== BADGES ===== */
-.badge { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-.badge-active    { background: #27ae60; color: #fff; }
-.badge-completed { background: #2980b9; color: #fff; }
-.badge-on_hold   { background: #f39c12; color: #fff; }
-.badge-void      { background: #e74c3c; color: #fff; }
-.badge-paid      { background: #27ae60; color: #fff; }
-.badge-unpaid    { background: #f1c40f; color: #000; }
+/* ── Stats grid ── */
+.stats-wrap { padding: 12px; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-/* ===== STATS CARD ===== */
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.stat-card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.stat-card .label { font-size: 12px; color: #7f8c8d; margin-bottom: 5px; }
-.stat-card .value { font-size: 18px; font-weight: bold; color: #2c3e50; }
-.stat-card .sub { font-size: 11px; color: #95a5a6; margin-top: 4px; line-height: 1.4; }
+.stat-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 13px 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+.stat-card.full  { grid-column: span 2; }
+.stat-card.blue  { border-left: 4px solid #2980b9; }
+.stat-card.green { border-left: 4px solid #27ae60; }
+.stat-card.red   { border-left: 4px solid #e74c3c; }
 
-/* ===== SECTION CARDS ===== */
-.section-card { background: #fff; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
-.section-header { padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-.section-header h2 { font-size: 15px; font-weight: bold; color: #34495e; }
-.section-header .btn-add { font-size: 12px; color: #2c7be5; text-decoration: none; font-weight: bold; }
+.stat-label { font-size: 11px; color: #90a0b0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+.stat-value { font-size: 18px; font-weight: bold; color: #1a2636; }
+.stat-value.green  { color: #27ae60; }
+.stat-value.red    { color: #e74c3c; }
+.stat-value.orange { color: #e67e22; }
+.stat-sub { font-size: 11px; color: #a0aec0; margin-top: 4px; line-height: 1.5; }
 
-/* ===== TABLES ===== */
+.sync-btn {
+  font-size: 11px; padding: 4px 10px; cursor: pointer;
+  border: 1px solid #ddd; border-radius: 4px;
+  background: #f8f9fa; color: #555;
+  float: right; margin-top: 2px;
+}
+.sync-btn:hover { background: #e9ecef; }
+
+/* ── Notes card ── */
+.notes-card {
+  display: none;
+  background: #fffbf0;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  margin: 0 12px 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #555;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.notes-label { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #f39c12; margin-bottom: 6px; }
+
+/* ── Section cards ── */
+.section-card {
+  background: #fff;
+  border-radius: 10px;
+  margin: 0 12px 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+.section-header {
+  padding: 11px 14px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.section-header h2 { font-size: 14px; font-weight: bold; color: #2d3748; }
+.section-header .add-link {
+  font-size: 12px; color: #27ae60; font-weight: bold;
+  text-decoration: none; padding: 4px 10px;
+  border: 1px solid #27ae60; border-radius: 5px;
+}
+
+/* ── Tables ── */
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; padding: 12px 16px; color: #7f8c8d; font-weight: normal; border-bottom: 1px solid #eee; }
-td { padding: 12px 16px; border-bottom: 1px solid #f9f9f9; vertical-align: middle; }
-.text-right { text-align: right; }
-.empty-state { padding: 20px; text-align: center; color: #95a5a6; font-size: 13px; }
+td { padding: 11px 14px; border-bottom: 1px solid #f4f6f8; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: #f8fafc; }
+td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-space: nowrap; }
+.doc-no   { font-weight: bold; color: #1a2636; font-size: 13px; }
+.doc-sub  { font-size: 11px; color: #a0aec0; margin-top: 2px; }
+.empty-row { padding: 20px; text-align: center; color: #a0aec0; font-size: 13px; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: bold; text-transform: uppercase;
+}
+.b-green  { background: #d4edda; color: #155724; }
+.b-yellow { background: #fff3cd; color: #856404; }
+.b-blue   { background: #cce5ff; color: #004085; }
+.b-red    { background: #f8d7da; color: #721c24; }
+.b-gray   { background: #e2e8f0; color: #4a5568; }
+.b-orange { background: #fdebd0; color: #784212; }
+
+/* bottom spacing */
+.bottom-pad { height: 40px; }
 </style>
 </head>
 <body>
 
-<div class="top-nav">
-  <a href="/project-list.html">Projects</a>
-  <span>/</span>
-  <b id="navProjectName">Loading...</b>
+<!-- Nav -->
+<div class="nav-bar">
+  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn back" onclick="location.href='/project-list.html'">← Projects</button>
 </div>
 
+<!-- Project header -->
 <div class="project-header">
-  <div class="proj-no" id="projNo">---</div>
-  <h1 id="projName">---</h1>
-  <div class="client" id="projClient">---</div>
-  <div class="meta-grid">
-    <div>Type: <span id="projType">---</span></div>
-    <div>Start: <span id="projStart">---</span></div>
-    <div id="projStatusWrap">Status: ---</div>
+  <div class="proj-no" id="projNo"></div>
+  <div class="proj-name" id="projName">Loading...</div>
+  <div class="proj-client" id="projClient"></div>
+  <div class="meta-row">
+    <div>Type: <strong id="projType">—</strong></div>
+    <div>Start: <strong id="projStart">—</strong></div>
+    <div id="projStatusWrap">Status: —</div>
   </div>
 </div>
 
-<div class="stats-grid">
-  <div class="stat-card" style="grid-column: span 2; border-left: 4px solid #2c7be5;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-      <div>
-        <div class="label">Contract Value</div>
-        <div class="value" id="statContract">RM 0.00</div>
-      </div>
-      <button onclick="updateContractValue()" style="font-size: 11px; padding: 4px 8px; cursor: pointer;">Sync Value</button>
+<!-- Stats -->
+<div class="stats-wrap">
+  <div class="stats-grid">
+
+    <div class="stat-card full blue">
+      <button class="sync-btn" onclick="updateContractValue()">⟳ Sync</button>
+      <div class="stat-label">Contract Value</div>
+      <div class="stat-value" id="statContract">RM 0.00</div>
+      <div class="stat-sub" id="statVO">Incl. Approved VO: RM 0.00</div>
     </div>
-    <div class="sub" id="statVO">Incl. Approved VO: RM 0.00</div>
-  </div>
-  
-  <div class="stat-card">
-    <div class="label">Total Invoiced</div>
-    <div class="value" id="statInvoiced">RM 0.00</div>
-    <div class="sub" id="statInvoicePct">0% of contract</div>
-  </div>
-  
-  <div class="stat-card">
-    <div class="label">Total Collected</div>
-    <div class="value" id="statCollected" style="color: #27ae60;">RM 0.00</div>
-    <div class="sub" id="statOutstanding">---</div>
-  </div>
 
-  <div class="stat-card">
-    <div class="label">Total Costs</div>
-    <div class="value" id="statCost" style="color: #e67e22;">RM 0.00</div>
-    <div id="statCostSub" class="sub">PO + Labour + Exp</div>
-  </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Invoiced</div>
+      <div class="stat-value" id="statInvoiced">RM 0.00</div>
+      <div class="stat-sub" id="statInvoicePct">0% of contract</div>
+    </div>
 
-  <div class="stat-card">
-    <div class="label">Gross Profit</div>
-    <div class="value" id="statProfit">RM 0.00</div>
-    <div class="sub">Based on Invoiced amount</div>
+    <div class="stat-card green">
+      <div class="stat-label">Collected</div>
+      <div class="stat-value green" id="statCollected">RM 0.00</div>
+      <div class="stat-sub" id="statOutstanding">Outstanding: RM 0.00</div>
+    </div>
+
+    <div class="stat-card red">
+      <div class="stat-label">Total Cost</div>
+      <div class="stat-value orange" id="statCost">RM 0.00</div>
+      <div class="stat-sub" id="statCostSub">PO + Payslip + Expenses</div>
+    </div>
+
+    <div class="stat-card" id="statProfitCard">
+      <div class="stat-label">Gross Profit</div>
+      <div class="stat-value" id="statProfit">RM 0.00</div>
+      <div class="stat-sub" id="statProfitSub">—</div>
+    </div>
+
   </div>
 </div>
 
-<div class="section-card" id="plNotesCard" style="display:none;">
-  <div class="section-header"><h2>Project Notes</h2></div>
-  <div style="padding: 16px; font-size: 13px; white-space: pre-wrap; color: #444;" id="plNotes"></div>
+<!-- Notes -->
+<div class="notes-card" id="plNotesCard">
+  <div class="notes-label">📋 Project Notes</div>
+  <div id="plNotes"></div>
 </div>
 
+<!-- Quotations -->
 <div class="section-card">
-  <div class="section-header"><h2>Quotations</h2><a href="#" class="btn-add" id="btnAddQuotation">+ Add</a></div>
+  <div class="section-header">
+    <h2>Quotations</h2>
+    <a href="#" class="add-link" id="btnAddQuotation">+ Add</a>
+  </div>
   <div id="listQuotations"></div>
 </div>
 
+<!-- Variation Orders -->
 <div class="section-card">
-  <div class="section-header"><h2>Variation Orders (VO)</h2><a href="#" class="btn-add" id="btnAddVO">+ Add</a></div>
+  <div class="section-header">
+    <h2>Variation Orders</h2>
+    <a href="#" class="add-link" id="btnAddVO">+ Add</a>
+  </div>
   <div id="listVO"></div>
 </div>
 
+<!-- Invoices -->
 <div class="section-card">
-  <div class="section-header"><h2>Invoices</h2><a href="#" class="btn-add" id="btnAddInvoice">+ Add</a></div>
+  <div class="section-header">
+    <h2>Invoices</h2>
+    <a href="#" class="add-link" id="btnAddInvoice">+ Add</a>
+  </div>
   <div id="listInvoices"></div>
 </div>
 
+<!-- Purchase Orders -->
 <div class="section-card">
-  <div class="section-header"><h2>Purchase Orders (PO)</h2><a href="#" class="btn-add" id="btnAddPO">+ Add</a></div>
+  <div class="section-header">
+    <h2>Purchase Orders</h2>
+    <a href="#" class="add-link" id="btnAddPO">+ Add</a>
+  </div>
   <div id="listPO"></div>
 </div>
 
+<!-- Payslips -->
 <div class="section-card">
-  <div class="section-header"><h2>Daily Labours</h2><a href="#" class="btn-add" id="btnAddLabour">+ Add</a></div>
+  <div class="section-header">
+    <h2>Payslips</h2>
+    <a href="#" class="add-link" id="btnAddLabour">+ Add</a>
+  </div>
   <div id="listLabour"></div>
 </div>
 
+<!-- Expenses -->
 <div class="section-card">
-  <div class="section-header"><h2>Expenses</h2><a href="#" class="btn-add" id="btnAddExpense">+ Add</a></div>
+  <div class="section-header">
+    <h2>Expenses</h2>
+    <a href="#" class="add-link" id="btnAddExpense">+ Add</a>
+  </div>
   <div id="listExpenses"></div>
 </div>
+
+<div class="bottom-pad"></div>
 
 <script>
 const urlParams = new URLSearchParams(window.location.search);
 const projectId = urlParams.get("id");
-
 if (!projectId) { alert("Project ID missing"); location.href = "/project-list.html"; }
 
 let projectData = null;
 
+/* ── Load all ── */
 async function loadAll() {
   try {
     const res = await fetch(`/api/project-view?id=${projectId}`, { credentials: "include" });
+    if (res.status === 401) { location.replace("/login.html"); return; }
     if (!res.ok) throw new Error("Load failed");
     const data = await res.json();
     projectData = data;
 
     renderHeader(data.project);
     renderFinancials(data.financials);
-    
-    // 渲染各个板块表格
     renderQuotations(data.quotations);
     renderVO(data.variation_orders);
     renderInvoices(data.invoices);
@@ -171,7 +291,6 @@ async function loadAll() {
     renderLabour(data.daily_labours);
     renderExpenses(data.expenses);
 
-    // 绑定所有的 Add 按钮跳转路径 (基于你的目录结构)
     document.getElementById("btnAddQuotation").href = `/quotation.html?project_id=${projectId}`;
     document.getElementById("btnAddVO").href        = `/vo.html?project_id=${projectId}`;
     document.getElementById("btnAddInvoice").href   = `/invoice.html?project_id=${projectId}`;
@@ -179,165 +298,202 @@ async function loadAll() {
     document.getElementById("btnAddLabour").href    = `/daily-labour-create.html?project_id=${projectId}`;
     document.getElementById("btnAddExpense").href   = `/expense.html?project_id=${projectId}`;
 
-  } catch (err) { console.error(err); alert(err.message); }
+  } catch (err) { alert("Failed to load: " + err.message); }
 }
 
+/* ── Header ── */
 function renderHeader(p) {
-  document.getElementById("navProjectName").textContent = p.project_name;
-  document.getElementById("projNo").textContent = p.project_no || "";
-  document.getElementById("projName").textContent = p.project_name;
+  document.title = p.project_name + " — Project";
+  document.getElementById("projNo").textContent     = p.project_no || "";
+  document.getElementById("projName").textContent   = p.project_name;
   document.getElementById("projClient").textContent = p.client_name || "";
-  document.getElementById("projType").textContent = (p.project_type || "").replace(/_/g, " ");
-  document.getElementById("projStart").textContent = p.start_date ? p.start_date.slice(0, 10) : "---";
-  
-  const status = p.status || "ACTIVE";
-  document.getElementById("projStatusWrap").innerHTML = `
-    Status: <button class="status-toggle-btn" onclick="toggleStatus('${status}')">
-      ${badge(status)}
-    </button>
-  `;
+  document.getElementById("projType").textContent   = (p.project_type || "").replace(/_/g, " ");
+  document.getElementById("projStart").textContent  = p.start_date ? p.start_date.slice(0, 10) : "—";
 
-  if (p.notes) {
-    document.getElementById("plNotesCard").style.display = "block";
-    document.getElementById("plNotes").textContent = p.notes;
+  const status = (p.status || "ACTIVE").toUpperCase();
+  const sClass = { ACTIVE: "s-active", ON_HOLD: "s-on_hold", COMPLETED: "s-completed" }[status] || "s-active";
+  document.getElementById("projStatusWrap").innerHTML =
+    `Status: <button class="status-btn ${sClass}" onclick="toggleStatus('${status}')">${status.replace("_"," ")}</button>`;
+
+  if (p.notes && p.notes.trim()) {
+    const nc = document.getElementById("plNotesCard");
+    nc.style.display = "block";
+    document.getElementById("plNotes").textContent = p.notes.trim();
   }
 }
 
+/* ── Status toggle ── */
 async function toggleStatus(cur) {
   const cycle = ["ACTIVE", "ON_HOLD", "COMPLETED"];
-  const next = cycle[(cycle.indexOf(cur.toUpperCase()) + 1) % cycle.length];
-  if (!confirm(`Change status to ${next}?`)) return;
-
+  const next  = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
+  if (!confirm(`Change status to ${next.replace("_"," ")}?`)) return;
   const res = await fetch("/api/project-update-status", {
-    method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+    method: "POST", credentials: "include",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ project_id: projectId, status: next })
   });
   if ((await res.json()).success) loadAll();
 }
 
+/* ── Financials ── */
 function renderFinancials(f) {
-  document.getElementById("statContract").textContent = RM(f.contract_value);
-  document.getElementById("statVO").textContent = "Incl. Approved VO: " + RM(f.total_vo);
-  document.getElementById("statInvoiced").textContent = RM(f.total_invoiced);
+  document.getElementById("statContract").textContent  = RM(f.contract_value);
+  document.getElementById("statVO").textContent        = "Incl. Approved VO: " + RM(f.total_vo);
+  document.getElementById("statInvoiced").textContent  = RM(f.total_invoiced);
   document.getElementById("statCollected").textContent = RM(f.total_collected);
-  
+  document.getElementById("statOutstanding").textContent = "Outstanding: " + RM(f.total_outstanding);
+
   const pct = f.contract_value > 0 ? Math.round((f.total_invoiced / f.contract_value) * 100) : 0;
   document.getElementById("statInvoicePct").textContent = pct + "% of contract";
-  document.getElementById("statOutstanding").textContent = "Unpaid: " + RM(f.total_outstanding);
 
   const cost = (f.total_po || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
   document.getElementById("statCost").textContent = RM(cost);
-  document.getElementById("statCostSub").textContent = `PO:${RM(f.total_po)} | Lab:${RM(f.total_labour)} | Exp:${RM(f.total_expenses)}`;
-  document.getElementById("statProfit").textContent = RM(f.total_invoiced - cost);
+  document.getElementById("statCostSub").textContent =
+    `PO: ${RM(f.total_po)} | Payslip: ${RM(f.total_labour)} | Exp: ${RM(f.total_expenses)}`;
+
+  const profit = f.total_invoiced - cost;
+  const profitEl = document.getElementById("statProfit");
+  profitEl.textContent = RM(profit);
+  profitEl.className   = "stat-value " + (profit < 0 ? "red" : profit > 0 ? "green" : "");
+
+  const margin = f.total_invoiced > 0
+    ? ((profit / f.total_invoiced) * 100).toFixed(1) + "% margin"
+    : "No invoices yet";
+  document.getElementById("statProfitSub").textContent = margin;
 }
 
-/* ===== TABLE RENDERING ===== */
-
+/* ── Quotations ── */
 function renderQuotations(list) {
-  const wrap = document.getElementById("listQuotations");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No quotations</div>'; return; }
-  let html = '<table><tbody>';
-  list.forEach(q => {
-    html += `<tr onclick="location.href='/quotation-view.html?id=${q.id}'" style="cursor:pointer">
-      <td><div style="font-weight:bold">${q.quotation_no}</div><div style="font-size:11px;color:#999">${q.quotation_date?.slice(0,10)}</div></td>
-      <td class="text-right">${RM(q.grand_total)}</td>
-    </tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderVO(list) {
-  const wrap = document.getElementById("listVO");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No variation orders</div>'; return; }
-  let html = '<table><tbody>';
-  list.forEach(v => {
-    html += `<tr onclick="location.href='/vo-view.html?id=${v.id}'" style="cursor:pointer">
-      <td><div style="font-weight:bold">${v.vo_no || 'VO-'+v.id}</div>${badge(v.status)}</td>
-      <td class="text-right">${RM(v.amount)}</td>
-    </tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderInvoices(list) {
-  const wrap = document.getElementById("listInvoices");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No invoices</div>'; return; }
-  let html = '<table><tbody>';
-  list.forEach(i => {
-    html += `<tr onclick="location.href='/invoice-view.html?id=${i.id}'" style="cursor:pointer">
-      <td><div style="font-weight:bold">${i.invoice_no}</div>${badge(i.status)}</td>
-      <td class="text-right">${RM(i.amount)}</td>
-    </tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderPO(list) {
-  const wrap = document.getElementById("listPO");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No purchase orders</div>'; return; }
-  let html = '<table><tbody>';
-  list.forEach(p => {
-    html += `<tr onclick="location.href='/po-view.html?id=${p.id}'" style="cursor:pointer">
-      <td><div style="font-weight:bold">${p.po_no}</div><div style="font-size:11px;color:#999">${p.supplier_name || '-'}</div></td>
-      <td class="text-right">${RM(p.total)}</td>
-    </tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
-}
-
-function renderLabour(list) {
-  const wrap = document.getElementById("listLabour");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No labour logs</div>'; return; }
-  let html = '<table><tbody>';
-  list.forEach(l => {
-    html += `<tr onclick="location.href='/daily-labour-view.html?id=${l.id}'" style="cursor:pointer">
+  const w = document.getElementById("listQuotations");
+  if (!list?.length) { w.innerHTML = empty("No quotations"); return; }
+  w.innerHTML = "<table>" + list.map(q => `
+    <tr class="clickable" onclick="location.href='/quotation-view.html?id=${q.id}'">
       <td>
-        <div style="font-size:11px; color:#999">${l.labour_date?.slice(0,10)}</div>
-        <div style="font-weight:bold">${l.worker_name}</div>
-        <div style="font-size:11px; color:#7f8c8d">${l.job || ''}</div>
+        <div class="doc-no">${q.quotation_no}</div>
+        <div class="doc-sub">${q.customer || ""} · ${(q.created_at || "").slice(0,10)}</div>
       </td>
-      <td class="text-right">
-        <div style="font-weight:bold">${RM(l.amount)}</div>
-        ${badge(l.status)}
+      <td class="amount-col">
+        ${RM(q.grand_total)}<br>
+        ${statusBadge(q.status)}
       </td>
-    </tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
+    </tr>`).join("") + "</table>";
 }
 
+/* ── Variation Orders ── */
+function renderVO(list) {
+  const w = document.getElementById("listVO");
+  if (!list?.length) { w.innerHTML = empty("No variation orders"); return; }
+  w.innerHTML = "<table>" + list.map(v => `
+    <tr class="clickable" onclick="location.href='/vo-view.html?id=${v.id}'">
+      <td>
+        <div class="doc-no">${v.vo_no || "VO-" + v.id}</div>
+        <div class="doc-sub">${v.title || ""} · ${(v.created_at || "").slice(0,10)}</div>
+      </td>
+      <td class="amount-col">
+        ${RM(v.amount)}<br>
+        ${statusBadge(v.status)}
+      </td>
+    </tr>`).join("") + "</table>";
+}
+
+/* ── Invoices ── */
+function renderInvoices(list) {
+  const w = document.getElementById("listInvoices");
+  if (!list?.length) { w.innerHTML = empty("No invoices"); return; }
+  w.innerHTML = "<table>" + list.map(i => `
+    <tr class="clickable" onclick="location.href='/invoice-view.html?id=${i.id}'">
+      <td>
+        <div class="doc-no">${i.invoice_no}</div>
+        <div class="doc-sub">${i.customer || ""} · ${(i.created_at || "").slice(0,10)}</div>
+      </td>
+      <td class="amount-col">
+        ${RM(i.amount)}<br>
+        ${statusBadge(i.status)}
+      </td>
+    </tr>`).join("") + "</table>";
+}
+
+/* ── Purchase Orders ── */
+function renderPO(list) {
+  const w = document.getElementById("listPO");
+  if (!list?.length) { w.innerHTML = empty("No purchase orders"); return; }
+  w.innerHTML = "<table>" + list.map(p => `
+    <tr class="clickable" onclick="location.href='/po-view.html?id=${p.id}'">
+      <td>
+        <div class="doc-no">${p.po_no}</div>
+        <div class="doc-sub">${p.supplier_name || ""} · ${(p.po_date || "").slice(0,10)}</div>
+      </td>
+      <td class="amount-col">
+        ${RM(p.total)}<br>
+        ${statusBadge(p.status)}
+      </td>
+    </tr>`).join("") + "</table>";
+}
+
+/* ── Payslips (Daily Labour) ── */
+function renderLabour(list) {
+  const w = document.getElementById("listLabour");
+  if (!list?.length) { w.innerHTML = empty("No payslips"); return; }
+  w.innerHTML = "<table>" + list.map(l => `
+    <tr class="clickable" onclick="location.href='/daily-labour-view.html?id=${l.id}'">
+      <td>
+        <div class="doc-no">${l.worker_name}</div>
+        <div class="doc-sub">${l.job || ""} · ${(l.labour_date || "").slice(0,10)}</div>
+      </td>
+      <td class="amount-col">
+        ${RM(l.amount)}<br>
+        ${statusBadge(l.status)}
+      </td>
+    </tr>`).join("") + "</table>";
+}
+
+/* ── Expenses ── */
 function renderExpenses(list) {
-  const wrap = document.getElementById("listExpenses");
-  if (!list?.length) { wrap.innerHTML = '<div class="empty-state">No expenses</div>'; return; }
-  let html = '<table><tbody>';
-  list.forEach(e => {
-    html += `<tr onclick="location.href='/expense-view.html?id=${e.id}'" style="cursor:pointer">
-      <td><div style="font-weight:bold">${e.category}</div><div style="font-size:11px;color:#999">${e.expense_date?.slice(0,10)}</div></td>
-      <td class="text-right">${RM(e.amount)}</td>
-    </tr>`;
-  });
-  wrap.innerHTML = html + '</tbody></table>';
+  const w = document.getElementById("listExpenses");
+  if (!list?.length) { w.innerHTML = empty("No expenses"); return; }
+  w.innerHTML = "<table>" + list.map(e => `
+    <tr class="clickable" onclick="location.href='/expense-view.html?id=${e.id}'">
+      <td>
+        <div class="doc-no">${e.description}</div>
+        <div class="doc-sub">${e.category} · ${(e.expense_date || "").slice(0,10)}${e.vendor ? " · " + e.vendor : ""}</div>
+      </td>
+      <td class="amount-col">
+        ${RM(e.amount)}<br>
+        ${statusBadge(e.status)}
+      </td>
+    </tr>`).join("") + "</table>";
 }
 
-/* ===== UTILS ===== */
-function RM(n) { return "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2 }); }
-function badge(s) {
-  const m = { ACTIVE: "badge-active", COMPLETED: "badge-completed", ON_HOLD: "badge-on_hold", APPROVED: "badge-active", OPEN: "badge-unpaid", PAID: "badge-active" };
-  const cls = m[(s||"").toUpperCase()] || "badge-unpaid";
-  return `<span class="badge ${cls}">${s || 'N/A'}</span>`;
-}
-
+/* ── Sync contract value ── */
 async function updateContractValue() {
-  const d = projectData;
+  const d    = projectData;
   const qSum = d.quotations.reduce((s, q) => s + Number(q.grand_total || 0), 0);
   const vSum = d.variation_orders.filter(v => v.status === "APPROVED").reduce((s, v) => s + Number(v.amount || 0), 0);
   const total = qSum + vSum;
-  if (!confirm(`Sync Contract Value to RM ${total.toFixed(2)}? (Quotations + Approved VO)`)) return;
-  
+  if (!confirm(`Sync Contract Value to ${RM(total)}?\n(Quotations + Approved VO)`)) return;
   const res = await fetch("/api/project-update-value", {
-    method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
+    method: "POST", credentials: "include",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ project_id: projectId, contract_value: total })
   });
   if ((await res.json()).success) loadAll();
+}
+
+/* ── Helpers ── */
+const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function statusBadge(s) {
+  const map = {
+    PAID:      "b-green",   ACCEPTED: "b-green",  APPROVED: "b-green",  ACTIVE:    "b-green",
+    DRAFT:     "b-gray",    OPEN:     "b-yellow",  UNPAID:   "b-yellow", ON_HOLD:   "b-orange",
+    REJECTED:  "b-red",     VOID:     "b-red",     INVOICED: "b-blue",   COMPLETED: "b-blue"
+  };
+  const cls = map[(s || "").toUpperCase()] || "b-gray";
+  return `<span class="badge ${cls}">${s || "—"}</span>`;
+}
+
+function empty(msg) {
+  return `<div class="empty-row">${msg}</div>`;
 }
 
 loadAll();
