@@ -46,7 +46,7 @@ export async function onRequestPost({ request, env }) {
     );
   }
 
-  const { id, customer, items } = body || {};
+  const { id, customer, items, invoice_date } = body || {};
 
   if (!id || !customer || !Array.isArray(items)) {
     return new Response(
@@ -59,9 +59,7 @@ export async function onRequestPost({ request, env }) {
      CHECK INVOICE STATUS
      =============================== */
   const invoice = await env.DB.prepare(`
-    SELECT status
-    FROM invoices
-    WHERE id = ?
+    SELECT status FROM invoices WHERE id = ?
   `).bind(id).first();
 
   if (!invoice || invoice.status !== "UNPAID") {
@@ -81,43 +79,44 @@ export async function onRequestPost({ request, env }) {
   }
 
   /* ===============================
-     UPDATE INVOICE
+     DETERMINE DATE
      =============================== */
-  await env.DB.prepare(`
-    UPDATE invoices
-    SET customer = ?, amount = ?
-    WHERE id = ?
-  `).bind(customer, total, id).run();
+  const targetDate = invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(invoice_date)
+    ? invoice_date
+    : null;
 
-  /* ===============================
-     REPLACE ITEMS
-     =============================== */
-  await env.DB.prepare(`
-    DELETE FROM invoice_items
-    WHERE invoice_id = ?
-  `).bind(id).run();
+  try {
+    /* UPDATE INVOICE */
+    const updateSql = targetDate
+      ? `UPDATE invoices SET customer = ?, amount = ?, created_at = ? WHERE id = ?`
+      : `UPDATE invoices SET customer = ?, amount = ? WHERE id = ?`;
 
-  for (const it of items) {
-    if (!it.description || it.qty <= 0) continue;
+    const updateBind = targetDate
+      ? [customer, total, targetDate + " 00:00:00", id]
+      : [customer, total, id];
 
-    await env.DB.prepare(`
-      INSERT INTO invoice_items
-        (invoice_id, description, qty, price)
-      VALUES (?, ?, ?, ?)
-    `).bind(
-      id,
-      it.description,
-      it.qty,
-      it.price
-    ).run();
+    await env.DB.prepare(updateSql).bind(...updateBind).run();
+
+    /* REPLACE ITEMS */
+    await env.DB.prepare(`DELETE FROM invoice_items WHERE invoice_id = ?`).bind(id).run();
+
+    for (const it of items) {
+      if (!it.description || it.qty <= 0) continue;
+      await env.DB.prepare(`
+        INSERT INTO invoice_items (invoice_id, description, qty, price)
+        VALUES (?, ?, ?, ?)
+      `).bind(id, it.description, it.qty, it.price).run();
+    }
+
+    return new Response(
+      JSON.stringify({ success: true }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ error: "DB error: " + err.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
-
-  return new Response(
-    JSON.stringify({
-      success: true,
-      updated_by: user.id,
-      role: user.role
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
 }
