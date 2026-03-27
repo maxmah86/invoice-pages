@@ -1,246 +1,270 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<title>编辑发票 - Invoice Editor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Edit Invoice</title>
+
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 0 0 40px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 12px;
+    color: #333;
+  }
 
-.nav-bar {
-  background: #1a2636; padding: 12px 16px;
-  display: flex; align-items: center; gap: 8px;
-  position: sticky; top: 0; z-index: 10; margin-bottom: 14px;
-}
-.nav-btn {
-  padding: 8px 14px; border: none; border-radius: 6px;
-  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
-}
-.nav-btn.home { background: #4a5568; }
-.nav-btn.back { background: #2d3748; border: 1px solid #4a5568; }
+  h2 { margin: 10px 0; font-size: 20px; }
 
-.page-title { padding: 0 16px 4px; font-size: 20px; font-weight: bold; color: #1a2636; }
-.page-sub   { padding: 0 16px 14px; font-size: 12px; color: #90a0b0; font-weight: bold; letter-spacing: 0.5px; }
+  .box {
+    background: #fff;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
 
-.section {
-  background: #fff; margin: 0 12px 12px; border-radius: 10px;
-  padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-}
-.section-title {
-  font-size: 11px; font-weight: bold; text-transform: uppercase;
-  letter-spacing: 1px; color: #90a0b0; margin-bottom: 14px;
-}
-.field { margin-bottom: 14px; }
-label { display: block; font-size: 13px; font-weight: bold; color: #2d3748; margin-bottom: 6px; }
-input {
-  width: 100%; padding: 11px 13px; font-size: 15px;
-  border: 1.5px solid #e2e8f0; border-radius: 8px;
-  background: #f8fafc; font-family: Arial, sans-serif;
-}
-input:focus { outline: none; border-color: #3b82f6; background: #fff; }
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-top: 12px;
+    color: #666;
+  }
 
-.item-card {
-  border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;
-  margin-bottom: 10px; position: relative; background: #f8fafc;
-}
-.remove-item {
-  position: absolute; top: 10px; right: 10px;
-  background: #e74c3c; color: #fff; border: none;
-  border-radius: 4px; padding: 3px 8px; font-size: 12px; cursor: pointer;
-}
-.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.item-sub { text-align: right; font-size: 12px; color: #718096; margin-top: 8px; }
+  input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    margin-top: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
 
-.add-item-btn {
-  width: 100%; padding: 11px; border: 2px dashed #cbd5e0;
-  background: none; border-radius: 8px; font-size: 14px;
-  color: #718096; cursor: pointer; margin-top: 4px;
-}
-.add-item-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+  .item {
+    border: 1px solid #eee;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    background: #fafafa;
+    position: relative;
+  }
 
-.total-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 0 0; border-top: 2px solid #e2e8f0; margin-top: 10px;
-  font-size: 16px; font-weight: bold; color: #1a2636;
-}
+  .row {
+    display: flex;
+    gap: 8px;
+  }
 
-.btn-save {
-  width: calc(100% - 24px); margin: 4px 12px; padding: 16px;
-  background: #2980b9; color: #fff; border: none; border-radius: 10px;
-  font-size: 16px; font-weight: bold; cursor: pointer;
-}
+  .row > div { flex: 1; }
 
-.error-box {
-  display: none; background: #fff0f0; border: 1px solid #f87171;
-  color: #c0392b; padding: 12px 16px; border-radius: 8px;
-  margin: 0 12px 12px; font-size: 13px;
-}
+  .subtotal {
+    text-align: right;
+    font-size: 14px;
+    margin-top: 8px;
+    color: #888;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  .btn-primary { background: #007bff; color: #fff; }
+  .btn-outline { background: #fff; border: 1px solid #007bff; color: #007bff; }
+  .btn-danger { background: #ff4d4f; color: #fff; width: auto; padding: 6px 12px; font-size: 12px; float: right; }
+
+  #total {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: right;
+    margin-top: 15px;
+    color: #d32f2f;
+  }
+
+  .loading-mask {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: rgba(255,255,255,0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+  }
 </style>
 </head>
 <body>
 
-<div class="nav-bar">
-  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
-  <button class="nav-btn back" onclick="history.back()">← Back</button>
+<div id="loading" class="loading-mask">加载中...</div>
+
+<div class="header">
+  <h2>编辑发票 <span id="invoice_no_display" style="color: #888; font-size: 14px;"></span></h2>
 </div>
 
-<div class="page-title">Edit Invoice</div>
-<div class="page-sub" id="invoiceNoLabel"></div>
+<div class="box">
+  <label>客户名称 (Customer)</label>
+  <input type="text" id="customer" placeholder="请输入客户姓名或公司">
 
-<div class="section">
-  <div class="section-title">Invoice Details</div>
-  <div class="field">
-    <label>Customer *</label>
-    <input id="customer" placeholder="Customer name">
-  </div>
-  <div class="field">
-    <label>Invoice Date *</label>
-    <input id="invoice_date" type="date">
-  </div>
+  <label>发票日期 (Date)</label>
+  <input type="date" id="invoice_date">
 </div>
 
-<div class="section">
-  <div class="section-title">Items</div>
-  <div id="itemsWrap"></div>
-  <button class="add-item-btn" onclick="addItem()">+ Add Item</button>
-  <div class="total-row">
-    <span>TOTAL</span>
-    <span id="total">RM 0.00</span>
+<div class="box">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="margin:0; font-size: 16px;">项目清单</h3>
+    <button class="btn-outline" style="width: auto; padding: 5px 15px;" onclick="addItem()">+ 添加项目</button>
   </div>
+  
+  <div id="items-container"></div>
+
+  <div id="total">Total: RM 0.00</div>
 </div>
 
-<div class="error-box" id="errorBox"></div>
-<button class="btn-save" onclick="save()">Save Changes</button>
+<button id="saveBtn" class="btn btn-primary" onclick="save()">保存修改</button>
+<button class="btn btn-outline" onclick="history.back()">取消</button>
 
 <script>
-/* ── Auth ── */
-fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.json())
-  .then(d => {
-    if (!d.loggedIn) location.replace("/login.html");
-    if (d.role !== "admin") location.replace("/index.html");
-  })
-  .catch(() => location.replace("/login.html"));
+  const urlParams = new URLSearchParams(window.location.search);
+  const id = urlParams.get('id');
 
-const invoiceId = new URLSearchParams(location.search).get("id");
-let _projectId  = null;
+  if (!id) {
+    alert("未找到发票ID");
+    location.href = "invoice-list.html";
+  }
 
-async function loadInvoice() {
-  if (!invoiceId) { alert("Missing invoice ID"); return; }
+  // 加载数据
+  async function loadInvoice() {
+    try {
+      const res = await fetch(`/api/invoice-view?id=${id}`);
+      const data = await res.json();
 
-  try {
-    const res  = await fetch(`/api/invoice-view?id=${invoiceId}`, { credentials: "include" });
-    if (res.status === 401) { location.replace("/login.html"); return; }
-    const data = await res.json();
-    if (!data || !data.invoice) { alert("Invoice not found"); return; }
+      if (data.error) throw new Error(data.error);
 
-    const inv = data.invoice;
+      // 填充基础信息
+      document.getElementById("invoice_no_display").innerText = `(${data.invoice.invoice_no})`;
+      document.getElementById("customer").value = data.invoice.customer;
+      document.getElementById("invoice_date").value = data.invoice.created_at.split(' ')[0];
 
-    if (inv.status !== "UNPAID") {
-      alert("Only UNPAID invoices can be edited.");
-      location.href = "/invoice-view.html?id=" + invoiceId;
+      // 状态检查：非 UNPAID 不允许编辑
+      if (data.invoice.status !== 'UNPAID') {
+        document.getElementById("saveBtn").disabled = true;
+        document.getElementById("saveBtn").innerText = "此状态不可编辑";
+        document.getElementById("saveBtn").style.background = "#ccc";
+      }
+
+      // 渲染项目
+      const container = document.getElementById("items-container");
+      container.innerHTML = "";
+      if (data.items && data.items.length > 0) {
+        data.items.forEach(it => addItem(it.description, it.qty, it.price));
+      } else {
+        addItem(); // 默认给一行
+      }
+
+      document.getElementById("loading").style.display = "none";
+    } catch (err) {
+      alert("加载失败: " + err.message);
+    }
+  }
+
+  function addItem(desc = '', qty = 1, price = 0) {
+    const container = document.getElementById("items-container");
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <button class="btn-danger" onclick="this.parentElement.remove(); updateTotal();">删除</button>
+      <label>描述</label>
+      <input type="text" class="desc" value="${desc}" placeholder="项目描述" oninput="updateTotal()">
+      <div class="row">
+        <div>
+          <label>数量</label>
+          <input type="number" class="qty" value="${qty}" step="1" oninput="updateTotal()">
+        </div>
+        <div>
+          <label>单价 (RM)</label>
+          <input type="number" class="price" value="${price}" step="0.01" oninput="updateTotal()">
+        </div>
+      </div>
+      <div class="subtotal">小计: RM <span>${(qty * price).toFixed(2)}</span></div>
+    `;
+    container.appendChild(div);
+    updateTotal();
+  }
+
+  function updateTotal() {
+    let total = 0;
+    document.querySelectorAll(".item").forEach(item => {
+      const qty = Number(item.querySelector(".qty").value) || 0;
+      const price = Number(item.querySelector(".price").value) || 0;
+      const sub = qty * price;
+      item.querySelector(".subtotal span").innerText = sub.toFixed(2);
+      total += sub;
+    });
+    document.getElementById("total").innerText = "Total: RM " + total.toFixed(2);
+  }
+
+  async function save() {
+    const customer = document.getElementById("customer").value.trim();
+    const invoice_date = document.getElementById("invoice_date").value;
+
+    if (!customer || !invoice_date) {
+      alert("请填写客户名称和日期");
       return;
     }
 
-    _projectId = inv.project_id || null;
-
-    document.getElementById("invoiceNoLabel").textContent = inv.invoice_no;
-    document.getElementById("customer").value     = inv.customer || "";
-    document.getElementById("invoice_date").value = (inv.created_at || "").slice(0, 10);
-
-    (data.items || []).forEach(it => addItem(it.description, it.qty, it.price));
-    calcTotal();
-
-  } catch (err) {
-    alert("Failed to load: " + err.message);
-  }
-}
-
-function addItem(desc = "", qty = 1, price = 0) {
-  const wrap = document.getElementById("itemsWrap");
-  const div  = document.createElement("div");
-  div.className = "item-card";
-  div.innerHTML = `
-    <button class="remove-item" onclick="this.closest('.item-card').remove(); calcTotal()">✕</button>
-    <div class="field">
-      <label>Description</label>
-      <input class="i-desc" value="${desc}" oninput="calcTotal()">
-    </div>
-    <div class="row-2">
-      <div class="field">
-        <label>Qty</label>
-        <input class="i-qty" type="number" value="${qty}" min="1" oninput="calcTotal()">
-      </div>
-      <div class="field">
-        <label>Unit Price (RM)</label>
-        <input class="i-price" type="number" step="0.01" value="${price}" oninput="calcTotal()">
-      </div>
-    </div>
-    <div class="item-sub">Subtotal: RM <span class="i-sub">0.00</span></div>
-  `;
-  wrap.appendChild(div);
-  calcTotal();
-}
-
-function calcTotal() {
-  let total = 0;
-  document.querySelectorAll(".item-card").forEach(card => {
-    const qty   = Number(card.querySelector(".i-qty").value)   || 0;
-    const price = Number(card.querySelector(".i-price").value) || 0;
-    const sub   = qty * price;
-    card.querySelector(".i-sub").textContent = sub.toFixed(2);
-    total += sub;
-  });
-  document.getElementById("total").textContent =
-    "RM " + total.toLocaleString("en-MY", { minimumFractionDigits: 2 });
-}
-
-async function save() {
-  document.getElementById("errorBox").style.display = "none";
-
-  const customer     = document.getElementById("customer").value.trim();
-  const invoice_date = document.getElementById("invoice_date").value;
-
-  if (!customer)     { showError("Customer is required"); return; }
-  if (!invoice_date) { showError("Invoice date is required"); return; }
-
-  const itemsData = [];
-  document.querySelectorAll(".item-card").forEach(card => {
-    const desc  = card.querySelector(".i-desc").value.trim();
-    const qty   = Number(card.querySelector(".i-qty").value);
-    const price = Number(card.querySelector(".i-price").value);
-    if (desc && qty > 0) itemsData.push({ description: desc, qty, price });
-  });
-
-  if (!itemsData.length) { showError("At least one item is required"); return; }
-
-  try {
-    const res  = await fetch("/api/invoice-edit", {
-      method: "POST", credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: invoiceId, customer, invoice_date, items: itemsData })
+    const itemsData = [];
+    document.querySelectorAll(".item").forEach(item => {
+      const desc = item.querySelector(".desc").value.trim();
+      const qty = Number(item.querySelector(".qty").value);
+      const price = Number(item.querySelector(".price").value);
+      if (desc && qty > 0) {
+        itemsData.push({ description: desc, qty, price });
+      }
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.success) { showError(data.error || "Failed to save"); return; }
+    if (itemsData.length === 0) {
+      alert("请至少添加一个有效的项目");
+      return;
+    }
 
-    location.href = _projectId
-      ? "/project-view.html?id=" + _projectId
-      : "/invoice-view.html?id=" + invoiceId;
+    const saveBtn = document.getElementById("saveBtn");
+    saveBtn.disabled = true;
+    saveBtn.innerText = "正在保存...";
 
-  } catch (err) {
-    showError("Network error: " + err.message);
+    try {
+      const res = await fetch("/api/invoice-edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          customer,
+          invoice_date,
+          items: itemsData
+        })
+      });
+
+      if (res.ok) {
+        alert("更新成功");
+        location.href = "invoice-view.html?id=" + id;
+      } else {
+        const err = await res.json();
+        alert("保存失败: " + (err.error || "未知错误"));
+        saveBtn.disabled = false;
+        saveBtn.innerText = "保存修改";
+      }
+    } catch (e) {
+      alert("网络错误，请稍后再试");
+      saveBtn.disabled = false;
+      saveBtn.innerText = "保存修改";
+    }
   }
-}
 
-function showError(msg) {
-  const el = document.getElementById("errorBox");
-  el.textContent = msg;
-  el.style.display = "block";
-}
-
-loadInvoice();
+  // 初始化加载
+  loadInvoice();
 </script>
+
 </body>
 </html>
