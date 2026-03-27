@@ -2,292 +2,245 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Edit Invoice</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
+<title>Edit Invoice</title>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 12px;
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 0 0 40px; }
 
-h2 {
-  margin-top: 0;
+.nav-bar {
+  background: #1a2636; padding: 12px 16px;
+  display: flex; align-items: center; gap: 8px;
+  position: sticky; top: 0; z-index: 10; margin-bottom: 14px;
 }
-
-.box {
-  background: #fff;
-  padding: 14px;
-  border-radius: 8px;
-  margin-bottom: 12px;
+.nav-btn {
+  padding: 8px 14px; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
 }
+.nav-btn.home { background: #4a5568; }
+.nav-btn.back { background: #2d3748; border: 1px solid #4a5568; }
 
-label {
-  display: block;
-  font-size: 14px;
-  font-weight: bold;
-  margin-top: 10px;
+.page-title { padding: 0 16px 4px; font-size: 20px; font-weight: bold; color: #1a2636; }
+.page-sub   { padding: 0 16px 14px; font-size: 12px; color: #90a0b0; font-weight: bold; letter-spacing: 0.5px; }
+
+.section {
+  background: #fff; margin: 0 12px 12px; border-radius: 10px;
+  padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
-
+.section-title {
+  font-size: 11px; font-weight: bold; text-transform: uppercase;
+  letter-spacing: 1px; color: #90a0b0; margin-bottom: 14px;
+}
+.field { margin-bottom: 14px; }
+label { display: block; font-size: 13px; font-weight: bold; color: #2d3748; margin-bottom: 6px; }
 input {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  margin-top: 6px;
-  box-sizing: border-box;
+  width: 100%; padding: 11px 13px; font-size: 15px;
+  border: 1.5px solid #e2e8f0; border-radius: 8px;
+  background: #f8fafc; font-family: Arial, sans-serif;
+}
+input:focus { outline: none; border-color: #3b82f6; background: #fff; }
+
+.item-card {
+  border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;
+  margin-bottom: 10px; position: relative; background: #f8fafc;
+}
+.remove-item {
+  position: absolute; top: 10px; right: 10px;
+  background: #e74c3c; color: #fff; border: none;
+  border-radius: 4px; padding: 3px 8px; font-size: 12px; cursor: pointer;
+}
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.item-sub { text-align: right; font-size: 12px; color: #718096; margin-top: 8px; }
+
+.add-item-btn {
+  width: 100%; padding: 11px; border: 2px dashed #cbd5e0;
+  background: none; border-radius: 8px; font-size: 14px;
+  color: #718096; cursor: pointer; margin-top: 4px;
+}
+.add-item-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+
+.total-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 0 0; border-top: 2px solid #e2e8f0; margin-top: 10px;
+  font-size: 16px; font-weight: bold; color: #1a2636;
 }
 
-.item {
-  border: 1px solid #ddd;
-  padding: 10px;
-  border-radius: 6px;
-  margin-top: 10px;
-  position: relative;
+.btn-save {
+  width: calc(100% - 24px); margin: 4px 12px; padding: 16px;
+  background: #2980b9; color: #fff; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: bold; cursor: pointer;
 }
 
-.row {
-  display: flex;
-  gap: 8px;
-}
-
-.row > div {
-  flex: 1;
-}
-
-.subtotal {
-  text-align: right;
-  font-size: 14px;
-  margin-top: 6px;
-}
-
-/* ===== Remove Button ===== */
-.remove-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #c0392b;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.actions button {
-  flex: 1;
-  padding: 14px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.save-btn {
-  background: #27ae60;
-  color: #fff;
-}
-
-.cancel-btn {
-  background: #7f8c8d;
-  color: #fff;
-}
-
-.add-btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  margin-top: 10px;
-  background: #3498db;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.total {
-  text-align: right;
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 10px;
+.error-box {
+  display: none; background: #fff0f0; border: 1px solid #f87171;
+  color: #c0392b; padding: 12px 16px; border-radius: 8px;
+  margin: 0 12px 12px; font-size: 13px;
 }
 </style>
 </head>
-
 <body>
 
-<h2>Edit Invoice</h2>
-
-<div class="box">
-  <label>Customer</label>
-  <input id="customer">
+<div class="nav-bar">
+  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn back" onclick="history.back()">← Back</button>
 </div>
 
-<div class="box">
-  <h3>Items</h3>
-  <div id="items"></div>
+<div class="page-title">Edit Invoice</div>
+<div class="page-sub" id="invoiceNoLabel"></div>
 
-  <button class="add-btn" onclick="addItem()">+ Add Item</button>
-
-  <div class="total" id="total">Total: RM 0.00</div>
+<div class="section">
+  <div class="section-title">Invoice Details</div>
+  <div class="field">
+    <label>Customer *</label>
+    <input id="customer" placeholder="Customer name">
+  </div>
+  <div class="field">
+    <label>Invoice Date *</label>
+    <input id="invoice_date" type="date">
+  </div>
 </div>
 
-<div class="actions">
-  <button class="save-btn" onclick="save()">Save</button>
-  <button class="cancel-btn" onclick="cancel()">Cancel</button>
+<div class="section">
+  <div class="section-title">Items</div>
+  <div id="itemsWrap"></div>
+  <button class="add-item-btn" onclick="addItem()">+ Add Item</button>
+  <div class="total-row">
+    <span>TOTAL</span>
+    <span id="total">RM 0.00</span>
+  </div>
 </div>
+
+<div class="error-box" id="errorBox"></div>
+<button class="btn-save" onclick="save()">Save Changes</button>
 
 <script>
-const id = new URLSearchParams(location.search).get("id");
+/* ── Auth ── */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.loggedIn) location.replace("/login.html");
+    if (d.role !== "admin") location.replace("/index.html");
+  })
+  .catch(() => location.replace("/login.html"));
 
-/* ===== Load invoice ===== */
+const invoiceId = new URLSearchParams(location.search).get("id");
+let _projectId  = null;
+
 async function loadInvoice() {
-  const res = await fetch(`/api/invoice-view?id=${id}`, {
-    credentials: "include"
-  });
+  if (!invoiceId) { alert("Missing invoice ID"); return; }
 
-  if (!res.ok) {
-    location.href = "/login.html";
-    return;
+  try {
+    const res  = await fetch(`/api/invoice-view?id=${invoiceId}`, { credentials: "include" });
+    if (res.status === 401) { location.replace("/login.html"); return; }
+    const data = await res.json();
+    if (!data || !data.invoice) { alert("Invoice not found"); return; }
+
+    const inv = data.invoice;
+
+    if (inv.status !== "UNPAID") {
+      alert("Only UNPAID invoices can be edited.");
+      location.href = "/invoice-view.html?id=" + invoiceId;
+      return;
+    }
+
+    _projectId = inv.project_id || null;
+
+    document.getElementById("invoiceNoLabel").textContent = inv.invoice_no;
+    document.getElementById("customer").value     = inv.customer || "";
+    document.getElementById("invoice_date").value = (inv.created_at || "").slice(0, 10);
+
+    (data.items || []).forEach(it => addItem(it.description, it.qty, it.price));
+    calcTotal();
+
+  } catch (err) {
+    alert("Failed to load: " + err.message);
   }
-
-  const data = await res.json();
-  const inv = data.invoice;
-
-  if (inv.status !== "UNPAID") {
-    alert("This invoice cannot be edited.");
-    location.href = "/invoice-view.html?id=" + id;
-    return;
-  }
-
-  document.getElementById("customer").value = inv.customer;
-
-  data.items.forEach(it => {
-    addItem(it.description, it.qty, it.price);
-  });
-
-  updateTotal();
 }
 
-/* ===== Add item ===== */
 function addItem(desc = "", qty = 1, price = 0) {
-  const div = document.createElement("div");
-  div.className = "item";
-
+  const wrap = document.getElementById("itemsWrap");
+  const div  = document.createElement("div");
+  div.className = "item-card";
   div.innerHTML = `
-    <button class="remove-btn" onclick="removeItem(this)">✕</button>
-
-    <label>Description</label>
-    <input class="desc" value="${desc}">
-
-    <div class="row">
-      <div>
+    <button class="remove-item" onclick="this.closest('.item-card').remove(); calcTotal()">✕</button>
+    <div class="field">
+      <label>Description</label>
+      <input class="i-desc" value="${desc}" oninput="calcTotal()">
+    </div>
+    <div class="row-2">
+      <div class="field">
         <label>Qty</label>
-        <input type="number" class="qty" value="${qty}">
+        <input class="i-qty" type="number" value="${qty}" min="1" oninput="calcTotal()">
       </div>
-      <div>
-        <label>Price</label>
-        <input type="number" class="price" value="${price}">
+      <div class="field">
+        <label>Unit Price (RM)</label>
+        <input class="i-price" type="number" step="0.01" value="${price}" oninput="calcTotal()">
       </div>
     </div>
-
-    <div class="subtotal">
-      Subtotal: RM <span>0.00</span>
-    </div>
+    <div class="item-sub">Subtotal: RM <span class="i-sub">0.00</span></div>
   `;
-
-  document.getElementById("items").appendChild(div);
-
-  div.querySelectorAll("input").forEach(i =>
-    i.addEventListener("input", updateTotal)
-  );
-
-  updateTotal();
+  wrap.appendChild(div);
+  calcTotal();
 }
 
-/* ===== Remove item ===== */
-function removeItem(btn) {
-  if (!confirm("Remove this item?")) return;
-  btn.closest(".item").remove();
-  updateTotal();
-}
-
-/* ===== Update total ===== */
-function updateTotal() {
+function calcTotal() {
   let total = 0;
-
-  document.querySelectorAll(".item").forEach(item => {
-    const qty = Number(item.querySelector(".qty").value) || 0;
-    const price = Number(item.querySelector(".price").value) || 0;
-    const sub = qty * price;
-
-    item.querySelector(".subtotal span").innerText = sub.toFixed(2);
+  document.querySelectorAll(".item-card").forEach(card => {
+    const qty   = Number(card.querySelector(".i-qty").value)   || 0;
+    const price = Number(card.querySelector(".i-price").value) || 0;
+    const sub   = qty * price;
+    card.querySelector(".i-sub").textContent = sub.toFixed(2);
     total += sub;
   });
-
-  document.getElementById("total").innerText =
-    "Total: RM " + total.toFixed(2);
+  document.getElementById("total").textContent =
+    "RM " + total.toLocaleString("en-MY", { minimumFractionDigits: 2 });
 }
 
-/* ===== Save ===== */
 async function save() {
-  const customer = document.getElementById("customer").value.trim();
-  if (!customer) {
-    alert("Customer is required");
-    return;
-  }
+  document.getElementById("errorBox").style.display = "none";
+
+  const customer     = document.getElementById("customer").value.trim();
+  const invoice_date = document.getElementById("invoice_date").value;
+
+  if (!customer)     { showError("Customer is required"); return; }
+  if (!invoice_date) { showError("Invoice date is required"); return; }
 
   const itemsData = [];
-  document.querySelectorAll(".item").forEach(item => {
-    const desc = item.querySelector(".desc").value.trim();
-    const qty = Number(item.querySelector(".qty").value);
-    const price = Number(item.querySelector(".price").value);
-
-    if (desc && qty > 0) {
-      itemsData.push({ description: desc, qty, price });
-    }
+  document.querySelectorAll(".item-card").forEach(card => {
+    const desc  = card.querySelector(".i-desc").value.trim();
+    const qty   = Number(card.querySelector(".i-qty").value);
+    const price = Number(card.querySelector(".i-price").value);
+    if (desc && qty > 0) itemsData.push({ description: desc, qty, price });
   });
 
-  if (itemsData.length === 0) {
-    alert("At least one item is required");
-    return;
+  if (!itemsData.length) { showError("At least one item is required"); return; }
+
+  try {
+    const res  = await fetch("/api/invoice-edit", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: invoiceId, customer, invoice_date, items: itemsData })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) { showError(data.error || "Failed to save"); return; }
+
+    location.href = _projectId
+      ? "/project-view.html?id=" + _projectId
+      : "/invoice-view.html?id=" + invoiceId;
+
+  } catch (err) {
+    showError("Network error: " + err.message);
   }
-
-  const res = await fetch("/api/invoice-edit", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id,
-      customer,
-      items: itemsData
-    })
-  });
-
-  if (!res.ok) {
-    alert("Failed to save invoice");
-    return;
-  }
-
-  alert("Invoice updated");
-  location.href = "/invoice-view.html?id=" + id;
 }
 
-/* ===== Cancel ===== */
-function cancel() {
-  location.href = "/invoice-view.html?id=" + id;
+function showError(msg) {
+  const el = document.getElementById("errorBox");
+  el.textContent = msg;
+  el.style.display = "block";
 }
 
 loadInvoice();
 </script>
-
 </body>
 </html>
