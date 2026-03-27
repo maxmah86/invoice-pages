@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>编辑发票 - Invoice Editor</title>
+<title>Edit Invoice - Invoice Editor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -98,24 +98,24 @@
 </head>
 <body>
 
-<div id="loading" class="loading-mask">加载中...</div>
+<div id="loading" class="loading-mask">Loading...</div>
 
 <div class="header">
-  <h2>编辑发票 <span id="invoice_no_display" style="color: #888; font-size: 14px;"></span></h2>
+  <h2>Edit Invoice <span id="invoice_no_display" style="color: #888; font-size: 14px;"></span></h2>
 </div>
 
 <div class="box">
-  <label>客户名称 (Customer)</label>
-  <input type="text" id="customer" placeholder="请输入客户姓名或公司">
+  <label>Customer Name</label>
+  <input type="text" id="customer" placeholder="Enter customer name or company">
 
-  <label>发票日期 (Date)</label>
+  <label>Invoice Date</label>
   <input type="date" id="invoice_date">
 </div>
 
 <div class="box">
   <div style="display: flex; justify-content: space-between; align-items: center;">
-    <h3 style="margin:0; font-size: 16px;">项目清单</h3>
-    <button class="btn-outline" style="width: auto; padding: 5px 15px;" onclick="addItem()">+ 添加项目</button>
+    <h3 style="margin:0; font-size: 16px;">Line Items</h3>
+    <button class="btn-outline" style="width: auto; padding: 5px 15px;" onclick="addItem()">+ Add Item</button>
   </div>
   
   <div id="items-container"></div>
@@ -123,19 +123,19 @@
   <div id="total">Total: RM 0.00</div>
 </div>
 
-<button id="saveBtn" class="btn btn-primary" onclick="save()">保存修改</button>
-<button class="btn btn-outline" onclick="history.back()">取消</button>
+<button id="saveBtn" class="btn btn-primary" onclick="save()">Save Changes</button>
+<button class="btn btn-outline" onclick="history.back()">Cancel</button>
 
 <script>
   const urlParams = new URLSearchParams(window.location.search);
   const id = urlParams.get('id');
 
   if (!id) {
-    alert("未找到发票ID");
+    alert("Invoice ID not found.");
     location.href = "invoice-list.html";
   }
 
-  // 加载数据
+  // Load Invoice Data
   async function loadInvoice() {
     try {
       const res = await fetch(`/api/invoice-view?id=${id}`);
@@ -143,57 +143,59 @@
 
       if (data.error) throw new Error(data.error);
 
-      // 填充基础信息
+      // Populate Basic Info
       document.getElementById("invoice_no_display").innerText = `(${data.invoice.invoice_no})`;
       document.getElementById("customer").value = data.invoice.customer;
       document.getElementById("invoice_date").value = data.invoice.created_at.split(' ')[0];
 
-      // 状态检查：非 UNPAID 不允许编辑
+      // Status Check: Lock if not UNPAID
       if (data.invoice.status !== 'UNPAID') {
         document.getElementById("saveBtn").disabled = true;
-        document.getElementById("saveBtn").innerText = "此状态不可编辑";
+        document.getElementById("saveBtn").innerText = "Locked (Read-Only)";
         document.getElementById("saveBtn").style.background = "#ccc";
       }
 
-      // 渲染项目
+      // Render Items
       const container = document.getElementById("items-container");
       container.innerHTML = "";
       if (data.items && data.items.length > 0) {
         data.items.forEach(it => addItem(it.description, it.qty, it.price));
       } else {
-        addItem(); // 默认给一行
+        addItem(); // Add one default blank row
       }
 
       document.getElementById("loading").style.display = "none";
     } catch (err) {
-      alert("加载失败: " + err.message);
+      alert("Failed to load invoice: " + err.message);
     }
   }
 
+  // Add a Line Item Row
   function addItem(desc = '', qty = 1, price = 0) {
     const container = document.getElementById("items-container");
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
-      <button class="btn-danger" onclick="this.parentElement.remove(); updateTotal();">删除</button>
-      <label>描述</label>
-      <input type="text" class="desc" value="${desc}" placeholder="项目描述" oninput="updateTotal()">
+      <button class="btn-danger" onclick="this.parentElement.remove(); updateTotal();">Delete</button>
+      <label>Description</label>
+      <input type="text" class="desc" value="${desc}" placeholder="Item description" oninput="updateTotal()">
       <div class="row">
         <div>
-          <label>数量</label>
+          <label>Qty</label>
           <input type="number" class="qty" value="${qty}" step="1" oninput="updateTotal()">
         </div>
         <div>
-          <label>单价 (RM)</label>
+          <label>Unit Price (RM)</label>
           <input type="number" class="price" value="${price}" step="0.01" oninput="updateTotal()">
         </div>
       </div>
-      <div class="subtotal">小计: RM <span>${(qty * price).toFixed(2)}</span></div>
+      <div class="subtotal">Subtotal: RM <span>${(qty * price).toFixed(2)}</span></div>
     `;
     container.appendChild(div);
     updateTotal();
   }
 
+  // Re-calculate Subtotals and Total
   function updateTotal() {
     let total = 0;
     document.querySelectorAll(".item").forEach(item => {
@@ -206,12 +208,13 @@
     document.getElementById("total").innerText = "Total: RM " + total.toFixed(2);
   }
 
+  // Save Changes to Backend
   async function save() {
     const customer = document.getElementById("customer").value.trim();
     const invoice_date = document.getElementById("invoice_date").value;
 
     if (!customer || !invoice_date) {
-      alert("请填写客户名称和日期");
+      alert("Please fill in Customer Name and Date.");
       return;
     }
 
@@ -220,19 +223,21 @@
       const desc = item.querySelector(".desc").value.trim();
       const qty = Number(item.querySelector(".qty").value);
       const price = Number(item.querySelector(".price").value);
+      
+      // Basic validation for items
       if (desc && qty > 0) {
         itemsData.push({ description: desc, qty, price });
       }
     });
 
     if (itemsData.length === 0) {
-      alert("请至少添加一个有效的项目");
+      alert("Please add at least one valid item.");
       return;
     }
 
     const saveBtn = document.getElementById("saveBtn");
     saveBtn.disabled = true;
-    saveBtn.innerText = "正在保存...";
+    saveBtn.innerText = "Saving...";
 
     try {
       const res = await fetch("/api/invoice-edit", {
@@ -247,22 +252,22 @@
       });
 
       if (res.ok) {
-        alert("更新成功");
+        alert("Invoice updated successfully.");
         location.href = "invoice-view.html?id=" + id;
       } else {
         const err = await res.json();
-        alert("保存失败: " + (err.error || "未知错误"));
+        alert("Failed to save: " + (err.error || "Unknown error"));
         saveBtn.disabled = false;
-        saveBtn.innerText = "保存修改";
+        saveBtn.innerText = "Save Changes";
       }
     } catch (e) {
-      alert("网络错误，请稍后再试");
+      alert("Network error, please try again later.");
       saveBtn.disabled = false;
-      saveBtn.innerText = "保存修改";
+      saveBtn.innerText = "Save Changes";
     }
   }
 
-  // 初始化加载
+  // Start initialization
   loadInvoice();
 </script>
 
