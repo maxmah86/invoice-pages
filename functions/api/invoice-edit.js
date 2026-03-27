@@ -1,122 +1,46 @@
 export async function onRequestPost({ request, env }) {
-
-  /* ===============================
-     AUTH (session_token + role)
-     =============================== */
   const cookie = request.headers.get("Cookie") || "";
   const token = cookie.match(/session=([^;]+)/)?.[1];
 
-  if (!token) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
-    );
-  }
+  if (!token) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
-  const user = await env.DB.prepare(`
-    SELECT id, role
-    FROM users
-    WHERE session_token = ?
-  `).bind(token).first();
+  const user = await env.DB.prepare(`SELECT role FROM users WHERE session_token = ?`).bind(token).first();
+  if (!user || user.role !== "admin") return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
 
-  if (!user) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      { status: 401 }
-    );
-  }
-
-  if (user.role !== "admin") {
-    return new Response(
-      JSON.stringify({ error: "Forbidden" }),
-      { status: 403 }
-    );
-  }
-
-  /* ===============================
-     PARSE BODY
-     =============================== */
   let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON" }),
-      { status: 400 }
-    );
-  }
+  try { body = await request.json(); } catch { return new Response("Invalid JSON", { status: 400 }); }
 
-  const { id, customer, items, invoice_date } = body || {};
+  const { id, customer, items, invoice_date } = body;
+  if (!id || !customer || !Array.isArray(items)) return new Response("Invalid data", { status: 400 });
 
-  if (!id || !customer || !Array.isArray(items)) {
-    return new Response(
-      JSON.stringify({ error: "Invalid data" }),
-      { status: 400 }
-    );
-  }
-
-  /* ===============================
-     CHECK INVOICE STATUS
-     =============================== */
-  const invoice = await env.DB.prepare(`
-    SELECT status FROM invoices WHERE id = ?
-  `).bind(id).first();
-
+  // 检查状态：只有 UNPAID 才能编辑
+  const invoice = await env.DB.prepare(`SELECT status FROM invoices WHERE id = ?`).bind(id).first();
   if (!invoice || invoice.status !== "UNPAID") {
-    return new Response(
-      JSON.stringify({ error: "Invoice cannot be edited" }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "Invoice is locked or not found" }), { status: 400 });
   }
 
-  /* ===============================
-     RE-CALCULATE TOTAL
-     =============================== */
+  // 计算总额
   let total = 0;
-  for (const it of items) {
-    if (!it.description || it.qty <= 0 || it.price < 0) continue;
-    total += Number(it.qty) * Number(it.price);
-  }
+  const validItems = items.filter(it => it.description && it.qty > 0);
+  validItems.forEach(it => { total += Number(it.qty) * Number(it.price); });
 
-  /* ===============================
-     DETERMINE DATE
-     =============================== */
-  const targetDate = invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(invoice_date)
-    ? invoice_date
-    : null;
+  const createdAt = (invoice_date || new Date().toISOString().slice(0, 10)) + " 00:00:00";
 
-  try {
-    /* UPDATE INVOICE */
-    const updateSql = targetDate
-      ? `UPDATE invoices SET customer = ?, amount = ?, created_at = ? WHERE id = ?`
-      : `UPDATE invoices SET customer = ?, amount = ? WHERE id = ?`;
+  // 使用 Batch 确保原子性：更新主表 + 删除旧项 + 插入新项
+  const statements = [
+    env.DB.prepare(`UPDATE invoices SET customer = ?, amount = ?, created_at = ? WHERE id = ?`)
+      .bind(customer, total, createdAt, id),
+    env.DB.prepare(`DELETE FROM invoice_items WHERE invoice_id = ?`).bind(id)
+  ];
 
-    const updateBind = targetDate
-      ? [customer, total, targetDate + " 00:00:00", id]
-      : [customer, total, id];
-
-    await env.DB.prepare(updateSql).bind(...updateBind).run();
-
-    /* REPLACE ITEMS */
-    await env.DB.prepare(`DELETE FROM invoice_items WHERE invoice_id = ?`).bind(id).run();
-
-    for (const it of items) {
-      if (!it.description || it.qty <= 0) continue;
-      await env.DB.prepare(`
-        INSERT INTO invoice_items (invoice_id, description, qty, price)
-        VALUES (?, ?, ?, ?)
-      `).bind(id, it.description, it.qty, it.price).run();
-    }
-
-    return new Response(
-      JSON.stringify({ success: true }),
-      { headers: { "Content-Type": "application/json" } }
+  validItems.forEach(it => {
+    statements.push(
+      env.DB.prepare(`INSERT INTO invoice_items (invoice_id, description, qty, price) VALUES (?, ?, ?, ?)`)
+        .bind(id, it.description, it.qty, it.price)
     );
+  });
 
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "DB error: " + err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  await env.DB.batch(statements);
+
+  return new Response(JSON.stringify({ success: true }));
 }
