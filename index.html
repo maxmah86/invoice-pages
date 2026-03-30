@@ -1,1 +1,23 @@
-<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Invoice Dashboard</title>\n    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>\n</head>\n<body>\n    <div id="toggle">\n        <button id="monthlyView">Monthly View</button>\n        <button id="annualView">Annual View</button>\n    </div>\n    <div id="dashboard">\n        <h1>Dashboard</h1>\n        <div id="content">\n            <!-- Content will be loaded here based on the selected view -->\n        </div>\n    </div>\n    <script>\n        $(document).ready(function() {\n            const loadMonthlyData = () => {\n                // Replace with actual data fetching logic\n                $('#content').html('<p>This is the Monthly Dashboard.</p>');\n            };\n            const loadAnnualData = () => {\n                // Replace with actual data fetching logic\n                $('#content').html('<p>This is the Annual Dashboard.</p>');\n            };\n            $('#monthlyView').click(() => {\n                loadMonthlyData();\n            });\n            $('#annualView').click(() => {\n                loadAnnualData();\n            });\n            // Load monthly view by default\n            loadMonthlyData();\n        });\n    </script>\n</body>\n</html>\n
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Pages</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Invoice Pages</h1>
+    <div>
+        <label for="view-toggle">Toggle View: </label>
+        <select id="view-toggle">
+            <option value="month">Month View</option>
+            <option value="year">Year View</option>
+        </select>
+    </div>
+    <div id="calendar">
+        <!-- Calendar will be rendered here -->
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
