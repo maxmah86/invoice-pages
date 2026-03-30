@@ -1,23 +1,377 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice Pages</title>
-    <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<title>MMAC Management System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2c3e50">
+<script src="/js/company-settings.js"></script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 16px;
+  color: #000;
+}
+
+h1 {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #555;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.section {
+  margin-top: 24px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.card h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.card p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #555;
+}
+
+/* ===== Monthly Summary ===== */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.summary-item {
+  text-align: center;
+  padding: 14px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.summary-item.invoice { background: #27ae60; }
+.summary-item.salary  { background: #6f42c1; }
+.summary-item.po {
+  background: #f39c12;
+  color: #000;
+  grid-column: span 2;
+}
+.summary-item.profit { background: #2c3e50; }
+.summary-item.profit.negative { background: #c0392b; }
+
+/* ===== Actions ===== */
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions a {
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+  padding: 10px;
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: 6px;
+  color: #fff;
+}
+
+/* ===== Buttons ===== */
+.btn-primary { background: #2c3e50; }
+.btn-success { background: #27ae60; }
+.btn-warning { background: #f39c12; color:#000; }
+.btn-info    { background: #2980b9; }
+.btn-purple  { background: #6f42c1; }
+.btn-gray    { background: #7f8c8d; }
+.btn-danger  { background: #c0392b; }
+
+.logout {
+  margin-top: 28px;
+  text-align: center;
+}
+.logout button {
+  background: #c0392b;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+</style>
 </head>
+
 <body>
-    <h1>Invoice Pages</h1>
-    <div>
-        <label for="view-toggle">Toggle View: </label>
-        <select id="view-toggle">
-            <option value="month">Month View</option>
-            <option value="year">Year View</option>
-        </select>
+
+<h1 id="comp-name">MMAC CONSTRUCTION</h1>
+<div class="subtitle" id="comp-reg"></div>
+
+<!-- ===== Monthly Summary ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Monthly Summary</h2>
+
+    <label style="display:block;margin-bottom:10px;">
+      Month
+      <input type="month" id="monthPicker" style="width:100%;padding:10px;">
+    </label>
+
+    <div class="summary-grid">
+  <div class="summary-item invoice" id="invTotal">Invoice<br>RM 0.00</div>
+  
+  <div class="summary-item salary" id="salTotal">Salary<br>RM 0.00</div>
+  <div class="summary-item po" id="poTotal">PO<br>RM 0.00</div>
+ <div class="summary-item quotation" id="quoTotal" style="background: #2980b9;">Accepted Quo<br>RM 0.00</div>
+   <div class="summary-item profit" id="profitTotal">Profit<br>RM 0.00</div>
+</div>
+
+
+<!-- ===== Invoice ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Invoice</h2>
+    <div class="actions">
+      <a class="btn-primary" href="/invoices.html">Invoice List</a>
     </div>
-    <div id="calendar">
-        <!-- Calendar will be rendered here -->
+  </div>
+</div>
+
+<!-- ===== Quotation ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Quotation</h2>
+    <p>Quotation creation, list and terms settings.</p>
+    <div class="actions">
+      <a class="btn-primary" href="/quotations.html">Quotation List</a>
+      <a class="btn-gray" href="/quotation-terms.html">Quotation Terms</a>
     </div>
-    <script src="script.js"></script>
+  </div>
+</div>
+
+<!-- ===== Statement (RESTORED) ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Statement</h2>
+    <p>Customer statements and outstanding balances.</p>
+    <div class="actions">
+      <a class="btn-purple" href="/statement.html">View Statements</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Item Catalog ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Item Catalog</h2>
+    <p>Reusable items for quotation, invoice and VO.</p>
+    <div class="actions">
+      <a class="btn-purple" href="/item-catalogs.html">Manage Item Catalog</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Projects ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Projects</h2>
+    <p>Manage projects, track invoices, POs, quotations and P&L per project.</p>
+    <div class="actions">
+      <a class="btn-success" href="/project-create.html">New Project</a>
+      <a class="btn-primary" href="/project-list.html">Project List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Projects & Work ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Work Checklists</h2>
+    <p>Site work progress and checklists.</p>
+    <div class="actions">
+      <a class="btn-success" href="/work-checklist.html">Work Checklists</a>
+      <a class="btn-primary" href="/create-checklist.html">Create Checklist</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Payslip ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Payslip</h2>
+    <div class="actions">
+      <a class="btn-success" href="/daily-labour-create.html">Add Payslip</a>
+      <a class="btn-primary" href="/daily-labours.html">Payslip List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Expenses ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Expenses</h2>
+    <p>Petty cash, utilities, rental, services and other operational costs.</p>
+    <div class="actions">
+      <a class="btn-success" href="/expense.html">Add Expense</a>
+      <a class="btn-primary" href="/expenses.html">Expense List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Variation Orders ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Variation Orders (VO)</h2>
+    <div class="actions">
+      <a class="btn-primary" href="/vos.html">VO List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Purchase Order ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Purchase Order</h2>
+    <div class="actions">
+      <a class="btn-warning" href="/po.html">Create PO</a>
+      <a class="btn-primary" href="/pos.html">PO List</a>
+      <a class="btn-gray" href="/po-summary.html">PO Summary</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Employees ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Employees</h2>
+    <div class="actions">
+      <a class="btn-info" href="/employee.html">Add Employee</a>
+      <a class="btn-primary" href="/employees.html">Employee List</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Salaries ===== -->
+<div class="section">
+  <div class="card">
+    <h2>Salaries</h2>
+    <div class="actions">
+      <a class="btn-purple" href="/salaries.html">Salary Management</a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Logout ===== -->
+<div class="logout">
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+// Apply company name from settings
+if (typeof applyCompanySettings === "function") applyCompanySettings();
+if (typeof COMPANY_CONFIG !== "undefined") {
+  // Update page title
+  document.title = COMPANY_CONFIG.name + " — Management System";
+  // Show reg number as subtitle
+  const regEl = document.getElementById("comp-reg");
+  if (regEl && COMPANY_CONFIG.regNo) regEl.textContent = COMPANY_CONFIG.regNo;
+}
+
+// 1. 身份验证与权限检查
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => {
+    if (!r.ok) location.replace("/login.html");
+    return r.json();
+  })
+  .then(d => {
+    // 只有 admin 角色可以查看仪表板，否则跳转到工作清单
+    if (d.role !== "admin") {
+      location.replace("/work-checklist.html");
+    }
+  })
+  .catch(() => location.replace("/login.html"));
+
+// 2. 初始化月份选择器，默认为当前月份
+const monthInput = document.getElementById("monthPicker");
+monthInput.value = new Date().toISOString().slice(0,7);
+
+/**
+ * 3. 加载汇总数据
+ * 包含：Invoice, Salary, PO, Profit 以及新增的 Accepted Quotation
+ */
+async function loadSummary() {
+  const m = monthInput.value;
+  try {
+    // 并发请求所有统计接口
+    const [i, s, p, pr, q] = await Promise.all([
+      fetch(`/api/dashboard-invoice-total?month=${m}`).then(r => r.json()),
+      fetch(`/api/dashboard-salary-total?month=${m}`).then(r => r.json()),
+      fetch(`/api/dashboard-po-total?month=${m}`).then(r => r.json()),
+      fetch(`/api/dashboard-profit?month=${m}`).then(r => r.json()),
+      // 假设您已根据建议创建了此接口
+      fetch(`/api/dashboard-quotation-total?month=${m}`).then(r => r.json())
+    ]);
+
+    // 更新 Invoice 总额
+    document.getElementById("invTotal").innerHTML = `Invoice<br>RM ${Number(i.total || 0).toFixed(2)}`;
+    
+    // 更新 Salary 总额 (包含月薪和日工)
+    document.getElementById("salTotal").innerHTML = `Salary<br>RM ${Number(s.total || 0).toFixed(2)}`;
+    
+    // 更新 PO 总额
+    document.getElementById("poTotal").innerHTML = `PO<br>RM ${Number(p.total || 0).toFixed(2)}`;
+
+    // 更新 Accepted Quotation 总额 (对应您截图中的新需求)
+    const quoElement = document.getElementById("quoTotal");
+    if (quoElement) {
+      quoElement.innerHTML = `Accepted Quo<br>RM ${Number(q.total || 0).toFixed(2)}`;
+    }
+
+    // 更新 Profit (利润) 并处理负数颜色
+    const profit = Number(pr.profit || 0);
+    const profitTotal = document.getElementById("profitTotal");
+    profitTotal.innerHTML = `Profit<br>RM ${profit.toFixed(2)}`;
+    profitTotal.classList.toggle("negative", profit < 0);
+
+  } catch (err) {
+    console.error("Failed to load dashboard data:", err);
+  }
+}
+
+// 监听月份变化
+monthInput.onchange = loadSummary;
+// 页面加载时执行一次
+loadSummary();
+
+/**
+ * 4. 注销功能
+ */
+async function logout() {
+  await fetch("/api/logout", { method: "POST", credentials: "include" });
+  location.replace("/login.html");
+}
+</script>
+
+
 </body>
 </html>
+
