@@ -1,5 +1,18 @@
 export async function onRequestGet({ request, env }) {
 
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS purchase_invoices (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pi_no TEXT UNIQUE NOT NULL,
+      project_id INTEGER,
+      subcon_name TEXT NOT NULL,
+      claim_date TEXT NOT NULL,
+      net_amount REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'DRAFT',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+
   /* ── Auth ── */
   const cookie = request.headers.get("Cookie") || "";
   const token  = cookie.match(/session=([^;]+)/)?.[1];
@@ -49,6 +62,11 @@ export async function onRequestGet({ request, env }) {
     FROM purchase_orders WHERE project_id = ? ORDER BY created_at DESC
   `).bind(id).all();
 
+  const { results: purchase_invoices } = await env.DB.prepare(`
+    SELECT id, pi_no, subcon_name, claim_date, net_amount, status, created_at
+    FROM purchase_invoices WHERE project_id = ? ORDER BY created_at DESC
+  `).bind(id).all();
+
   const { results: variation_orders } = await env.DB.prepare(`
     SELECT id, vo_no, title, amount, status, created_at
     FROM variation_orders WHERE project_id = ? ORDER BY created_at DESC
@@ -71,6 +89,7 @@ export async function onRequestGet({ request, env }) {
   const totalOutstanding = totalInvoiced - totalCollected;
 
   const totalPO     = purchase_orders.reduce((s, p) => s + (Number(p.total) || 0), 0);
+  const totalPI     = purchase_invoices.reduce((s, p) => s + (Number(p.net_amount) || 0), 0);
   const totalLabour = daily_labours.reduce((s, d) => s + (Number(d.amount) || 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
@@ -80,7 +99,7 @@ export async function onRequestGet({ request, env }) {
     .reduce((s, v) => s + (Number(v.amount) || 0), 0);
 
   // Total cost = PO + Labour + Expenses
-  const totalCost = totalPO + totalLabour + totalExpenses;
+  const totalCost = totalPO + totalPI + totalLabour + totalExpenses;
 
   // Gross profit = Invoiced - all costs
   const grossProfit = totalInvoiced - totalCost;
@@ -94,6 +113,7 @@ export async function onRequestGet({ request, env }) {
         total_collected:   totalCollected,
         total_outstanding: totalOutstanding,
         total_po:          totalPO,
+        total_purchase_invoices: totalPI,
         total_vo:          totalVO,
         total_labour:      totalLabour,
         total_expenses:    totalExpenses,
@@ -103,6 +123,7 @@ export async function onRequestGet({ request, env }) {
       quotations,
       invoices,
       purchase_orders,
+      purchase_invoices,
       variation_orders,
       daily_labours,
       expenses

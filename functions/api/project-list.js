@@ -71,7 +71,28 @@ export async function onRequestGet({ request, env }) {
         FROM purchase_orders
         WHERE project_id = p.id
           AND status != 'VOID'
-      ), 0) AS total_po
+      ), 0) AS total_po,
+
+      IFNULL((
+        SELECT SUM(net_amount)
+        FROM purchase_invoices
+        WHERE project_id = p.id
+          AND status != 'VOID'
+      ), 0) AS total_purchase_invoices,
+
+      IFNULL((
+        SELECT SUM(amount)
+        FROM daily_labours
+        WHERE project_id = p.id
+          AND status != 'VOID'
+      ), 0) AS total_labour,
+
+      IFNULL((
+        SELECT SUM(amount)
+        FROM expenses
+        WHERE project_id = p.id
+          AND status != 'VOID'
+      ), 0) AS total_expenses
 
     FROM projects p
     WHERE 1 = 1
