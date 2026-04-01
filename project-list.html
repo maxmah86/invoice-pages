@@ -278,7 +278,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
       <div class="dash-sub" id="dashSub">Loading...</div>
     </div>
     <select class="month-filter" id="monthFilter">
-      <option value="">This Year</option>
+      <option value="">All Time</option>
     </select>
   </div>
 
@@ -363,7 +363,7 @@ function resetAllFilters() {
   // 2. Reset Search Input
   document.getElementById("searchQ").value = "";
 
-  // 3. Reset Month Filter to Default (This Year)
+  // 3. Reset Month Filter to Default (All Time)
   document.getElementById("monthFilter").value = "";
 
   // 4. Reload Data
@@ -374,7 +374,6 @@ function resetAllFilters() {
 async function load() {
   const q      = document.getElementById("searchQ").value.trim();
   const month  = document.getElementById("monthFilter").value;
-  const year   = new Date().getFullYear();
 
   const params = new URLSearchParams();
   if (_statusFilter) params.set("status", _statusFilter);
@@ -382,8 +381,6 @@ async function load() {
 
   if (month) {
     params.set("start_month", month);
-  } else {
-    params.set("start_year", String(year));
   }
 
   const wrap = document.getElementById("projectList");
@@ -414,7 +411,7 @@ async function load() {
 
     const periodLabel = month
       ? new Date(month + "-01").toLocaleDateString("en-MY", { month: "long", year: "numeric" })
-      : "Year " + year;
+      : "All Time";
     document.getElementById("dashSub").textContent =
       rows.length + " project" + (rows.length !== 1 ? "s" : "") + " · " + periodLabel;
 
