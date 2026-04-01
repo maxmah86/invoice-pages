@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Create Purchase Invoice</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+body { font-family: Arial, sans-serif; margin: 16px; color: #000; }
+h1 { margin-bottom: 12px; }
+.form-group { margin-bottom: 12px; }
+label { display:block; font-size:13px; font-weight:bold; margin-bottom:4px; }
+input, textarea, select { width:100%; box-sizing:border-box; padding:8px; font-size:14px; }
+textarea { min-height: 60px; }
+.grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+@media (max-width: 720px){ .grid { grid-template-columns: 1fr; } }
+table { width:100%; border-collapse: collapse; margin-top:8px; }
+th, td { border:1px solid #000; padding:6px; font-size:13px; }
+th { background:#f0f0f0; }
+.text-right { text-align:right; }
+.total-box { margin-top:12px; background:#fafafa; border:1px solid #ddd; border-radius:6px; padding:10px; }
+.total-row { display:flex; justify-content:space-between; margin:4px 0; }
+.actions { margin-top:14px; display:flex; gap:8px; }
+button { padding:8px 14px; font-size:14px; cursor:pointer; }
+#errorBox { display:none; margin-top:14px; padding:10px; border:1px solid #c00; background:#fff3f3; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Create Purchase Invoice (Subcon Claim)</h1>
+
+<div id="projectBanner" style="display:none; background:#2c3e50; color:#fff; padding:10px 15px; border-radius:6px; margin-bottom:12px; font-size:14px;">
+  📁 Project: <strong id="projectLabel"></strong>
+</div>
+
+<div class="grid">
+  <div class="form-group">
+    <label>Subcon Name *</label>
+    <input id="subcon_name" placeholder="Required">
+  </div>
+  <div class="form-group">
+    <label>Claim Date</label>
+    <input id="claim_date" type="date">
+  </div>
+</div>
+
+<div class="grid">
+  <div class="form-group">
+    <label>Work Period From</label>
+    <input id="period_from" type="date">
+  </div>
+  <div class="form-group">
+    <label>Work Period To</label>
+    <input id="period_to" type="date">
+  </div>
+</div>
+
+<div class="form-group">
+  <label>Notes</label>
+  <textarea id="notes"></textarea>
+</div>
+
+<h3>Claim Items *</h3>
+<table>
+  <thead>
+    <tr>
+      <th style="width:6%">No</th>
+      <th style="width:14%">Type</th>
+      <th>Description</th>
+      <th style="width:10%">Qty</th>
+      <th style="width:10%">Unit</th>
+      <th style="width:15%">Unit Price</th>
+      <th style="width:15%">Amount</th>
+      <th style="width:6%"></th>
+    </tr>
+  </thead>
+  <tbody id="items"></tbody>
+</table>
+<button onclick="addRow()">+ Add Item</button>
+
+<div class="grid" style="margin-top:12px;">
+  <div class="form-group">
+    <label>Retention %</label>
+    <input id="retention_pct" type="number" value="0" step="0.01" oninput="calc()">
+  </div>
+  <div class="form-group">
+    <label>Less Advance (RM)</label>
+    <input id="less_advance" type="number" value="0" step="0.01" oninput="calc()">
+  </div>
+</div>
+
+<div class="total-box">
+  <div class="total-row"><strong>Labour:</strong><span id="labour">RM 0.00</span></div>
+  <div class="total-row"><strong>Material:</strong><span id="material">RM 0.00</span></div>
+  <div class="total-row"><strong>Other:</strong><span id="other">RM 0.00</span></div>
+  <div class="total-row"><strong>Gross:</strong><span id="gross">RM 0.00</span></div>
+  <div class="total-row"><strong>Retention Amount:</strong><span id="retentionAmt">RM 0.00</span></div>
+  <div class="total-row"><strong>Net Amount:</strong><span id="net" style="font-size:16px;">RM 0.00</span></div>
+</div>
+
+<div class="actions">
+  <button onclick="submitPI()">Create Purchase Invoice</button>
+  <button onclick="history.back()">Cancel</button>
+</div>
+
+<div id="errorBox"></div>
+
+<script>
+let _projectId = null;
+
+function addRow(item = {}) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td></td>
+    <td>
+      <select class="cost_type" onchange="calc()">
+        <option value="LABOUR" ${item.cost_type === "LABOUR" ? "selected" : ""}>LABOUR</option>
+        <option value="MATERIAL" ${item.cost_type === "MATERIAL" ? "selected" : ""}>MATERIAL</option>
+        <option value="OTHER" ${item.cost_type === "OTHER" ? "selected" : ""}>OTHER</option>
+      </select>
+    </td>
+    <td><input class="desc" value="${item.description || ""}"></td>
+    <td><input type="number" class="qty text-right" value="${item.qty || 0}" oninput="calc()"></td>
+    <td><input class="unit" value="${item.unit || ""}"></td>
+    <td><input type="number" class="unit_price text-right" value="${item.unit_price || 0}" oninput="calc()"></td>
+    <td class="text-right amount">0.00</td>
+    <td><button onclick="this.closest('tr').remove(); calc()">X</button></td>
+  `;
+  document.getElementById("items").appendChild(tr);
+  calc();
+}
+
+function calc() {
+  let labour = 0, material = 0, other = 0;
+
+  document.querySelectorAll("#items tr").forEach((tr, idx) => {
+    tr.children[0].textContent = idx + 1;
+    const type = tr.querySelector(".cost_type").value;
+    const qty = Number(tr.querySelector(".qty").value) || 0;
+    const price = Number(tr.querySelector(".unit_price").value) || 0;
+    const amount = qty * price;
+    tr.querySelector(".amount").textContent = amount.toFixed(2);
+
+    if (type === "LABOUR") labour += amount;
+    else if (type === "MATERIAL") material += amount;
+    else other += amount;
+  });
+
+  const gross = labour + material + other;
+  const retentionPct = Number(document.getElementById("retention_pct").value) || 0;
+  const retentionAmt = gross * (retentionPct / 100);
+  const lessAdvance = Number(document.getElementById("less_advance").value) || 0;
+  const net = gross - retentionAmt - lessAdvance;
+
+  document.getElementById("labour").textContent = RM(labour);
+  document.getElementById("material").textContent = RM(material);
+  document.getElementById("other").textContent = RM(other);
+  document.getElementById("gross").textContent = RM(gross);
+  document.getElementById("retentionAmt").textContent = RM(retentionAmt);
+  document.getElementById("net").textContent = RM(net);
+}
+
+async function submitPI() {
+  const errorBox = document.getElementById("errorBox");
+  errorBox.style.display = "none";
+  errorBox.textContent = "";
+
+  const subconName = document.getElementById("subcon_name").value.trim();
+  const rows = [...document.querySelectorAll("#items tr")];
+  const items = rows.map(tr => ({
+    cost_type: tr.querySelector(".cost_type").value,
+    description: tr.querySelector(".desc").value,
+    qty: Number(tr.querySelector(".qty").value) || 0,
+    unit: tr.querySelector(".unit").value,
+    unit_price: Number(tr.querySelector(".unit_price").value) || 0
+  }));
+
+  if (!subconName) { alert("Subcon Name is required"); return; }
+  if (!items.length) { alert("Please add at least one item"); return; }
+
+  const payload = {
+    project_id: _projectId ? Number(_projectId) : null,
+    subcon_name: subconName,
+    claim_date: document.getElementById("claim_date").value,
+    period_from: document.getElementById("period_from").value,
+    period_to: document.getElementById("period_to").value,
+    retention_pct: Number(document.getElementById("retention_pct").value) || 0,
+    less_advance: Number(document.getElementById("less_advance").value) || 0,
+    notes: document.getElementById("notes").value,
+    items
+  };
+
+  try {
+    const res = await fetch("/api/purchase-invoice-create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.success) {
+      errorBox.style.display = "block";
+      errorBox.textContent = json.error || `Create failed (${res.status})`;
+      return;
+    }
+
+    alert(`Created ${json.pi_no}`);
+    location.href = `/purchase-invoice-view.html?id=${json.id}`;
+  } catch (err) {
+    errorBox.style.display = "block";
+    errorBox.textContent = "Network error: " + err.message;
+  }
+}
+
+function RM(n) {
+  return "RM " + Number(n || 0).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+(function init(){
+  addRow({ cost_type: "LABOUR", qty: 1, unit_price: 0 });
+  const p = new URLSearchParams(location.search);
+  _projectId = p.get("project_id");
+
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById("claim_date").value = today;
+
+  if (_projectId) {
+    document.getElementById("projectBanner").style.display = "block";
+    document.getElementById("projectLabel").textContent = "#" + _projectId;
+  }
+})();
+</script>
+</body>
+</html>

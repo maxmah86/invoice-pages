@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Purchase Invoice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="/js/config.js"></script>
+  <script src="/js/company-settings.js"></script>
+  <style>
+    :root {
+      --gap: 10px;
+      --font: Arial, sans-serif;
+      --border: #000;
+      --muted-bg: #f0f0f0;
+      --padding: 8px;
+    }
+
+    body {
+      font-family: var(--font);
+      margin: 16px;
+      color: #000;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .company {
+      font-size: 14px;
+      line-height: 1.5;
+      max-width: 60%;
+    }
+
+    .company-header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--gap);
+      margin-bottom: 8px;
+    }
+
+    .company-logo {
+      width: 64px;
+      height: auto;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+
+    .company-text h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .doc-box {
+      text-align: right;
+      min-width: 320px;
+    }
+
+    .doc-title {
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .doc-actions {
+      margin: 6px 0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .doc-actions button {
+      padding: 6px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .doc-meta {
+      font-size: 14px;
+      line-height: 1.6;
+      text-align: right;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+
+    .DRAFT { background:#e9ecef; color:#495057; }
+    .APPROVED { background:#d0ebff; color:#1864ab; }
+    .PARTIAL { background:#fff3bf; color:#e67700; }
+    .PAID { background:#d3f9d8; color:#2b8a3e; }
+    .REJECTED { background:#ffe3e3; color:#c92a2a; }
+
+    .section { margin-top: 20px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: var(--padding);
+      font-size: 13px;
+    }
+
+    th { background: var(--muted-bg); }
+
+    .text-right { text-align: right; }
+
+    .summary {
+      margin-top: 14px;
+      max-width: 460px;
+      margin-left: auto;
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
+      font-size: 14px;
+    }
+
+    .row {
+      display:flex;
+      justify-content: space-between;
+      margin: 5px 0;
+    }
+
+    .net {
+      font-size: 16px;
+      font-weight: bold;
+      border-top: 1px solid #ddd;
+      padding-top: 6px;
+      margin-top: 8px;
+    }
+
+    #err {
+      margin-top: 8px;
+      color: #c92a2a;
+      font-size: 13px;
+      text-align: right;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 8mm 10mm 8mm 10mm;
+      }
+
+      html { zoom: 0.8; }
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+
+      button, .doc-actions, #err, #statusBadge {
+        display: none !important;
+      }
+
+      tr { page-break-inside: avoid; }
+      thead { display: table-header-group; }
+    }
+
+    @media (max-width: 720px) {
+      .header { flex-direction: column; }
+      .company { max-width: 100%; }
+      .doc-box, .doc-meta { text-align: left; }
+      .doc-actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="company">
+      <div class="company-header">
+        <img id="company-logo" src="" alt="Logo" class="company-logo" />
+        <div class="company-text">
+          <h1 id="comp-name">Demo Sdn Bhd</h1>
+          <div id="comp-reg"></div>
+        </div>
+      </div>
+      <address>
+        <div id="comp-address"></div>
+        <div id="comp-contact"></div>
+      </address>
+    </div>
+
+    <div class="doc-box">
+      <div class="doc-title">PURCHASE INVOICE</div>
+      <div class="doc-actions">
+        <button onclick="location.href='/index.html'">HOME</button>
+        <button onclick="goProject()" id="btnProject" style="display:none;">PROJECT</button>
+        <button onclick="location.href='/purchase-invoices.html'">LIST</button>
+        <button onclick="window.print()">PRINT / PDF</button>
+        <button onclick="quickStatus('APPROVED')">APPROVE</button>
+        <button onclick="quickStatus('PARTIAL')">PARTIAL</button>
+        <button onclick="quickStatus('PAID')">PAID</button>
+        <button onclick="quickStatus('REJECTED')">REJECT</button>
+      </div>
+
+      <div class="doc-meta" id="meta">Loading...</div>
+      <div id="statusBadge" class="status-badge DRAFT">DRAFT</div>
+      <div id="err"></div>
+    </div>
+  </header>
+
+  <main class="section">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:6%">No</th>
+          <th style="width:12%">Type</th>
+          <th>Description</th>
+          <th style="width:10%">Qty</th>
+          <th style="width:10%">Unit</th>
+          <th style="width:15%">Unit Price</th>
+          <th style="width:15%">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="items">
+        <tr><td colspan="7" style="text-align:center">Loading items...</td></tr>
+      </tbody>
+    </table>
+
+    <div class="summary" id="summary"></div>
+  </main>
+
+<script>
+const params = new URLSearchParams(location.search);
+const id = params.get('id');
+let headerData = null;
+
+if (!id) {
+  document.getElementById('meta').textContent = 'No purchase invoice ID provided.';
+} else {
+  load();
+}
+
+(async function loadCompany() {
+  if (window.CompanySettings?.loadAndApply) {
+    await window.CompanySettings.loadAndApply({
+      logoId: 'company-logo',
+      nameId: 'comp-name',
+      regId: 'comp-reg',
+      addressId: 'comp-address',
+      contactId: 'comp-contact'
+    });
+  }
+})();
+
+async function load() {
+  const res = await fetch(`/api/purchase-invoice-view?id=${encodeURIComponent(id)}`, { credentials: 'include' });
+  if (res.status === 401) {
+    location.replace('/login.html');
+    return;
+  }
+
+  if (!res.ok) {
+    document.getElementById('meta').textContent = 'Load failed';
+    return;
+  }
+
+  const data = await res.json();
+  const h = data.header;
+  const items = data.items || [];
+  headerData = h;
+
+  document.title = `${h.pi_no} — Purchase Invoice`;
+  document.getElementById('meta').innerHTML = `
+    <div><strong>PI No:</strong> ${h.pi_no || '—'}</div>
+    <div><strong>Date:</strong> ${(h.claim_date || '').slice(0,10) || '—'}</div>
+    <div><strong>Company:</strong> ${h.subcon_name || '—'}</div>
+    <div><strong>Project:</strong> ${h.project_name || (h.project_id ? ('#' + h.project_id) : '—')}</div>
+    <div><strong>Period:</strong> ${(h.period_from || '').slice(0,10) || '—'} to ${(h.period_to || '').slice(0,10) || '—'}</div>
+    <div><strong>Created By:</strong> ${h.created_by || '—'}</div>
+    <div><strong>Notes:</strong> ${h.notes || '—'}</div>
+  `;
+
+  if (h.project_id) {
+    document.getElementById('btnProject').style.display = 'inline-block';
+  }
+
+  setStatusBadge(h.status || 'DRAFT');
+
+  const tbody = document.getElementById('items');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No items</td></tr>';
+  } else {
+    tbody.innerHTML = items.map((it, idx) => `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${it.cost_type || 'OTHER'}</td>
+        <td>${it.description || ''}</td>
+        <td class="text-right">${Number(it.qty || 0).toFixed(2)}</td>
+        <td>${it.unit || ''}</td>
+        <td class="text-right">${RM(it.unit_price)}</td>
+        <td class="text-right">${RM(it.line_total)}</td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('summary').innerHTML = `
+    <div class="row"><span>Labour</span><strong>${RM(h.labour_amount)}</strong></div>
+    <div class="row"><span>Material</span><strong>${RM(h.material_amount)}</strong></div>
+    <div class="row"><span>Other</span><strong>${RM(h.other_amount)}</strong></div>
+    <div class="row"><span>Gross</span><strong>${RM(h.gross_amount)}</strong></div>
+    <div class="row"><span>Retention (${Number(h.retention_pct || 0).toFixed(2)}%)</span><strong>- ${RM(h.retention_amount)}</strong></div>
+    <div class="row"><span>Less Advance</span><strong>- ${RM(h.less_advance)}</strong></div>
+    <div class="row net"><span>Net Amount</span><strong>${RM(h.net_amount)}</strong></div>
+  `;
+}
+
+function goProject() {
+  if (!headerData?.project_id) return;
+  location.href = `/project-view.html?id=${headerData.project_id}`;
+}
+
+async function quickStatus(status) {
+  if (!headerData) return;
+  if (!confirm(`Set status to ${status}?`)) return;
+
+  const res = await fetch('/api/purchase-invoice-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ id: Number(id), status })
+  });
+
+  if (!res.ok) {
+    document.getElementById('err').textContent = 'Failed to update status';
+    return;
+  }
+
+  headerData.status = status;
+  setStatusBadge(status);
+  document.getElementById('err').textContent = '';
+}
+
+function setStatusBadge(status) {
+  const b = document.getElementById('statusBadge');
+  b.className = `status-badge ${status}`;
+  b.textContent = status;
+}
+
+function RM(v) {
+  return 'RM ' + Number(v || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+</script>
+</body>
+</html>

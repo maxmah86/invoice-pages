@@ -192,7 +192,7 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
     <div class="stat-card red">
       <div class="stat-label">Total Cost</div>
       <div class="stat-value orange" id="statCost">RM 0.00</div>
-      <div class="stat-sub" id="statCostSub">PO + Payslip + Expenses</div>
+      <div class="stat-sub" id="statCostSub">PO + PI + Payslip + Expenses</div>
     </div>
 
     <div class="stat-card" id="statProfitCard">
@@ -246,6 +246,15 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="listPO"></div>
 </div>
 
+<!-- Purchase Invoices -->
+<div class="section-card">
+  <div class="section-header">
+    <h2>Purchase Invoices</h2>
+    <a href="#" class="add-link" id="btnAddPI">+ Add</a>
+  </div>
+  <div id="listPI"></div>
+</div>
+
 <!-- Payslips -->
 <div class="section-card">
   <div class="section-header">
@@ -288,6 +297,7 @@ async function loadAll() {
     renderVO(data.variation_orders);
     renderInvoices(data.invoices);
     renderPO(data.purchase_orders);
+    renderPI(data.purchase_invoices);
     renderLabour(data.daily_labours);
     renderExpenses(data.expenses);
 
@@ -295,6 +305,7 @@ async function loadAll() {
     document.getElementById("btnAddVO").href        = `/vo.html?project_id=${projectId}`;
     document.getElementById("btnAddInvoice").href   = `/invoice.html?project_id=${projectId}`;
     document.getElementById("btnAddPO").href        = `/po.html?project_id=${projectId}`;
+    document.getElementById("btnAddPI").href        = `/purchase-invoice.html?project_id=${projectId}`;
     document.getElementById("btnAddLabour").href    = `/daily-labour-create.html?project_id=${projectId}`;
     document.getElementById("btnAddExpense").href   = `/expense.html?project_id=${projectId}`;
 
@@ -346,10 +357,10 @@ function renderFinancials(f) {
   const pct = f.contract_value > 0 ? Math.round((f.total_invoiced / f.contract_value) * 100) : 0;
   document.getElementById("statInvoicePct").textContent = pct + "% of contract";
 
-  const cost = (f.total_po || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
+  const cost = (f.total_po || 0) + (f.total_purchase_invoices || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
   document.getElementById("statCost").textContent = RM(cost);
   document.getElementById("statCostSub").textContent =
-    `PO: ${RM(f.total_po)} | Payslip: ${RM(f.total_labour)} | Exp: ${RM(f.total_expenses)}`;
+    `PO: ${RM(f.total_po)} | PI: ${RM(f.total_purchase_invoices)} | Payslip: ${RM(f.total_labour)} | Exp: ${RM(f.total_expenses)}`;
 
   const profit = f.total_invoiced - cost;
   const profitEl = document.getElementById("statProfit");
@@ -425,6 +436,23 @@ function renderPO(list) {
       </td>
       <td class="amount-col">
         ${RM(p.total)}<br>
+        ${statusBadge(p.status)}
+      </td>
+    </tr>`).join("") + "</table>";
+}
+
+/* ── Purchase Invoices ── */
+function renderPI(list) {
+  const w = document.getElementById("listPI");
+  if (!list?.length) { w.innerHTML = empty("No purchase invoices"); return; }
+  w.innerHTML = "<table>" + list.map(p => `
+    <tr class="clickable" onclick="location.href='/purchase-invoice-view.html?id=${p.id}'">
+      <td>
+        <div class="doc-no">${p.pi_no}</div>
+        <div class="doc-sub">${p.subcon_name || ""} · ${(p.claim_date || "").slice(0,10)}</div>
+      </td>
+      <td class="amount-col">
+        ${RM(p.net_amount)}<br>
         ${statusBadge(p.status)}
       </td>
     </tr>`).join("") + "</table>";

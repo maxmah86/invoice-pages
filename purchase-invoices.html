@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Purchase Invoices</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial, sans-serif; margin: 16px; background: #f5f5f5; }
+h1 { margin: 0; }
+.filter-box { background:#fff; padding:12px; border-radius:6px; margin:12px 0; }
+label { display:block; font-size:13px; font-weight:bold; margin-top:6px; }
+input, select { width:100%; padding:8px; font-size:14px; margin-top:4px; }
+.list { background:#fff; border-radius:6px; overflow:hidden; }
+.item { border-bottom:1px solid #eee; padding:12px; }
+.item:last-child { border-bottom:none; }
+.row { font-size:14px; margin-bottom:4px; }
+.actions { margin-top:6px; display:flex; gap:6px; flex-wrap:wrap; }
+.actions button { padding:6px 10px; font-size:12px; cursor:pointer; }
+.status { font-weight:bold; }
+.DRAFT { color:#6c757d; }
+.APPROVED { color:#1c7ed6; }
+.PARTIAL { color:#e67700; }
+.PAID { color:#2f9e44; }
+.REJECTED { color:#c92a2a; }
+</style>
+</head>
+<body>
+<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+  <h1>Purchase Invoices (Subcon Claims)</h1>
+  <div style="display:flex; gap:6px;">
+    <button onclick="location.href='/purchase-invoice.html'" style="background:#2b8a3e; color:#fff; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;">+ New</button>
+    <button onclick="location.href='/index.html'" style="background:#7f8c8d; color:#fff; border:none; border-radius:6px; padding:8px 16px; cursor:pointer;">Home</button>
+  </div>
+</div>
+
+<div class="filter-box">
+  <label>Status</label>
+  <select id="filterStatus" onchange="applyFilter()">
+    <option value="">ALL</option>
+    <option value="DRAFT">DRAFT</option>
+    <option value="APPROVED">APPROVED</option>
+    <option value="PARTIAL">PARTIAL</option>
+    <option value="PAID">PAID</option>
+    <option value="REJECTED">REJECTED</option>
+  </select>
+
+  <label>PI No</label>
+  <input id="filterNo" placeholder="Search PI no" oninput="applyFilter()">
+
+  <label>Subcon</label>
+  <input id="filterSubcon" placeholder="Search subcon" oninput="applyFilter()">
+</div>
+
+<div class="list" id="list"></div>
+
+<script>
+let purchaseInvoices = [];
+
+fetch('/api/purchase-invoices', { credentials: 'include' })
+  .then(res => {
+    if (res.status === 401) {
+      location.replace('/login.html');
+      throw new Error('Unauthorized');
+    }
+    return res.json();
+  })
+  .then(data => {
+    purchaseInvoices = data || [];
+    render(purchaseInvoices);
+  })
+  .catch(err => {
+    document.getElementById('list').innerHTML = `<div class="item">Load failed: ${err.message}</div>`;
+  });
+
+function applyFilter() {
+  const status = document.getElementById('filterStatus').value;
+  const no = document.getElementById('filterNo').value.toLowerCase();
+  const subcon = document.getElementById('filterSubcon').value.toLowerCase();
+
+  const filtered = purchaseInvoices.filter(pi => {
+    if (status && pi.status !== status) return false;
+    if (no && !String(pi.pi_no || '').toLowerCase().includes(no)) return false;
+    if (subcon && !String(pi.subcon_name || '').toLowerCase().includes(subcon)) return false;
+    return true;
+  });
+
+  render(filtered);
+}
+
+function render(list) {
+  const c = document.getElementById('list');
+  c.innerHTML = '';
+
+  if (!list.length) {
+    c.innerHTML = "<div class='item'>No purchase invoices found</div>";
+    return;
+  }
+
+  list.forEach(pi => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+      <div class="row"><strong>${pi.pi_no}</strong></div>
+      <div class="row">Subcon: ${pi.subcon_name || '—'}</div>
+      <div class="row">Claim Date: ${(pi.claim_date || '').slice(0, 10) || '—'}</div>
+      <div class="row">Net: RM ${Number(pi.net_amount || 0).toFixed(2)}</div>
+      <div class="row status ${pi.status}">${pi.status || '—'}</div>
+      <div class="actions">
+        <button onclick="viewPI(${pi.id})">View</button>
+        ${renderStatusButtons(pi)}
+      </div>
+    `;
+    c.appendChild(div);
+  });
+}
+
+function renderStatusButtons(pi) {
+  const id = Number(pi.id);
+  if (pi.status === 'DRAFT') {
+    return `<button onclick="setStatus(${id}, 'APPROVED')">Approve</button><button onclick="setStatus(${id}, 'REJECTED')">Reject</button>`;
+  }
+  if (pi.status === 'APPROVED' || pi.status === 'PARTIAL') {
+    return `<button onclick="setStatus(${id}, 'PAID')">Mark Paid</button><button onclick="setStatus(${id}, 'PARTIAL')">Mark Partial</button>`;
+  }
+  if (pi.status === 'PAID') {
+    return `<button onclick="setStatus(${id}, 'PARTIAL')">Mark Partial</button>`;
+  }
+  if (pi.status === 'REJECTED') {
+    return `<button onclick="setStatus(${id}, 'DRAFT')">Reopen Draft</button>`;
+  }
+  return '';
+}
+
+function viewPI(id) {
+  location.href = `/purchase-invoice-view.html?id=${id}`;
+}
+
+async function setStatus(id, status) {
+  if (!confirm(`Set purchase invoice to ${status}?`)) return;
+
+  const res = await fetch('/api/purchase-invoice-status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ id, status })
+  });
+
+  if (!res.ok) {
+    alert('Failed to update status');
+    return;
+  }
+
+  const pi = purchaseInvoices.find(x => x.id === id);
+  if (pi) pi.status = status;
+  applyFilter();
+}
+</script>
+</body>
+</html>

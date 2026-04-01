@@ -76,7 +76,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
 /* Stats row */
 .dash-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
@@ -248,6 +248,11 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   margin-top: 3px;
   display: flex;
   justify-content: space-between;
+  gap: 8px;
+}
+.mini-profit {
+  color: #38a169;
+  font-weight: bold;
 }
 
 .empty-msg {
@@ -289,6 +294,10 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
     <div class="stat-box">
       <div class="s-val" id="statCollected">RM 0</div>
       <div class="s-lbl">Collected</div>
+    </div>
+    <div class="stat-box">
+      <div class="s-val" id="statProfit">RM 0</div>
+      <div class="s-lbl">Profit</div>
     </div>
   </div>
 </div>
@@ -389,11 +398,19 @@ async function load() {
     const totalContract  = rows.reduce((s, p) => s + (Number(p.contract_value)  || 0), 0);
     const totalInvoiced  = rows.reduce((s, p) => s + (Number(p.total_invoiced)  || 0), 0);
     const totalCollected = rows.reduce((s, p) => s + (Number(p.total_collected) || 0), 0);
+    const totalProfit = rows.reduce((s, p) => {
+      const totalCost = (Number(p.total_po) || 0)
+        + (Number(p.total_purchase_invoices) || 0)
+        + (Number(p.total_labour) || 0)
+        + (Number(p.total_expenses) || 0);
+      return s + ((Number(p.total_invoiced) || 0) - totalCost);
+    }, 0);
 
     document.getElementById("dashTotal").textContent    = RM(totalContract);
     document.getElementById("statCount").textContent    = rows.length;
     document.getElementById("statInvoiced").textContent = RMk(totalInvoiced);
     document.getElementById("statCollected").textContent = RMk(totalCollected);
+    document.getElementById("statProfit").textContent = RMk(totalProfit);
 
     const periodLabel = month
       ? new Date(month + "-01").toLocaleDateString("en-MY", { month: "long", year: "numeric" })
@@ -412,6 +429,11 @@ async function load() {
       const invoicePct = p.contract_value > 0
         ? Math.min(100, Math.round((p.total_invoiced / p.contract_value) * 100))
         : 0;
+      const totalCost = (Number(p.total_po) || 0)
+        + (Number(p.total_purchase_invoices) || 0)
+        + (Number(p.total_labour) || 0)
+        + (Number(p.total_expenses) || 0);
+      const profit = (Number(p.total_invoiced) || 0) - totalCost;
 
       const card = document.createElement("div");
       card.className = "project-card";
@@ -438,6 +460,7 @@ async function load() {
           </div>
           <div class="mini-label">
             <span>Invoiced ${RM(p.total_invoiced)}</span>
+            <span class="mini-profit">Profit ${RM(profit)}</span>
             <span>${invoicePct}%</span>
           </div>
         </div>` : ""}
