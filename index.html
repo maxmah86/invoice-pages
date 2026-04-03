@@ -10,76 +10,114 @@
 <script src="/js/company-settings.js"></script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  margin: 0;
-  padding: 16px;
-  color: #000;
+:root {
+  --bg: #f3f6fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #2563eb;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --radius: 14px;
 }
 
-  
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, #dbeafe 0%, transparent 40%),
+    radial-gradient(circle at top right, #e0e7ff 0%, transparent 35%),
+    var(--bg);
+  margin: 0;
+  padding: 18px;
+  color: var(--text);
+}
+
 h1 {
-  margin-top: 0;
-  margin-bottom: 4px;
+  margin: 0;
+  font-size: 1.8rem;
 }
 
 .subtitle {
-  color: #555;
-  margin-bottom: 16px;
-  font-size: 14px;
+  color: var(--muted);
+  margin-top: 4px;
+  margin-bottom: 18px;
+  font-size: 0.95rem;
 }
 
 .section {
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 .card {
-  background: #fff;
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--card) 90%, #f8fafc 10%);
+  border-radius: var(--radius);
   padding: 16px;
   margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow);
+  border: 1px solid #e2e8f0;
 }
 
 .card h2 {
-  margin: 0 0 6px;
-  font-size: 18px;
+  margin: 0 0 8px;
+  font-size: 1.06rem;
 }
 
 .card p {
   margin: 0 0 12px;
-  font-size: 14px;
-  color: #555;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
-/* ===== Monthly Summary ===== */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.filter-grid label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.filter-grid select {
+  width: 100%;
+  margin-top: 5px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.92rem;
+  background: #fff;
+}
+
 .summary-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
 }
 
 .summary-item {
   text-align: center;
   padding: 14px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: bold;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
   color: #fff;
+  line-height: 1.45;
 }
 
-.summary-item.invoice { background: #27ae60; }
-.summary-item.salary  { background: #6f42c1; }
-.summary-item.po {
-  background: #f39c12;
-  color: #000;
-  grid-column: span 2;
-}
-.summary-item.profit { background: #2c3e50; }
-.summary-item.profit.negative { background: #c0392b; }
+.summary-item.invoice { background: linear-gradient(135deg, #16a34a, #22c55e); }
+.summary-item.salary  { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+.summary-item.po      { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #111827; }
+.summary-item.quotation { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
+.summary-item.profit { background: linear-gradient(135deg, #0f172a, #334155); }
+.summary-item.profit.negative { background: linear-gradient(135deg, #b91c1c, #ef4444); }
 
-/* ===== Actions ===== */
 .actions {
   display: flex;
   gap: 10px;
@@ -92,31 +130,38 @@ h1 {
   text-align: center;
   padding: 10px;
   text-decoration: none;
-  font-size: 14px;
-  border-radius: 6px;
+  font-size: 0.88rem;
+  border-radius: 10px;
   color: #fff;
+  font-weight: 600;
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
-/* ===== Buttons ===== */
-.btn-primary { background: #2c3e50; }
-.btn-success { background: #27ae60; }
-.btn-warning { background: #f39c12; color:#000; }
-.btn-info    { background: #2980b9; }
-.btn-purple  { background: #6f42c1; }
-.btn-gray    { background: #7f8c8d; }
-.btn-danger  { background: #c0392b; }
+.actions a:hover {
+  transform: translateY(-1px);
+  opacity: 0.96;
+}
+
+.btn-primary { background: #1d4ed8; }
+.btn-success { background: #16a34a; }
+.btn-warning { background: #f59e0b; color: #111827; }
+.btn-info    { background: #0284c7; }
+.btn-purple  { background: #7c3aed; }
+.btn-gray    { background: #475569; }
+.btn-danger  { background: #dc2626; }
 
 .logout {
-  margin-top: 28px;
+  margin-top: 24px;
   text-align: center;
 }
+
 .logout button {
-  background: #c0392b;
+  background: #dc2626;
   color: #fff;
   border: none;
   padding: 10px 18px;
-  font-size: 14px;
-  border-radius: 6px;
+  font-size: 0.9rem;
+  border-radius: 10px;
   cursor: pointer;
 }
 </style>
@@ -127,27 +172,31 @@ h1 {
 <h1 id="comp-name">MMAC CONSTRUCTION</h1>
 <div class="subtitle" id="comp-reg"></div>
 
-<!-- ===== Monthly Summary ===== -->
 <div class="section">
   <div class="card">
-    <h2>Monthly Summary</h2>
+    <h2>Dashboard Summary</h2>
 
-    <label style="display:block;margin-bottom:10px;">
-      Month
-      <input type="month" id="monthPicker" style="width:100%;padding:10px;">
-    </label>
+    <div class="filter-grid">
+      <label>
+        Year
+        <select id="yearPicker"></select>
+      </label>
+      <label>
+        Month
+        <select id="monthPicker"></select>
+      </label>
+    </div>
 
     <div class="summary-grid">
-  <div class="summary-item invoice" id="invTotal">Invoice<br>RM 0.00</div>
-  
-  <div class="summary-item salary" id="salTotal">Salary<br>RM 0.00</div>
-  <div class="summary-item po" id="poTotal">PO<br>RM 0.00</div>
- <div class="summary-item quotation" id="quoTotal" style="background: #2980b9;">Accepted Quo<br>RM 0.00</div>
-   <div class="summary-item profit" id="profitTotal">Profit<br>RM 0.00</div>
+      <div class="summary-item invoice" id="invTotal">Invoice<br>RM 0.00</div>
+      <div class="summary-item salary" id="salTotal">Salary<br>RM 0.00</div>
+      <div class="summary-item po" id="poTotal">PO<br>RM 0.00</div>
+      <div class="summary-item quotation" id="quoTotal">Accepted Quo<br>RM 0.00</div>
+      <div class="summary-item profit" id="profitTotal">Profit<br>RM 0.00</div>
+    </div>
+  </div>
 </div>
 
-
-<!-- ===== Invoice ===== -->
 <div class="section">
   <div class="card">
     <h2>Invoice</h2>
@@ -157,7 +206,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Purchase Invoice ===== -->
 <div class="section">
   <div class="card">
     <h2>Purchase Invoice</h2>
@@ -169,7 +217,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Quotation ===== -->
 <div class="section">
   <div class="card">
     <h2>Quotation</h2>
@@ -181,7 +228,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Statement (RESTORED) ===== -->
 <div class="section">
   <div class="card">
     <h2>Statement</h2>
@@ -192,7 +238,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Item Catalog ===== -->
 <div class="section">
   <div class="card">
     <h2>Item Catalog</h2>
@@ -203,11 +248,10 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Projects ===== -->
 <div class="section">
   <div class="card">
     <h2>Projects</h2>
-    <p>Manage projects, track invoices, POs, quotations and P&L per project.</p>
+    <p>Manage projects, track invoices, POs, quotations and P&amp;L per project.</p>
     <div class="actions">
       <a class="btn-success" href="/project-create.html">New Project</a>
       <a class="btn-primary" href="/project-list.html">Project List</a>
@@ -215,7 +259,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Projects & Work ===== -->
 <div class="section">
   <div class="card">
     <h2>Work Checklists</h2>
@@ -227,7 +270,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Payslip ===== -->
 <div class="section">
   <div class="card">
     <h2>Payslip</h2>
@@ -238,7 +280,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Expenses ===== -->
 <div class="section">
   <div class="card">
     <h2>Expenses</h2>
@@ -250,7 +291,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Variation Orders ===== -->
 <div class="section">
   <div class="card">
     <h2>Variation Orders (VO)</h2>
@@ -260,7 +300,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Purchase Order ===== -->
 <div class="section">
   <div class="card">
     <h2>Purchase Order</h2>
@@ -272,7 +311,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Employees ===== -->
 <div class="section">
   <div class="card">
     <h2>Employees</h2>
@@ -283,7 +321,6 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Salaries ===== -->
 <div class="section">
   <div class="card">
     <h2>Salaries</h2>
@@ -293,97 +330,93 @@ h1 {
   </div>
 </div>
 
-<!-- ===== Logout ===== -->
 <div class="logout">
   <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-// Apply company name from settings
 if (typeof applyCompanySettings === "function") applyCompanySettings();
 if (typeof COMPANY_CONFIG !== "undefined") {
-  // Update page title
   document.title = COMPANY_CONFIG.name + " — Management System";
-  // Show reg number as subtitle
   const regEl = document.getElementById("comp-reg");
   if (regEl && COMPANY_CONFIG.regNo) regEl.textContent = COMPANY_CONFIG.regNo;
 }
 
-// 1. 身份验证与权限检查
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => {
     if (!r.ok) location.replace("/login.html");
     return r.json();
   })
   .then(d => {
-    // 只有 admin 角色可以查看仪表板，否则跳转到工作清单
-    if (d.role !== "admin") {
-      location.replace("/work-checklist.html");
-    }
+    if (d.role !== "admin") location.replace("/work-checklist.html");
   })
   .catch(() => location.replace("/login.html"));
 
-// 2. 初始化月份选择器，默认为当前月份
+const yearInput = document.getElementById("yearPicker");
 const monthInput = document.getElementById("monthPicker");
-monthInput.value = new Date().toISOString().slice(0,7);
 
-/**
- * 3. 加载汇总数据
- * 包含：Invoice, Salary, PO, Profit 以及新增的 Accepted Quotation
- */
+function initDatePickers() {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+
+  for (let y = currentYear - 5; y <= currentYear + 1; y++) {
+    const opt = document.createElement("option");
+    opt.value = String(y);
+    opt.textContent = String(y);
+    if (y === currentYear) opt.selected = true;
+    yearInput.appendChild(opt);
+  }
+
+  for (let m = 1; m <= 12; m++) {
+    const mm = String(m).padStart(2, "0");
+    const opt = document.createElement("option");
+    opt.value = mm;
+    opt.textContent = mm;
+    if (m === currentMonth) opt.selected = true;
+    monthInput.appendChild(opt);
+  }
+}
+
+function selectedYearMonth() {
+  return `${yearInput.value}-${monthInput.value}`;
+}
+
 async function loadSummary() {
-  const m = monthInput.value;
+  const ym = selectedYearMonth();
   try {
-    // 并发请求所有统计接口
     const [i, s, p, pr, q] = await Promise.all([
-      fetch(`/api/dashboard-invoice-total?month=${m}`).then(r => r.json()),
-      fetch(`/api/dashboard-salary-total?month=${m}`).then(r => r.json()),
-      fetch(`/api/dashboard-po-total?month=${m}`).then(r => r.json()),
-      fetch(`/api/dashboard-profit?month=${m}`).then(r => r.json()),
-      // 假设您已根据建议创建了此接口
-      fetch(`/api/dashboard-quotation-total?month=${m}`).then(r => r.json())
+      fetch(`/api/dashboard-invoice-total?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-salary-total?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-po-total?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-profit?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-quotation-total?month=${ym}`).then(r => r.json())
     ]);
 
-    // 更新 Invoice 总额
     document.getElementById("invTotal").innerHTML = `Invoice<br>RM ${Number(i.total || 0).toFixed(2)}`;
-    
-    // 更新 Salary 总额 (包含月薪和日工)
     document.getElementById("salTotal").innerHTML = `Salary<br>RM ${Number(s.total || 0).toFixed(2)}`;
-    
-    // 更新 PO 总额
     document.getElementById("poTotal").innerHTML = `PO<br>RM ${Number(p.total || 0).toFixed(2)}`;
+    document.getElementById("quoTotal").innerHTML = `Accepted Quo<br>RM ${Number(q.total || 0).toFixed(2)}`;
 
-    // 更新 Accepted Quotation 总额 (对应您截图中的新需求)
-    const quoElement = document.getElementById("quoTotal");
-    if (quoElement) {
-      quoElement.innerHTML = `Accepted Quo<br>RM ${Number(q.total || 0).toFixed(2)}`;
-    }
-
-    // 更新 Profit (利润) 并处理负数颜色
     const profit = Number(pr.profit || 0);
     const profitTotal = document.getElementById("profitTotal");
     profitTotal.innerHTML = `Profit<br>RM ${profit.toFixed(2)}`;
     profitTotal.classList.toggle("negative", profit < 0);
-
   } catch (err) {
     console.error("Failed to load dashboard data:", err);
   }
 }
 
-// 监听月份变化
-monthInput.onchange = loadSummary;
-// 页面加载时执行一次
+yearInput.addEventListener("change", loadSummary);
+monthInput.addEventListener("change", loadSummary);
+initDatePickers();
 loadSummary();
 
-/**
- * 4. 注销功能
- */
 async function logout() {
   await fetch("/api/logout", { method: "POST", credentials: "include" });
   location.replace("/login.html");
 }
 </script>
 
-
 </body>
-  </html>
+</html>
