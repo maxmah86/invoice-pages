@@ -15,6 +15,28 @@ body {
 
 h2 {
   margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.group {
+  margin-bottom: 16px;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.group-title {
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.group-meta {
+  font-size: 12px;
+  color: #5c6770;
 }
 
 .card {
@@ -43,6 +65,11 @@ h2 {
 
 .amount {
   font-size: 14px;
+}
+
+.empty {
+  color: #5c6770;
+  margin: 6px 0 0;
 }
 
 a {
@@ -75,22 +102,52 @@ fetch("/api/daily-labours-list", { credentials: "include" })
       return;
     }
 
-    rows.forEach(r => {
-      const div = document.createElement("div");
-      div.className = "card";
-      div.innerHTML = `
-        <a href="/daily-labour-view.html?id=${r.id}">
-          <div class="row">
-            <div>
-              <div class="name">${r.worker_name}</div>
-              <div>${r.labour_date}</div>
-            </div>
-            <div class="status ${r.status}">${r.status}</div>
-          </div>
-          <div class="amount">RM ${Number(r.amount).toFixed(2)}</div>
-        </a>
+    const groups = [
+      { key: "UNPAID", title: "Unpaid" },
+      { key: "PAID", title: "Paid" }
+    ];
+
+    groups.forEach(group => {
+      const groupRows = rows.filter(r => (r.status || "").toUpperCase() === group.key);
+      const totalAmount = groupRows.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const section = document.createElement("section");
+      section.className = "group";
+
+      const header = document.createElement("div");
+      header.className = "group-header";
+      header.innerHTML = `
+        <div class="group-title">${group.title}</div>
+        <div class="group-meta">${groupRows.length} record(s) • RM ${totalAmount.toFixed(2)}</div>
       `;
-      box.appendChild(div);
+      section.appendChild(header);
+
+      if (!groupRows.length) {
+        const empty = document.createElement("p");
+        empty.className = "empty";
+        empty.textContent = "No records";
+        section.appendChild(empty);
+      } else {
+        groupRows.forEach(r => {
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML = `
+            <a href="/daily-labour-view.html?id=${r.id}">
+              <div class="row">
+                <div>
+                  <div class="name">${r.worker_name}</div>
+                  <div>${r.labour_date}</div>
+                </div>
+                <div class="status ${r.status}">${r.status}</div>
+              </div>
+              <div class="amount">RM ${Number(r.amount).toFixed(2)}</div>
+            </a>
+          `;
+          section.appendChild(div);
+        });
+      }
+
+      box.appendChild(section);
     });
   });
 </script>
