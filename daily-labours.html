@@ -14,8 +14,39 @@ body {
 }
 
 h2 {
-  margin-top: 0;
+  margin: 0 0 12px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 12px;
+}
+
+.group-btn {
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: #fff;
+  color: #343a40;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.group-btn.active {
+  background: #1971c2;
+  color: #fff;
+  border-color: #1971c2;
+}
+
+.grand-total {
+  background: #fff;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-weight: bold;
+  color: #1f2d3d;
 }
 
 .group {
@@ -56,8 +87,15 @@ h2 {
   font-weight: bold;
 }
 
+.sub {
+  font-size: 12px;
+  color: #5c6770;
+  margin-top: 2px;
+}
+
 .status {
   font-weight: bold;
+  font-size: 12px;
 }
 
 .status.PAID { color: #2f9e44; }
@@ -65,11 +103,12 @@ h2 {
 
 .amount {
   font-size: 14px;
+  margin-top: 6px;
 }
 
 .empty {
   color: #5c6770;
-  margin: 6px 0 0;
+  margin-top: 6px;
 }
 
 a {
@@ -83,6 +122,13 @@ a {
 
 <h2>Payslips</h2>
 
+<div class="toolbar" id="toolbar">
+  <button class="group-btn active" data-group="project">By Project</button>
+  <button class="group-btn" data-group="name">By Name</button>
+  <button class="group-btn" data-group="month">By Month</button>
+</div>
+
+<div class="grand-total" id="grandTotal">Grand Total: RM 0.00</div>
 <div id="list"></div>
 
 <script>
@@ -90,65 +136,149 @@ a {
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => { if (!r.ok) location.replace("/login.html"); });
 
-/* ===== LOAD LIST ===== */
-fetch("/api/daily-labours-list", { credentials: "include" })
-  .then(r => r.json())
-  .then(rows => {
-    const box = document.getElementById("list");
-    box.innerHTML = "";
+const listBox = document.getElementById("list");
+const grandTotalBox = document.getElementById("grandTotal");
+const toolbar = document.getElementById("toolbar");
 
-    if (!rows.length) {
-      box.innerHTML = "<p>No records</p>";
-      return;
+let allRows = [];
+let projectMap = new Map();
+let currentGroup = "project";
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function amountNumber(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function formatMonth(dateStr) {
+  if (!dateStr) return "Unknown Month";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) {
+    return dateStr.slice(0, 7) || "Unknown Month";
+  }
+  return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function getProjectName(row) {
+  if (!row.project_id) return "No Project";
+  return projectMap.get(String(row.project_id)) || `Project #${row.project_id}`;
+}
+
+function groupLabel(row, type) {
+  if (type === "name") return row.worker_name || "Unknown Worker";
+  if (type === "month") return formatMonth(row.labour_date);
+  return getProjectName(row);
+}
+
+function renderList(type) {
+  listBox.innerHTML = "";
+
+  if (!allRows.length) {
+    grandTotalBox.textContent = "Grand Total: RM 0.00";
+    listBox.innerHTML = "<p>No records</p>";
+    return;
+  }
+
+  const grandTotal = allRows.reduce((sum, row) => sum + amountNumber(row.amount), 0);
+  grandTotalBox.textContent = `Grand Total: RM ${grandTotal.toFixed(2)}`;
+
+  const grouped = new Map();
+  allRows.forEach(row => {
+    const label = groupLabel(row, type);
+    if (!grouped.has(label)) grouped.set(label, []);
+    grouped.get(label).push(row);
+  });
+
+  let entries = Array.from(grouped.entries());
+
+  entries.sort((a, b) => {
+    if (type === "month") {
+      const ad = new Date(a[1][0]?.labour_date || "").getTime() || 0;
+      const bd = new Date(b[1][0]?.labour_date || "").getTime() || 0;
+      return bd - ad;
+    }
+    return a[0].localeCompare(b[0]);
+  });
+
+  entries.forEach(([label, rows]) => {
+    const sectionTotal = rows.reduce((sum, row) => sum + amountNumber(row.amount), 0);
+
+    const section = document.createElement("section");
+    section.className = "group";
+
+    const header = document.createElement("div");
+    header.className = "group-header";
+    header.innerHTML = `
+      <div class="group-title">${escapeHtml(label)}</div>
+      <div class="group-meta">${rows.length} record(s) • RM ${sectionTotal.toFixed(2)}</div>
+    `;
+    section.appendChild(header);
+
+    rows.forEach(row => {
+      const projectName = getProjectName(row);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <a href="/daily-labour-view.html?id=${encodeURIComponent(row.id)}">
+          <div class="row">
+            <div>
+              <div class="name">${escapeHtml(row.worker_name || "-")}</div>
+              <div class="sub">${escapeHtml(row.labour_date || "-")} • ${escapeHtml(projectName)}</div>
+            </div>
+            <div class="status ${escapeHtml(row.status || "")}">${escapeHtml(row.status || "-")}</div>
+          </div>
+          <div class="amount">RM ${amountNumber(row.amount).toFixed(2)}</div>
+        </a>
+      `;
+      section.appendChild(card);
+    });
+
+    listBox.appendChild(section);
+  });
+}
+
+toolbar.addEventListener("click", e => {
+  const btn = e.target.closest("button[data-group]");
+  if (!btn) return;
+
+  currentGroup = btn.dataset.group;
+
+  toolbar.querySelectorAll(".group-btn").forEach(item => item.classList.remove("active"));
+  btn.classList.add("active");
+
+  renderList(currentGroup);
+});
+
+Promise.all([
+  fetch("/api/daily-labours-list", { credentials: "include" }).then(r => r.json()),
+  fetch("/api/project-list", { credentials: "include" })
+    .then(r => r.ok ? r.json() : [])
+    .catch(() => [])
+])
+  .then(([rows, projects]) => {
+    allRows = Array.isArray(rows) ? rows : [];
+
+    if (Array.isArray(projects)) {
+      projects.forEach(project => {
+        const id = String(project.id || "");
+        const name = project.project_name || project.project_no || `Project #${id}`;
+        if (id) projectMap.set(id, name);
+      });
     }
 
-    const groups = [
-      { key: "UNPAID", title: "Unpaid" },
-      { key: "PAID", title: "Paid" }
-    ];
-
-    groups.forEach(group => {
-      const groupRows = rows.filter(r => (r.status || "").toUpperCase() === group.key);
-      const totalAmount = groupRows.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
-      const section = document.createElement("section");
-      section.className = "group";
-
-      const header = document.createElement("div");
-      header.className = "group-header";
-      header.innerHTML = `
-        <div class="group-title">${group.title}</div>
-        <div class="group-meta">${groupRows.length} record(s) • RM ${totalAmount.toFixed(2)}</div>
-      `;
-      section.appendChild(header);
-
-      if (!groupRows.length) {
-        const empty = document.createElement("p");
-        empty.className = "empty";
-        empty.textContent = "No records";
-        section.appendChild(empty);
-      } else {
-        groupRows.forEach(r => {
-          const div = document.createElement("div");
-          div.className = "card";
-          div.innerHTML = `
-            <a href="/daily-labour-view.html?id=${r.id}">
-              <div class="row">
-                <div>
-                  <div class="name">${r.worker_name}</div>
-                  <div>${r.labour_date}</div>
-                </div>
-                <div class="status ${r.status}">${r.status}</div>
-              </div>
-              <div class="amount">RM ${Number(r.amount).toFixed(2)}</div>
-            </a>
-          `;
-          section.appendChild(div);
-        });
-      }
-
-      box.appendChild(section);
-    });
+    renderList(currentGroup);
+  })
+  .catch(() => {
+    listBox.innerHTML = "<p>Failed to load records.</p>";
+    grandTotalBox.textContent = "Grand Total: RM 0.00";
   });
 </script>
 
