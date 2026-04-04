@@ -94,6 +94,7 @@ input, select {
 </div>
 
 <script>
+// 权限检查
 fetch("/api/auth-check", { credentials:"include" })
   .then(r => r.ok ? r.json() : Promise.reject())
   .then(d => {
@@ -101,6 +102,7 @@ fetch("/api/auth-check", { credentials:"include" })
   })
   .catch(() => location.replace("/login.html"));
 
+// 读取项目 ID
 const _params = new URLSearchParams(window.location.search);
 const _projectId = _params.get("project_id");
 
@@ -157,7 +159,7 @@ if (_projectId) {
 <datalist id="catalogs"></datalist>
 
 <script>
-// 【升级重点：初始化日期为今天】
+// 【新增】初始化日期为今天 (YYYY-MM-DD)
 document.getElementById('quotation_date').value = new Date().toISOString().split('T')[0];
 
 const sectionsEl = document.getElementById("sections");
@@ -174,18 +176,14 @@ fetch("/api/quotation-terms-list",{credentials:"include"})
     opt.textContent = t.title;
     sel.appendChild(opt);
   });
-})
-.catch(err => console.error("Load Terms Error:", err));
+});
 
 /* ===== LOAD ITEM CATALOG ===== */
 fetch("/api/item-catalog-list",{credentials:"include"})
 .then(r=>r.json())
 .then(list=>{
   const dl = document.getElementById("catalogs");
-  dl.innerHTML="";
-  list
-    .filter(i=>Number(i.is_active)===1)
-    .forEach(i=>{
+  list.filter(i=>Number(i.is_active)===1).forEach(i=>{
       const opt=document.createElement("option");
       opt.value=i.description;
       opt.dataset.price=i.default_amount;
@@ -250,43 +248,34 @@ function calc() {
       const price = Number(it.querySelector(".price-input").value)||0;
       sub += qty * price;
     });
-    const subSpan = sec.querySelector(".subtotal span");
-    if(subSpan) subSpan.textContent = sub.toFixed(2);
+    sec.querySelector(".subtotal span").textContent = sub.toFixed(2);
     grand += sub;
   });
   const discount = Number(document.getElementById("discount").value)||0;
-  const grandTotal = Math.max(0, grand - discount);
-  document.getElementById("grandTotal").textContent = `Total: RM ${grandTotal.toFixed(2)}`;
+  document.getElementById("grandTotal").textContent = `Total: RM ${Math.max(0, grand - discount).toFixed(2)}`;
 }
-
 
 async function save() {
   const customer = document.getElementById("customer").value.trim();
-  const quotation_date = document.getElementById("quotation_date").value; // 【获取日期】
+  const quotation_date = document.getElementById("quotation_date").value; // 获取日期
   const project_title = document.getElementById("project_title").value.trim();
   const project_address = document.getElementById("project_address").value.trim();
   const terms_id = document.getElementById("terms_id").value || null;
   const discount = Number(document.getElementById("discount").value) || 0;
 
-  if (!customer) {
-    alert("Please enter Customer Name");
-    return;
-  }
-  if (!quotation_date) {
-    alert("Please select a Date");
+  if (!customer || !quotation_date) {
+    alert("Please enter Customer Name and Date");
     return;
   }
 
   const sections = [];
-  document.querySelectorAll(".section").forEach((sec) => {
+  document.querySelectorAll(".section").forEach(sec => {
     const sectionTitle = sec.querySelector("input").value.trim();
     if (!sectionTitle) return;
-
     const items = [];
-    sec.querySelectorAll(".item").forEach((it) => {
+    sec.querySelectorAll(".item").forEach(it => {
       const description = it.querySelector(".desc-input").value.trim();
       if (!description) return;
-
       items.push({
         description,
         UOM: it.querySelector(".uom-input").value.trim(),
@@ -294,25 +283,22 @@ async function save() {
         price: Number(it.querySelector(".price-input").value) || 0
       });
     });
-
-    if (items.length > 0) {
-      sections.push({ section_title: sectionTitle, items });
-    }
+    if (items.length > 0) sections.push({ section_title: sectionTitle, items });
   });
 
   if (sections.length === 0) {
-    alert("Please add at least one section with items");
+    alert("Please add items");
     return;
   }
 
   const payload = {
     customer,
-    date: quotation_date, // 【核心：将日期发送至后台】
     project_id: _projectId ? Number(_projectId) : null,
     project_title,
     project_address,
     terms_id,
     discount,
+    created_at: quotation_date, // 【核心】将日期映射到数据库已有的 created_at 字段
     sections
   };
 
@@ -336,10 +322,10 @@ async function save() {
       : "/quotation-view.html?id=" + json.data.id;
 
   } catch (e) {
-    alert("Network error, please try again.");
+    alert("Network error");
   }
 }
-  
+
 addSection();
 </script>
 
