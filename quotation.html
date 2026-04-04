@@ -101,7 +101,6 @@ fetch("/api/auth-check", { credentials:"include" })
   })
   .catch(() => location.replace("/login.html"));
 
-// Read project_id from URL
 const _params = new URLSearchParams(window.location.search);
 const _projectId = _params.get("project_id");
 
@@ -113,7 +112,6 @@ if (_projectId) {
         document.getElementById("projectBanner").style.display = "block";
         document.getElementById("projectLabel").textContent =
           d.project.project_name + " (" + d.project.client_name + ")";
-        // Auto-fill customer and project title
         document.getElementById("customer").value = d.project.client_name || "";
         document.getElementById("project_title").value = d.project.project_name || "";
       }
@@ -125,6 +123,9 @@ if (_projectId) {
 <div class="box">
   <label>Customer Name</label>
   <input type="text" id="customer" placeholder="Enter customer name">
+
+  <label>Quotation Date</label>
+  <input type="date" id="quotation_date">
 
   <label>Project Title</label>
   <input type="text" id="project_title" placeholder="Enter project title">
@@ -156,6 +157,9 @@ if (_projectId) {
 <datalist id="catalogs"></datalist>
 
 <script>
+// 【升级重点：初始化日期为今天】
+document.getElementById('quotation_date').value = new Date().toISOString().split('T')[0];
+
 const sectionsEl = document.getElementById("sections");
 
 /* ===== LOAD TERMS ===== */
@@ -195,7 +199,7 @@ function addSection(title="") {
   sec.style.border = "1px solid #eee";
   sec.innerHTML=`
     <div style="display:flex; gap:10px;">
-        <input placeholder="Section Title (e.g. Living Hall)" value="${title}" style="font-weight:bold; flex:1;">
+        <input placeholder="Section Title" value="${title}" style="font-weight:bold; flex:1;">
         <button class="btn-cancel" style="width:auto; padding:0 10px; margin-top:6px; border-radius:4px;" onclick="this.parentElement.parentElement.remove(); calc();">Remove</button>
     </div>
     <div class="items"></div>
@@ -203,7 +207,6 @@ function addSection(title="") {
     <div class="subtotal">Subtotal: RM <span>0.00</span></div>
   `;
   sectionsEl.appendChild(sec);
-  // 默认给每个新 Section 加一个 Item
   addItem(sec.querySelector(".btn-add"));
 }
 
@@ -259,6 +262,7 @@ function calc() {
 
 async function save() {
   const customer = document.getElementById("customer").value.trim();
+  const quotation_date = document.getElementById("quotation_date").value; // 【获取日期】
   const project_title = document.getElementById("project_title").value.trim();
   const project_address = document.getElementById("project_address").value.trim();
   const terms_id = document.getElementById("terms_id").value || null;
@@ -268,16 +272,18 @@ async function save() {
     alert("Please enter Customer Name");
     return;
   }
+  if (!quotation_date) {
+    alert("Please select a Date");
+    return;
+  }
 
   const sections = [];
-
-  document.querySelectorAll(".section").forEach((sec, sIdx) => {
+  document.querySelectorAll(".section").forEach((sec) => {
     const sectionTitle = sec.querySelector("input").value.trim();
     if (!sectionTitle) return;
 
     const items = [];
-
-    sec.querySelectorAll(".item").forEach((it, iIdx) => {
+    sec.querySelectorAll(".item").forEach((it) => {
       const description = it.querySelector(".desc-input").value.trim();
       if (!description) return;
 
@@ -290,10 +296,7 @@ async function save() {
     });
 
     if (items.length > 0) {
-      sections.push({
-        section_title: sectionTitle,
-        items
-      });
+      sections.push({ section_title: sectionTitle, items });
     }
   });
 
@@ -304,6 +307,7 @@ async function save() {
 
   const payload = {
     customer,
+    date: quotation_date, // 【核心：将日期发送至后台】
     project_id: _projectId ? Number(_projectId) : null,
     project_title,
     project_address,
@@ -336,7 +340,6 @@ async function save() {
   }
 }
   
-// 初始化：默认添加一个 Section
 addSection();
 </script>
 
