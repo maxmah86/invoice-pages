@@ -17,6 +17,18 @@ export async function onRequestGet({ request, env }) {
   const year = url.searchParams.get("year") || new Date().getFullYear().toString();
 
   const salaryRow = period === "year"
+export async function onRequestGet({ request, env }) {
+  const auth = await fetch(new URL("/api/auth-check", request.url), {
+    headers: { cookie: request.headers.get("cookie") || "" }
+  });
+  if (!auth.ok) return new Response("Unauthorized", { status: 401 });
+
+  const url = new URL(request.url);
+  const period = url.searchParams.get("period") === "year" ? "year" : "month";
+  const month = url.searchParams.get("month") || new Date().toISOString().slice(0, 7);
+  const year = url.searchParams.get("year") || new Date().getFullYear().toString();
+
+  const salaryRow = period === "year"
     ? await env.DB.prepare(`
         SELECT IFNULL(SUM(net_salary), 0) AS total
         FROM salaries
@@ -55,17 +67,7 @@ export async function onRequestGet({ request, env }) {
     total: totalSalary
   }), { headers: { "Content-Type": "application/json" } });
 }
-);
-
-  /* ===============================
-     RESPONSE
-     =============================== */
-  return new Response(
-    JSON.stringify({
-      month,
-      salary_monthly: salaryRow.total,
-      salary_daily: dailyRow.total,
-      total: totalSalary
+lary
     }),
     { headers: { "Content-Type": "application/json" } }
   );
