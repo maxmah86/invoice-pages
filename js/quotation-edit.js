@@ -1,4 +1,3 @@
-
 /* =========================================================
  * Admin only guard
  * ========================================================= */
@@ -146,32 +145,51 @@ async function loadQuotationForEdit() {
 
   const q = json.data;
 
+  // --- 回填 Master Data ---
   document.getElementById("customer").value = q.customer || "";
   document.getElementById("project_title").value = q.project_title || "";
   document.getElementById("project_address").value = q.project_address || "";
   document.getElementById("discount").value = q.discount || 0;
 
-  if (q.terms_id) document.getElementById("terms_id").value = q.terms_id;
+  // 【核心升级】回填日期：从数据库的 created_at 截取前 10 位 (YYYY-MM-DD)
+  if (q.created_at) {
+    const dateInput = document.getElementById("quotation_date");
+    if (dateInput) {
+      dateInput.value = q.created_at.substring(0, 10);
+    }
+  }
 
+  if (q.terms_id) {
+     // 确保 terms 列表加载完成后再选中
+     const termSel = document.getElementById("terms_id");
+     termSel.value = q.terms_id;
+  }
+
+  // --- 清空并回填 Sections & Items ---
   sectionsEl.innerHTML = "";
-
-  (q.sections||[]).forEach(sec=>{
-    const secEl = addSection(sec.section_title);
-    const itemsContainer = secEl.querySelector(".items");
-    itemsContainer.innerHTML="";
-    (sec.items||[]).forEach(it=>{
-      addItemFromData(itemsContainer, it);
+  if (q.sections && q.sections.length > 0) {
+    q.sections.forEach(sec=>{
+      const secEl = addSection(sec.section_title);
+      const itemsContainer = secEl.querySelector(".items");
+      itemsContainer.innerHTML="";
+      (sec.items||[]).forEach(it=>{
+        addItemFromData(itemsContainer, it);
+      });
     });
-  });
+  } else {
+    addSection(); // 如果没数据，默认给一个空 section
+  }
 
   calc();
 }
 
 /* =========================================================
- * Save (EDIT)
+ * Save (UPDATE)
  * ========================================================= */
 async function save() {
   const customer = document.getElementById("customer").value.trim();
+  const qDate = document.getElementById("quotation_date")?.value;
+
   if (!customer) {
     alert("Customer required");
     return;
@@ -179,7 +197,8 @@ async function save() {
 
   const sections = [];
   document.querySelectorAll(".section").forEach(sec=>{
-    const title = sec.querySelector("input").value.trim();
+    const titleInput = sec.querySelector("input");
+    const title = titleInput ? titleInput.value.trim() : "";
     if (!title) return;
 
     const items=[];
@@ -194,7 +213,7 @@ async function save() {
       });
     });
 
-    if (items.length) sections.push({ section_title:title, items });
+    if (items.length) sections.push({ section_title: title, items });
   });
 
   if (!sections.length) {
@@ -205,10 +224,11 @@ async function save() {
   const payload = {
     id: quotationId,
     customer,
+    created_at: qDate, // 【核心升级】保存用户修改后的日期
     project_title: document.getElementById("project_title").value,
     project_address: document.getElementById("project_address").value,
-    terms_id: document.getElementById("terms_id").value||null,
-    discount: Number(document.getElementById("discount").value)||0,
+    terms_id: document.getElementById("terms_id").value || null,
+    discount: Number(document.getElementById("discount").value) || 0,
     sections
   };
 
