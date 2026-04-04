@@ -41,11 +41,13 @@ export async function onRequestGet({ request, env }) {
   }
 
   let row;
+  // 核心逻辑：增加 status != 'VOID' 过滤
   if (period === "year") {
     row = await env.DB.prepare(`
       SELECT IFNULL(SUM(${amountColumn}), 0) AS total
       FROM invoices
       WHERE substr(created_at, 1, 4) = ?
+        AND status != 'VOID'
     `).bind(year).first();
   } else if (period === "quarter") {
     const { start, end } = getQuarterRange(year, quarter);
@@ -53,12 +55,14 @@ export async function onRequestGet({ request, env }) {
       SELECT IFNULL(SUM(${amountColumn}), 0) AS total
       FROM invoices
       WHERE substr(created_at, 1, 7) BETWEEN ? AND ?
+        AND status != 'VOID'
     `).bind(start, end).first();
   } else {
     row = await env.DB.prepare(`
       SELECT IFNULL(SUM(${amountColumn}), 0) AS total
       FROM invoices
       WHERE substr(created_at, 1, 7) = ?
+        AND status != 'VOID'
     `).bind(month).first();
   }
 
