@@ -1,3 +1,4 @@
+
 /* =========================================================
  * Admin only guard
  * ========================================================= */
@@ -150,11 +151,6 @@ async function loadQuotationForEdit() {
   document.getElementById("project_address").value = q.project_address || "";
   document.getElementById("discount").value = q.discount || 0;
 
-  // 【核心升级】回填日期：从 created_at 截取前 10 位 (YYYY-MM-DD)
-  if (q.created_at) {
-    document.getElementById("quotation_date").value = q.created_at.substring(0, 10);
-  }
-
   if (q.terms_id) document.getElementById("terms_id").value = q.terms_id;
 
   sectionsEl.innerHTML = "";
@@ -172,8 +168,68 @@ async function loadQuotationForEdit() {
 }
 
 /* =========================================================
- * Save (EDIT / UPDATE)
+ * Save (EDIT)
  * ========================================================= */
 async function save() {
   const customer = document.getElementById("customer").value.trim();
-  const qDate = document.getElementById("quot
+  if (!customer) {
+    alert("Customer required");
+    return;
+  }
+
+  const sections = [];
+  document.querySelectorAll(".section").forEach(sec=>{
+    const title = sec.querySelector("input").value.trim();
+    if (!title) return;
+
+    const items=[];
+    sec.querySelectorAll(".item").forEach(it=>{
+      const desc = it.querySelector(".desc-input").value.trim();
+      if (!desc) return;
+      items.push({
+        description: desc,
+        UOM: it.querySelector(".uom-input").value.trim(),
+        qty: Number(it.querySelector(".qty-input").value)||0,
+        price: Number(it.querySelector(".price-input").value)||0
+      });
+    });
+
+    if (items.length) sections.push({ section_title:title, items });
+  });
+
+  if (!sections.length) {
+    alert("At least one section required");
+    return;
+  }
+
+  const payload = {
+    id: quotationId,
+    customer,
+    project_title: document.getElementById("project_title").value,
+    project_address: document.getElementById("project_address").value,
+    terms_id: document.getElementById("terms_id").value||null,
+    discount: Number(document.getElementById("discount").value)||0,
+    sections
+  };
+
+  const res = await fetch("/api/quotation-edit",{
+    method:"POST",
+    credentials:"include",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const json = await res.json();
+  if (!json.success) {
+    alert(json.error || "Save failed");
+    return;
+  }
+
+  alert("Quotation updated");
+  location.href="/quotation-view.html?id="+quotationId;
+}
+
+/* =========================================================
+ * Init
+ * ========================================================= */
+loadQuotationForEdit();
