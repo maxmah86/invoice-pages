@@ -19,6 +19,7 @@ export async function onRequestPost(context) {
     const {
       id,
       customer,
+      date, // 【新增：从前端传入的日期】
       project_title,
       project_address,
       terms_id,
@@ -41,10 +42,9 @@ export async function onRequestPost(context) {
     }
 
     /* ===============================
-     * Resolve terms snapshot (KEY FIX)
+     * Resolve terms snapshot
      * =============================== */
     let termsSnapshot = null;
-
     if (terms_id) {
       const term = await db.prepare(`
         SELECT content FROM quotation_terms
@@ -54,17 +54,17 @@ export async function onRequestPost(context) {
       if (!term) {
         return jsonError("Invalid terms", 400);
       }
-
       termsSnapshot = term.content;
     }
 
     /* ===============================
-     * Update quotation master
+     * Update quotation master (核心修改)
      * =============================== */
     await db.prepare(`
       UPDATE quotations
       SET
         customer = ?,
+        date = ?,            -- 【新增：更新日期字段】
         project_title = ?,
         project_address = ?,
         terms_id = ?,
@@ -74,6 +74,7 @@ export async function onRequestPost(context) {
       WHERE id = ?
     `).bind(
       customer,
+      date || null,          // 【新增绑定：日期】
       project_title || null,
       project_address || null,
       terms_id || null,
@@ -85,13 +86,8 @@ export async function onRequestPost(context) {
     /* ===============================
      * Clear old sections & items
      * =============================== */
-    await db.prepare(`
-      DELETE FROM quotation_items WHERE quotation_id = ?
-    `).bind(id).run();
-
-    await db.prepare(`
-      DELETE FROM quotation_sections WHERE quotation_id = ?
-    `).bind(id).run();
+    await db.prepare(`DELETE FROM quotation_items WHERE quotation_id = ?`).bind(id).run();
+    await db.prepare(`DELETE FROM quotation_sections WHERE quotation_id = ?`).bind(id).run();
 
     /* ===============================
      * Recreate sections & items
@@ -100,58 +96,26 @@ export async function onRequestPost(context) {
 
     for (let s = 0; s < sections.length; s++) {
       const sec = sections[s];
-
       const secRes = await db.prepare(`
-        INSERT INTO quotation_sections (
-          quotation_id,
-          section_title,
-          sort_order,
-          created_at
-        )
+        INSERT INTO quotation_sections (quotation_id, section_title, sort_order, created_at)
         VALUES (?, ?, ?, datetime('now'))
-      `).bind(
-        id,
-        sec.section_title || "",
-        s
-      ).run();
+      `).bind(id, sec.section_title || "", s).run();
 
       const sectionId = secRes.meta.last_row_id;
 
       for (let i = 0; i < (sec.items || []).length; i++) {
         const it = sec.items[i];
-
         const qty = Number(it.qty) || 0;
-        const unitPrice =
-          Number(it.unit_price ?? it.price) || 0;
-
+        const unitPrice = Number(it.unit_price ?? it.price) || 0;
         const lineTotal = qty * unitPrice;
         subtotal += lineTotal;
 
         await db.prepare(`
           INSERT INTO quotation_items (
-            quotation_id,
-            item_no,
-            description,
-            UOM,
-            qty,
-            unit_price,
-            line_total,
-            section_id,
-            sort_order,
-            is_priced
+            quotation_id, item_no, description, UOM, qty, unit_price, line_total, section_id, sort_order, is_priced
           )
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-        `).bind(
-          id,
-          String(i + 1),
-          it.description || "",
-          it.UOM || "",
-          qty,
-          unitPrice,
-          lineTotal,
-          sectionId,
-          i
-        ).run();
+        `).bind(id, String(i + 1), it.description || "", it.UOM || "", qty, unitPrice, lineTotal, sectionId, i).run();
       }
     }
 
@@ -159,18 +123,9 @@ export async function onRequestPost(context) {
      * Update totals
      * =============================== */
     const grandTotal = Math.max(0, subtotal - discount);
-
     await db.prepare(`
-      UPDATE quotations
-      SET
-        subtotal = ?,
-        grand_total = ?
-      WHERE id = ?
-    `).bind(
-      subtotal,
-      grandTotal,
-      id
-    ).run();
+      UPDATE quotations SET subtotal = ?, grand_total = ? WHERE id = ?
+    `).bind(subtotal, grandTotal, id).run();
 
     return jsonOK({ success: true });
 
@@ -180,9 +135,6 @@ export async function onRequestPost(context) {
   }
 }
 
-/* ===============================
- * Helpers
- * =============================== */
 function jsonOK(data) {
   return new Response(JSON.stringify({ success: true, data }), {
     headers: { "Content-Type": "application/json" }
