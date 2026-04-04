@@ -29,10 +29,7 @@ export async function onRequestGet({ request, env }) {
     const quarter = url.searchParams.get("quarter") || String(Math.floor((new Date().getMonth()) / 3) + 1);
     const { start, end } = getQuarterRange(year, quarter);
 
-    let salaryRow;
-    let dailyRow;
-    let poRow;
-    let piRow;
+    let salaryRow, dailyRow, poRow, piRow;
 
     if (period === "year") {
       salaryRow = await env.DB.prepare(`SELECT IFNULL(SUM(net_salary),0) AS total FROM salaries WHERE substr(salary_month,1,4) = ? AND status = 'PAID'`).bind(year).first();
@@ -65,22 +62,24 @@ export async function onRequestGet({ request, env }) {
     else if (names.includes("sub_total")) amountColumn = "sub_total";
 
     let invoiceTotal = 0;
+    // 核心逻辑：在计算利润的 invoice 汇总中增加 status != 'VOID'
     if (amountColumn) {
-      const invRow = period === "year"
-        ? await env.DB.prepare(`SELECT IFNULL(SUM(${amountColumn}),0) AS total FROM invoices WHERE substr(created_at,1,4) = ?`).bind(year).first()
-        : period === "quarter"
-          ? await env.DB.prepare(`SELECT IFNULL(SUM(${amountColumn}),0) AS total FROM invoices WHERE substr(created_at,1,7) BETWEEN ? AND ?`).bind(start, end).first()
-          : await env.DB.prepare(`SELECT IFNULL(SUM(${amountColumn}),0) AS total FROM invoices WHERE substr(created_at,1,7) = ?`).bind(month).first();
-      invoiceTotal = Number(invRow.total || 0);
+      if (period === "year") {
+        const invRow = await env.DB.prepare(`SELECT IFNULL(SUM(${amountColumn}),0) AS total FROM invoices WHERE substr(created_at,1,4) = ? AND status != 'VOID'`).bind(year).first();
+        invoiceTotal = Number(invRow.total || 0);
+      } else if (period === "quarter") {
+        const invRow = await env.DB.prepare(`SELECT IFNULL(SUM(${amountColumn}),0) AS total FROM invoices WHERE substr(created_at,1,7) BETWEEN ? AND ? AND status != 'VOID'`).bind(start, end).first();
+        invoiceTotal = Number(invRow.total || 0);
+      } else {
+        const invRow = await env.DB.prepare(`SELECT IFNULL(SUM(${amountColumn}),0) AS total FROM invoices WHERE substr(created_at,1,7) = ? AND status != 'VOID'`).bind(month).first();
+        invoiceTotal = Number(invRow.total || 0);
+      }
     }
 
     const profit = invoiceTotal - salaryTotal - poTotal - piTotal;
 
     return Response.json({
-      period,
-      month,
-      year,
-      quarter,
+      period, month, year, quarter,
       invoice: invoiceTotal,
       salary: salaryTotal,
       po: poTotal,
