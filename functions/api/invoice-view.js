@@ -1,51 +1,53 @@
-export async function onRequest({ request, env }) {
-  /* ===============================
-     AUTH CHECK
-     =============================== */
-  const cookie = request.headers.get("Cookie") || "";
-  const token = cookie.match(/session=([^;]+)/)?.[1];
+// functions/api/invoice-view.js
 
-  if (!token) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-  }
+export async function onRequestGet({ request, env }) {
+  const db = env.DB;
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
 
-  const user = await env.DB.prepare(`SELECT id, username, role FROM users WHERE session_token = ?`).bind(token).first();
-  if (!user) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
-  }
+  if (!id) return jsonError("Invoice ID required", 400);
 
-  /* ===============================
-     READ DATA
-     =============================== */
-  const url = new URL(request.url);
-  const id = url.searchParams.get("id");
-  if (!id) return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
+  try {
+    // 1. 获取发票主表信息 (增加了项目名称、地址、折扣等字段)
+    const invoice = await db.prepare(`
+      SELECT id, invoice_no, customer, amount, status, project_id, 
+             project_title, project_address, discount, created_at 
+      FROM invoices WHERE id = ?
+    `).bind(id).first();
 
-  // 获取发票主表
-  const invoice = await env.DB.prepare(`
-    SELECT id, invoice_no, customer, amount, status, project_id, created_at 
-    FROM invoices WHERE id = ?
-  `).bind(id).first();
+    if (!invoice) return jsonError("Invoice not found", 404);
 
-  if (!invoice) return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+    // 2. 获取所有分段
+    const sections = await db.prepare(`
+      SELECT * FROM invoice_sections WHERE invoice_id = ? ORDER BY sort_order ASC
+    `).bind(id).all();
 
-  // 获取明细表
-  const itemsRaw = await env.DB.prepare(`
-    SELECT description, qty, price FROM invoice_items WHERE invoice_id = ? ORDER BY id ASC
-  `).bind(id).all();
-  
-  const items = itemsRaw.results || [];
+    // 3. 获取所有项目明细
+    const items = await db.prepare(`
+      SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY section_id, sort_order ASC
+    `).bind(id).all();
 
-  // 后端预计算总数（可选，用于双重校验）
-  const calculatedTotal = items.reduce((sum, item) => sum + (Number(item.qty) * Number(item.price)), 0);
+    // 4. 将项目归类到对应的分段中 (逻辑同 Quotation)
+    const sectionMap = {};
+    sections.results.forEach(sec => {
+      sectionMap[sec.id] = { ...sec, items: [] };
+    });
 
-  return new Response(
-    JSON.stringify({
+    items.results.forEach(it => {
+      if (it.section_id && sectionMap[it.section_id]) {
+        sectionMap[it.section_id].items.push(it);
+      }
+    });
+
+    return jsonOK({
       invoice,
-      items,
-      calculatedTotal,
-      viewer: { id: user.id, role: user.role }
-    }),
-    { headers: { "Content-Type": "application/json" } }
-  );
+      sections: Object.values(sectionMap)
+    });
+
+  } catch (err) {
+    return jsonError(err.message, 500);
+  }
 }
+
+function jsonOK(data) { return new Response(JSON.stringify({ success: true, ...data }), { headers: { "Content-Type": "application/json" } }); }
+function jsonError(msg, status) { return new Response(JSON.stringify({ success: false, error: msg }), { status, headers: { "Content-Type": "application/json" } }); }
