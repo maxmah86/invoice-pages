@@ -1,405 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Quotation</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Quotation - View</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <script src="/js/config.js"></script>
+  <script src="/js/company-settings.js"></script>
 
-<!-- Config -->
-<script src="/js/config.js"></script>
-<script src="/js/company-settings.js"></script>
+  <style>
+    :root {
+      --primary-color: #1a2636;
+      --border-color: #000;
+      --bg-muted: #f9f9f9;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      color: #333;
+      line-height: 1.4;
+    }
+    /* 控制栏 - 打印时隐藏 */
+    .no-print {
+      background: #eee;
+      padding: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      border-radius: 4px;
+    }
+    button { padding: 8px 16px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc; }
+    .btn-primary { background: var(--primary-color); color: white; border: none; }
 
-<style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 16px;
-  color: #000;
-}
+    /* 报价单主体布局 */
+    .document-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      border: 1px solid #eee;
+      padding: 40px;
+      background: #fff;
+    }
 
-/* ===== HEADER ===== */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
+    /* 头部信息 */
+    .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .company-info h1 { margin: 0; font-size: 24px; color: var(--primary-color); }
+    .company-info p { margin: 2px 0; font-size: 13px; }
+    .doc-type { text-align: right; }
+    .doc-type h2 { margin: 0; font-size: 28px; letter-spacing: 2px; }
 
-.amount-zero {
-  color: transparent;
-}
+    /* 客户与详情 */
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 30px;
+    }
+    .detail-box h3 { font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 8px; }
+    .detail-box p { margin: 3px 0; font-size: 14px; }
 
-#company-logo {
-  width: 80px;
-  height: auto;
-}
+    /* 表格样式 */
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { background: #f2f2f2; border: 1px solid var(--border-color); padding: 8px; font-size: 13px; }
+    td { border: 1px solid var(--border-color); padding: 8px; font-size: 13px; vertical-align: top; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
 
-.company-header {
-  display: flex;
-  gap: 10px;
-}
+    /* 分段标题 */
+    .section-header { background: #fcfcfc; font-weight: bold; }
+    .section-subtotal { font-style: italic; background: #fafafa; }
+    
+    /* 总计栏 */
+    .grand-total-row { font-weight: bold; font-size: 16px; background: #eee; }
 
-.company h1 {
-  margin: 0;
-  font-size: 22px;
-}
+    /* 签名栏 */
+    .signature-section { margin-top: 50px; display: flex; justify-content: space-between; }
+    .sig-box { width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 5px; margin-top: 80px; font-size: 13px; }
 
-/* ===== TABLE ===== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-th, td {
-  border: 1px solid #000;
-  padding: 6px;
-  font-size: 13px;
-}
-
-th {
-  background: #f0f0f0;
-}
-
-.right {
-  text-align: right;
-}
-
-/* ===== SECTION ===== */
-.section-title td {
-  font-weight: bold;
-  background: #eee;
-}
-
-.section-subtotal td,
-.grand-total td {
-  font-weight: bold;
-  background: #f5f5f5;
-}
-
-/* ===== INFO ===== */
-.project-info {
-  margin-top: 20px;
-  font-size: 14px;
-}
-
-/* ===== TERMS ===== */
-.terms {
-  margin-top: 30px;
-  font-size: 13px;
-  white-space: pre-line;
-}
-
-/* ===== SIGNATURE ===== */
-.signature {
-  margin-top: 50px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.signature-box {
-  text-align: center;
-  font-size: 13px;
-}
-
-.signature-box img {
-  width: 120px;
-}
-
-/* ===== PRINT ===== */
-@media print {
-  .no-print { display: none; }
-  tr { page-break-inside: avoid; }
-}
-</style>
+    @media print {
+      .no-print { display: none; }
+      body { margin: 0; }
+      .document-wrap { border: none; width: 100%; max-width: none; padding: 0; }
+    }
+  </style>
 </head>
-
 <body>
 
-<!-- ================= ACTION BUTTONS ================= -->
-<div class="no-print" id="action-buttons" style="text-align:right; margin-bottom:10px;">
+  <div class="no-print">
+    <button onclick="location.href='/index.html'">返回首页</button>
+    <button class="btn-primary" onclick="window.print()">打印 / 另存为 PDF</button>
+    <button id="convertBtn" style="background:#28a745; color:white; border:none;">转为 Invoice</button>
+  </div>
 
-  <button id="homeBtn" type="button">HOME</button>
-  <button id="btn-edit" onclick="goEdit()">Edit</button>
-  <button id="btn-approve" onclick="approveQuotation()">Approve</button>
-  <button id="btn-convert" onclick="convertInvoice()">Convert to Invoice</button>
-  <button id="btn-reject" onclick="rejectQuotation()">Reject</button>
-</div>
-
-<div class="no-print" style="text-align:right">
-  <button onclick="window.print()">Print</button>
-</div>
-
-<!-- ================= HEADER ================= -->
-<div class="header">
-  <div class="company">
-    <div class="company-header">
-      <img id="company-logo" alt="Company Logo">
-      <div>
+  <div class="document-wrap">
+    <div class="header">
+      <div class="company-info">
+        <img id="company-logo" src="" alt="Logo" style="height: 60px; margin-bottom: 10px;">
         <h1 id="comp-name">Loading...</h1>
-        <div id="comp-reg"></div>
+        <p id="comp-reg"></p>
+        <p id="comp-address"></p>
+        <p id="comp-contact"></p>
+      </div>
+      <div class="doc-type">
+        <h2>QUOTATION</h2>
+        <p><strong>No:</strong> <span id="q-no">-</span></p>
+        <p><strong>Date:</strong> <span id="q-date">-</span></p>
       </div>
     </div>
-    <address style="font-style: normal;">
-      <div id="comp-address"></div>
-      <div id="comp-contact"></div>
-    </address>
-  </div>
 
-  <div>
-    <h2>QUOTATION</h2>
-    <div>No: <span id="quotation_no"></span></div>
-    <div>Date: <span id="quotation_date"></span></div>
-  </div>
-</div>
+    <div class="details-grid">
+      <div class="detail-box">
+        <h3>QUOTATION TO:</h3>
+        <p><strong id="q-customer">-</strong></p>
+        <p id="q-address">-</p>
+      </div>
+      <div class="detail-box">
+        <h3>PROJECT:</h3>
+        <p id="q-project-title">-</p>
+      </div>
+    </div>
 
-<!-- ================= PROJECT ================= -->
-<div class="project-info">
-  <div><strong>Customer:</strong> <span id="customer"></span></div>
-  <div><strong>Project:</strong> <span id="project_title"></span></div>
-  <div><strong>Address:</strong> <span id="project_address"></span></div>
-</div>
+    <table>
+      <thead>
+        <tr>
+          <th width="5%">No.</th>
+          <th width="50%">Description</th>
+          <th width="10%">UOM</th>
+          <th width="10%">Qty</th>
+          <th width="12%">Unit Price</th>
+          <th width="13%">Amount</th>
+        </tr>
+      </thead>
+      <tbody id="items-tbody">
+        </tbody>
+      <tfoot>
+        <tr class="grand-total-row">
+          <td colspan="5" class="text-right">TOTAL AMOUNT (RM)</td>
+          <td id="q-grand-total" class="text-right">0.00</td>
+        </tr>
+      </tfoot>
+    </table>
 
-<!-- ================= ITEMS ================= -->
-<table>
-  <thead>
-    <tr>
-      <th style="width:5%">No</th>
-      <th>Description</th>
-      <th style="width:8%">UOM</th>
-      <th style="width:8%">Qty</th>
-      <th style="width:12%">Unit Price</th>
-      <th style="width:15%">Amount</th>
-    </tr>
-  </thead>
-  <tbody id="items"></tbody>
-</table>
+    <div style="margin-top: 20px; font-size: 13px;">
+      <p><strong>Terms:</strong> <span id="q-terms">Standard</span></p>
+    </div>
 
-<!-- ================= BANK ================= -->
-<div class="bank-info" style="margin-top:25px; font-size:13px; border-top: 1px solid #eee; pt: 10px;">
-    <strong>Payment Information:</strong><br>
-    Bank: <b id="bank-info"></b> | 
-    Beneficiary: <b class="company-name"></b>
-    <div style="margin-top: 5px;">
-      All cheques should be made payable to: <b class="company-name"></b>
+    <div class="signature-section">
+      <div>
+        <div class="sig-box">Issued By</div>
+      </div>
+      <div>
+        <div class="sig-box">Customer Acceptance</div>
+      </div>
     </div>
   </div>
 
+  <script>
+    (async function() {
+      const params = new URLSearchParams(location.search);
+      const qId = params.get('id');
+      if (!qId) return alert("Missing Quotation ID");
 
-<!-- ================= TERMS ================= -->
-<div class="terms">
-  <strong>Terms & Conditions</strong>
-  <div id="terms"></div>
-</div>
+      function qid(id) { return document.getElementById(id); }
 
-<!-- ================= SIGNATURE ================= -->
-<div class="signature">
-  <div class="signature-box">
-    <img id="company-chop">
-    <div id="authorized-title"></div>
-    <div><strong id="authorized-name"></strong></div>
-  </div>
-</div>
+      // 1. 加载公司设置 (来自 company-settings.js)
+      if (window.COMPANY_CONFIG) {
+        qid('company-logo').src = COMPANY_CONFIG.logoUrl;
+        qid('comp-name').textContent = COMPANY_CONFIG.name;
+        qid('comp-reg').textContent = COMPANY_CONFIG.regNo;
+        qid('comp-address').textContent = COMPANY_CONFIG.address;
+        qid('comp-contact').textContent = `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
+      }
 
-<!-- ================= SCRIPT ================= -->
-<script>
-/* ===== BASIC ===== */
-const id = new URL(location.href).searchParams.get("id");
-const CURRENCY = CONFIG.CURRENCY || "RM";
-const qid = (id) => document.getElementById(id);
+      // 2. 获取报价单数据
+      try {
+        const res = await fetch(`/api/quotation-view?id=${qId}`);
+        const result = await res.json();
+        if (!result.success) throw new Error(result.error);
+        
+        const data = result.data;
 
-/* ================= LOAD DATA ================= */
-fetch("/api/quotation-view?id=" + id, { credentials: "include" })
-  .then(r => r.json())
-  .then(json => {
-    if (!json.success) {
-      alert(json.error || "Load failed");
-      return;
-    }
+        // 填充基础信息
+        qid('q-no').textContent = data.quotation_no;
+        qid('q-date').textContent = new Date(data.created_at).toLocaleDateString('en-MY');
+        qid('q-customer').textContent = data.customer;
+        qid('q-address').textContent = data.project_address || '';
+        qid('q-project-title').textContent = data.project_title || 'General Works';
+        qid('q-grand-total').textContent = Number(data.grand_total).toFixed(2);
 
-    const q = json.data;
-    const sections = q.sections || [];
+        // 填充表格项目
+        const tbody = qid('items-tbody');
+        tbody.innerHTML = '';
+        let itemIdx = 1;
 
-    // ✅ 关键修正：统一 status
-    const status = (q.status || "").toUpperCase().trim();
+        data.sections.forEach(section => {
+          // 渲染分段标题
+          if (section.section_title) {
+            const secRow = `<tr class="section-header"><td colspan="6">${section.section_title}</td></tr>`;
+            tbody.insertAdjacentHTML('beforeend', secRow);
+          }
 
-    /* ===== Header ===== */
-    qid("quotation_no").innerText = q.quotation_no;
-    qid("quotation_date").innerText = q.created_at?.slice(0,10) || "";
-    qid("customer").innerText = q.customer;
-    qid("project_title").innerText = q.project_title || "";
-    qid("project_address").innerText = q.project_address || "";
-    qid("terms").innerText = q.terms_snapshot || "";
+          let sectionTotal = 0;
+          section.items.forEach(item => {
+            const lineTotal = item.qty * item.unit_price;
+            sectionTotal += lineTotal;
 
-    /* ===== Home button: go back to project if linked ===== */
-    const homeTarget = q.project_id
-      ? '/project-view.html?id=' + q.project_id
-      : '/index.html';
+            const row = `
+              <tr>
+                <td class="text-center">${itemIdx++}</td>
+                <td>${item.description}</td>
+                <td class="text-center">${item.UOM || ''}</td>
+                <td class="text-center">${item.qty}</td>
+                <td class="text-right">${Number(item.unit_price).toFixed(2)}</td>
+                <td class="text-right">${lineTotal.toFixed(2)}</td>
+              </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', row);
+          });
 
-    /* ===== Button visibility ===== */
-    if (status === "OPEN") {
-      qid('homeBtn').addEventListener('click', () => location.href = homeTarget);
-      qid("btn-edit").style.display = "";
-      qid("btn-approve").style.display = "";
-      qid("btn-convert").style.display = "";
-      qid("btn-reject").style.display = "";
-    } else if (status === "ACCEPTED") {
-      qid('homeBtn').addEventListener('click', () => location.href = homeTarget);
-      qid("btn-edit").style.display = "none";
-      qid("btn-approve").style.display = "none";
-      qid("btn-reject").style.display = "none";
-      qid("btn-convert").style.display = "";
-    } else {
-      qid('homeBtn').addEventListener('click', () => location.href = homeTarget);
-      qid("btn-edit").style.display = "none";
-      qid("btn-approve").style.display = "none";
-      qid("btn-convert").style.display = "none";
-      qid("btn-reject").style.display = "none";
-    }
+          // 渲染分段小计 (可选)
+          if (data.sections.length > 1) {
+            const subRow = `
+              <tr class="section-subtotal">
+                <td colspan="5" class="text-right">Section Subtotal</td>
+                <td class="text-right">${sectionTotal.toFixed(2)}</td>
+              </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', subRow);
+          }
+        });
 
-    renderItems(sections, q.discount || 0);
-  });
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load quotation data");
+      }
 
-/* ================= ACTIONS ================= */
-function goEdit() {
-  location.href = "/quotation-edit.html?id=" + id;
-}
+      // 3. 转换发票逻辑
+      qid('convertBtn').onclick = async () => {
+        if (!confirm("确认将此报价单转换为发票 (Invoice) 吗？")) return;
+        
+        try {
+          // 这里调用你之后需要写的后端 API
+          const res = await fetch('/api/convert-to-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quotation_id: qId })
+          });
+          const resData = await res.json();
+          if (resData.success) {
+            alert("转换成功！");
+            location.href = `/invoice-view.html?id=${resData.invoice_id}`;
+          } else {
+            alert("转换失败: " + resData.error);
+          }
+        } catch (e) {
+          alert("请求出错");
+        }
+      };
 
-async function approveQuotation() {
-  if (!confirm("Approve this quotation?")) return;
-
-  const res = await fetch("/api/quotation-accept", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ id })
-  });
-
-  const json = await res.json();
-  if (!json.success) {
-    alert(json.error || "Approve failed");
-    return;
-  }
-
-  alert("Quotation approved");
-  location.reload();
-}
-
-async function rejectQuotation() {
-  const reason = prompt("Reject reason (optional):");
-  if (reason === null) return;
-
-  const res = await fetch("/api/quotation-reject", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ quotation_id: id, reason })
-  });
-
-  if (!res.ok) {
-    alert("Reject failed");
-    return;
-  }
-
-  location.href = "/quotations.html";
-}
-
-async function convertInvoice() {
-  if (!confirm("Convert this quotation to invoice?")) return;
-
-  const res = await fetch("/api/quotation-convert-invoice", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ quotation_id: id })
-  });
-
-  const json = await res.json();
-  if (!json.success) {
-    alert(json.error);
-    return;
-  }
-
-  location.href = "/invoice-view.html?id=" + json.data.invoice_id;
-}
-
-/* ================= RENDER ITEMS ================= */
-function renderItems(sections, discount) {
-  const tbody = qid("items");
-  tbody.innerHTML = "";
-  let grandTotal = 0;
-
-  sections.forEach(sec => {
-    tbody.insertAdjacentHTML(
-      "beforeend",
-      `<tr class="section-title"><td colspan="6">${sec.section_title}</td></tr>`
-    );
-
-    let sectionTotal = 0;
-
-    sec.items.forEach(it => {
-      const qty = Number(it.qty) || 0;
-      const price = Number(it.unit_price) || 0;
-      const line = Number(it.line_total) || 0;
-
-      sectionTotal += line;
-      grandTotal += line;
-
-      tbody.insertAdjacentHTML("beforeend", `
-        <tr>
-          <td>${it.item_no || ""}</td>
-          <td>${it.description}</td>
-          <td class="right">${it.UOM || ""}</td>
-          <td class="right ${qty === 0 ? 'amount-zero' : ''}">${qty}</td>
-          <td class="right ${price === 0 ? 'amount-zero' : ''}">${price.toFixed(2)}</td>
-          <td class="right ${line === 0 ? 'amount-zero' : ''}">${line.toFixed(2)}</td>
-        </tr>
-      `);
-    });
-
-    tbody.insertAdjacentHTML("beforeend", `
-      <tr class="section-subtotal">
-        <td colspan="5" class="right">Subtotal</td>
-        <td class="right">${sectionTotal.toFixed(2)}</td>
-      </tr>
-    `);
-  });
-
-  if (discount > 0) {
-    tbody.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td colspan="5" class="right">Discount</td>
-        <td class="right">-${discount.toFixed(2)}</td>
-      </tr>
-    `);
-  }
-
-  tbody.insertAdjacentHTML("beforeend", `
-    <tr class="grand-total">
-      <td colspan="5" class="right">TOTAL (${CURRENCY})</td>
-      <td class="right">${(grandTotal - discount).toFixed(2)}</td>
-    </tr>
-  `);
-}
-
-/* ================= COMPANY ================= */
-document.addEventListener("DOMContentLoaded", () => {
-  if (!window.COMPANY_CONFIG) return;
-
-  qid("company-logo").src = COMPANY_CONFIG.logoUrl || "";
-  qid("comp-name").innerText = COMPANY_CONFIG.name;
-  qid("comp-reg").innerText = COMPANY_CONFIG.regNo || "";
-  qid("comp-address").innerText = COMPANY_CONFIG.address || "";
-  qid("comp-contact").innerText =
-    `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
-
-  qid("bank-info").innerText =
-    `${COMPANY_CONFIG.bankName} : ${COMPANY_CONFIG.bankAcc}`;
-
-  qid("company-chop").src = COMPANY_CONFIG.chopUrl || "";
-  qid("authorized-title").innerText =
-    COMPANY_CONFIG.authorizedTitle || "Authorized Signature";
-  qid("authorized-name").innerText = COMPANY_CONFIG.name;
-});
-</script>
-
+    })();
+  </script>
 </body>
 </html>
