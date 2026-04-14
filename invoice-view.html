@@ -1,226 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Invoice</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Invoice View</title>
   <script src="/js/config.js"></script>
   <script src="/js/company-settings.js"></script>
   <style>
-    :root {
-      --font: Arial, sans-serif;
-      --border: #000;
-    }
-    body { font-family: var(--font); margin: 20px; color: #000; line-height: 1.4; }
-    
-    /* 顶部控制栏 */
-    .no-print {
-      background: #eee; padding: 10px; margin-bottom: 20px;
-      display: flex; gap: 10px; border-radius: 4px;
-    }
-    .btn { padding: 6px 12px; cursor: pointer; border: 1px solid #ccc; background: #fff; }
-    .btn-primary { background: #1a2636; color: #fff; border: none; }
-
-    /* 发票容器 */
-    .doc-wrap { max-width: 850px; margin: 0 auto; border: 1px solid #eee; padding: 30px; }
-    
-    /* 抬头 */
-    .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
-    .company h1 { margin: 0; font-size: 22px; }
-    .company p { margin: 2px 0; font-size: 13px; }
-    .doc-info { text-align: right; }
-    .doc-info h2 { margin: 0; font-size: 26px; letter-spacing: 2px; }
-
-    /* 客户信息 */
-    .details { display: flex; justify-content: space-between; margin-top: 20px; margin-bottom: 20px; }
-    .details div { width: 48%; }
-    .details h3 { font-size: 14px; border-bottom: 1px solid #000; padding-bottom: 5px; }
-
-    /* 表格 */
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid var(--border); padding: 8px; font-size: 13px; }
+    body { font-family: Arial, sans-serif; margin: 20px; font-size: 13px; }
+    .no-print { background: #eee; padding: 10px; margin-bottom: 20px; display: flex; gap: 10px; }
+    .doc-wrap { max-width: 800px; margin: 0 auto; border: 1px solid #ddd; padding: 30px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #000; padding: 8px; }
     th { background: #f2f2f2; }
     .text-right { text-align: right; }
-    .text-center { text-align: center; }
-
-    /* 分段标题样式 (新发票专用) */
-    .section-title { background: #f9f9f9; font-weight: bold; }
-    
-    .grand-total-row { font-weight: bold; background: #eee; font-size: 14px; }
-
-    @media print {
-      .no-print { display: none; }
-      .doc-wrap { border: none; padding: 0; }
-    }
+    .section-header { background: #f9f9f9; font-weight: bold; }
+    .grand-total { background: #eee; font-weight: bold; }
   </style>
 </head>
 <body>
 
-  <div class="no-print">
-    <button id="homeBtn" class="btn">HOME</button>
-    <button class="btn btn-primary" onclick="window.print()">Print / PDF</button>
-    <button id="editBtn" class="btn">Edit</button>
-  </div>
+<div class="no-print">
+  <button onclick="location.href='/index.html'">HOME</button>
+  <button onclick="window.print()">PRINT PDF</button>
+</div>
 
-  <div class="doc-wrap">
-    <div class="header">
-      <div class="company">
-        <h1 id="comp-name">Loading...</h1>
-        <p id="comp-address"></p>
-        <p id="comp-contact"></p>
-      </div>
-      <div class="doc-info">
-        <h2>INVOICE</h2>
-        <p>No: <b id="inv-no"></b></p>
-        <p>Date: <span id="inv-date"></span></p>
-      </div>
+<div class="doc-wrap">
+  <div style="display: flex; justify-content: space-between;">
+    <div id="company-side">
+      <h1 id="comp-name" style="margin:0"></h1>
+      <p id="comp-address" style="margin:5px 0; font-size:12px;"></p>
     </div>
-
-    <div class="details">
-      <div>
-        <h3>BILL TO:</h3>
-        <p><b id="inv-customer"></b></p>
-        <p id="inv-address" style="white-space: pre-line;"></p>
-      </div>
-      <div style="text-align: right;">
-        <h3>PROJECT:</h3>
-        <p id="inv-project-title">-</p>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th width="5%">No.</th>
-          <th>Description</th>
-          <th width="10%">UOM</th>
-          <th width="8%">Qty</th>
-          <th width="12%">Unit Price</th>
-          <th width="15%">Amount (RM)</th>
-        </tr>
-      </thead>
-      <tbody id="items-tbody">
-        </tbody>
-      <tfoot>
-        <tr id="discount-row" style="display: none;">
-          <td colspan="5" class="text-right">Discount</td>
-          <td id="inv-discount" class="text-right"></td>
-        </tr>
-        <tr class="grand-total-row">
-          <td colspan="5" class="text-right">TOTAL AMOUNT (RM)</td>
-          <td id="total-amount" class="text-right">0.00</td>
-        </tr>
-      </tfoot>
-    </table>
-
-    <div style="margin-top: 50px; display: flex; justify-content: space-between;">
-      <div style="width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 5px;">
-        Issued By
-      </div>
-      <div style="width: 200px; border-top: 1px solid #000; text-align: center; padding-top: 5px;">
-        Customer Acceptance
-      </div>
+    <div style="text-align: right;">
+      <h2 style="margin:0">TAX INVOICE</h2>
+      <p>No: <b id="inv-no"></b></p>
+      <p>Date: <span id="inv-date"></span></p>
     </div>
   </div>
 
-  <script>
-    (async function() {
-      const qid = (id) => document.getElementById(id);
-      const params = new URLSearchParams(location.search);
-      const invoiceId = params.get('id');
+  <div style="margin-top:20px;">
+    <b>BILL TO:</b>
+    <p id="inv-customer" style="margin:5px 0; font-weight:bold;"></p>
+    <p id="inv-project" style="margin:5px 0; color:#666;"></p>
+  </div>
 
-      if (!invoiceId) return alert("Missing Invoice ID");
+  <table>
+    <thead>
+      <tr>
+        <th width="5%">No</th>
+        <th>Description</th>
+        <th width="10%">UOM</th>
+        <th width="10%">Qty</th>
+        <th width="12%">Price</th>
+        <th width="15%">Amount</th>
+      </tr>
+    </thead>
+    <tbody id="main-tbody">
+      </tbody>
+    <tfoot>
+      <tr class="grand-total">
+        <td colspan="5" class="text-right">GRAND TOTAL (RM)</td>
+        <td id="inv-total" class="text-right"></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
 
-      // 1. 加载公司配置
-      if (window.COMPANY_CONFIG) {
-        qid('comp-name').innerText = COMPANY_CONFIG.name;
-        qid('comp-address').innerText = COMPANY_CONFIG.address;
-        qid('comp-contact').innerText = `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
-      }
+<script>
+  async function loadInvoice() {
+    const id = new URLSearchParams(window.location.search).get('id');
+    const qid = (i) => document.getElementById(i);
 
-      function formatCurrency(num) {
-        return Number(num || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      }
+    // 加载公司信息
+    if (window.COMPANY_CONFIG) {
+      qid('comp-name').innerText = COMPANY_CONFIG.name;
+      qid('comp-address').innerText = COMPANY_CONFIG.address;
+    }
 
-      try {
-        const res = await fetch(`/api/invoice-view?id=${invoiceId}`);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.error);
+    try {
+      const res = await fetch(`/api/invoice-view?id=${id}`);
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error);
 
-        const inv = data.invoice;
-        
-        // 填充基础信息
-        qid('inv-no').textContent = inv.invoice_no;
-        qid('inv-date').textContent = new Date(inv.created_at).toLocaleDateString('en-MY');
-        qid('inv-customer').textContent = inv.customer;
-        qid('inv-address').textContent = inv.project_address || '';
-        qid('inv-project-title').textContent = inv.project_title || '-';
-        qid('total-amount').textContent = formatCurrency(inv.amount);
+      qid('inv-no').innerText = data.invoice.invoice_no;
+      qid('inv-date').innerText = new Date(data.invoice.created_at).toLocaleDateString('en-MY');
+      qid('inv-customer').innerText = data.invoice.customer;
+      qid('inv-project').innerText = data.invoice.project_title || "";
+      qid('inv-total').innerText = Number(data.invoice.amount).toFixed(2);
 
-        if (inv.discount > 0) {
-          qid('discount-row').style.display = 'table-row';
-          qid('inv-discount').textContent = '-' + formatCurrency(inv.discount);
+      const tbody = qid('main-tbody');
+      tbody.innerHTML = '';
+      let rowIdx = 1;
+
+      // 核心渲染逻辑
+      data.sections.forEach(sec => {
+        // 如果有标题，渲染分段行
+        if (sec.section_title) {
+          const sTr = document.createElement('tr');
+          sTr.className = 'section-header';
+          sTr.innerHTML = `<td colspan="6">${sec.section_title}</td>`;
+          tbody.appendChild(sTr);
         }
 
-        // 按钮逻辑
-        const homeBtn = qid('homeBtn');
-        if (inv.project_id) {
-          homeBtn.textContent = '← PROJECT';
-          homeBtn.onclick = () => location.href = '/project-view.html?id=' + inv.project_id;
-        } else {
-          homeBtn.onclick = () => location.href = '/index.html';
-        }
-
-        // 核心渲染逻辑：【兼容旧单与新单】
-        const tbody = qid('items-tbody');
-        tbody.innerHTML = '';
-        let rowIdx = 1;
-
-        // 如果后端返回了 sections (新单结构)
-        if (data.sections && data.sections.length > 0) {
-          data.sections.forEach(sec => {
-            // 渲染分段名
-            if (sec.section_title) {
-              tbody.insertAdjacentHTML('beforeend', `
-                <tr class="section-title">
-                  <td colspan="6">${sec.section_title}</td>
-                </tr>
-              `);
-            }
-            // 渲染分段下的项目
-            sec.items.forEach(item => {
-              renderRow(item);
-            });
-          });
-        } 
-        // 兜底逻辑：如果完全没有 sections (可能是极旧的 API 结构)
-        else if (inv.items && inv.items.length > 0) {
-          inv.items.forEach(item => renderRow(item));
-        }
-
-        function renderRow(item) {
-          const qty = Number(item.qty) || 0;
-          const price = Number(item.price) || 0;
-          const lineTotal = qty * price;
-          
-          const row = `
-            <tr>
-              <td class="text-center">${rowIdx++}</td>
-              <td>${item.description || ''}</td>
-              <td class="text-center">${item.UOM || ''}</td>
-              <td class="text-right">${qty}</td>
-              <td class="text-right">${formatCurrency(price)}</td>
-              <td class="text-right">${formatCurrency(lineTotal)}</td>
-            </tr>
+        // 渲染项目
+        sec.items.forEach(it => {
+          const qty = Number(it.qty) || 0;
+          const price = Number(it.price) || 0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td align="center">${rowIdx++}</td>
+            <td>${it.description}</td>
+            <td align="center">${it.UOM || '-'}</td>
+            <td align="right">${qty}</td>
+            <td align="right">${price.toFixed(2)}</td>
+            <td align="right">${(qty * price).toFixed(2)}</td>
           `;
-          tbody.insertAdjacentHTML('beforeend', row);
-        }
+          tbody.appendChild(tr);
+        });
+      });
 
-      } catch (err) {
-        console.error(err);
-        alert("Load Error: " + err.message);
-      }
-    })();
-  </script>
+    } catch (e) {
+      alert("加载失败: " + e.message);
+    }
+  }
+  loadInvoice();
+</script>
 </body>
 </html>
