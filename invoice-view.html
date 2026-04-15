@@ -236,16 +236,16 @@
       }
 
       function initCompanySettings() {
-        if (window.COMPANY_CONFIG) {
-          qid('comp-name').textContent = COMPANY_CONFIG.name;
-          qid('comp-reg').textContent = `(Reg No: ${COMPANY_CONFIG.regNo})`;
-          qid('comp-address').textContent = COMPANY_CONFIG.address;
-          qid('comp-contact').textContent = `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
-          qid('company-logo').src = COMPANY_CONFIG.logoUrl;
-          qid('company-chop').src = COMPANY_CONFIG.chopUrl;
-          qid('bank-info').textContent = `${COMPANY_CONFIG.bankName} ${COMPANY_CONFIG.bankAcc}`;
-          document.querySelectorAll('.company-name-text').forEach(el => el.textContent = COMPANY_CONFIG.name);
-        }
+        if (typeof COMPANY_CONFIG === 'undefined') return;
+
+        qid('comp-name').textContent = COMPANY_CONFIG.name;
+        qid('comp-reg').textContent = `(Reg No: ${COMPANY_CONFIG.regNo})`;
+        qid('comp-address').textContent = COMPANY_CONFIG.address;
+        qid('comp-contact').textContent = `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
+        qid('company-logo').src = COMPANY_CONFIG.logoUrl;
+        qid('company-chop').src = COMPANY_CONFIG.chopUrl;
+        qid('bank-info').textContent = `${COMPANY_CONFIG.bankName} ${COMPANY_CONFIG.bankAcc}`;
+        document.querySelectorAll('.company-name-text').forEach(el => el.textContent = COMPANY_CONFIG.name);
       }
 
       document.addEventListener('DOMContentLoaded', () => {
