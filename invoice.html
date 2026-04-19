@@ -20,6 +20,8 @@
     .form-group { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
     .input-field { display: flex; flex-direction: column; gap: 5px; }
     .input-field label { font-size: 13px; font-weight: 600; color: #374151; }
+    .input-row { display: flex; align-items: center; gap: 5px; }
+    .input-row input { flex: 1; }
     input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
     .project-banner { display: none; margin-bottom: 16px; padding: 10px 12px; border-radius: 6px; background: #eff6ff; color: #1d4ed8; font-size: 14px; }
 
@@ -54,6 +56,99 @@
     .grand-total-box { text-align: right; margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 6px; }
     .grand-total-box h3 { margin: 0; color: var(--primary); font-size: 24px; }
 
+    /* Quick select button & modal */
+    .btn-quick-select {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-left: 5px;
+      padding: 4px 8px;
+      font-size: 14px;
+      cursor: pointer;
+      color: #2563eb;
+      transition: 0.2s;
+    }
+    .btn-quick-select:hover {
+      background: #eff6ff;
+      border-color: var(--primary);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-header h3 { margin: 0; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .quotation-group {
+      margin-bottom: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .quotation-group h4 {
+      margin: 10px 0;
+      color: #1f2937;
+    }
+    .quote-item-row {
+      display: grid;
+      grid-template-columns: 3fr 1fr 1fr 80px;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+      align-items: center;
+    }
+    .quote-item-row:hover { background: #f9fafb; }
+    .btn-select-item {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    /* Customer list in modal */
+    .customer-list-item {
+      padding: 10px 15px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .customer-list-item:hover { background: #f0f9ff; }
+    .badge {
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
     @media (max-width: 768px) {
       body { padding: 10px; }
       .container { padding: 16px; border-radius: 6px; }
@@ -82,7 +177,10 @@
     </div>
     <div class="input-field">
       <label>Customer / Client Name</label>
-      <input type="text" id="customer" placeholder="Enter client name">
+      <div class="input-row">
+        <input type="text" id="customer" placeholder="Enter client name">
+        <button type="button" class="btn-quick-select" onclick="openCustomerSelector()" title="Select from quotations">📋</button>
+      </div>
     </div>
   </div>
 
@@ -108,6 +206,12 @@
     sections: []
   };
 
+  // Quotation items cache
+  let quotationsCache = [];
+  // Unique customers list derived from quotationsCache
+  let customerList = [];
+  let activeRow = { secId: null, itemIdx: null };
+
   function generateInvoiceNoByDate() {
     const d = new Date();
     const yyyy = d.getFullYear();
@@ -117,6 +221,24 @@
     const mi = String(d.getMinutes()).padStart(2, "0");
     const suffix = String(Math.floor(Math.random() * 900) + 100);
     return `INV-${yyyy}${mm}${dd}-${hh}${mi}${suffix}`;
+  }
+
+  // Load quotation items for current project
+  async function loadQuotationsForProject() {
+    if (!activeProjectId) return;
+    try {
+      const res = await fetch(`/api/project-quotation-items?project_id=${activeProjectId}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        quotationsCache = data;
+        // Extract unique customers
+        const customers = new Set();
+        data.forEach(item => { if (item.customer) customers.add(item.customer); });
+        customerList = Array.from(customers).sort();
+      }
+    } catch (e) {
+      console.warn("Failed to load quotations:", e);
+    }
   }
 
   // Initialize with one default section
@@ -130,6 +252,8 @@
       const banner = document.getElementById("projectBanner");
       banner.style.display = "block";
       banner.textContent = `Project ID: #${activeProjectId}`;
+      // Load quotation data for quick selections
+      loadQuotationsForProject();
     }
   }
 
@@ -183,6 +307,123 @@
     return grandTotal;
   }
 
+  // ----- Customer Selector Modal -----
+  function openCustomerSelector() {
+    if (customerList.length === 0) {
+      alert("No customers found in quotations for this project.");
+      return;
+    }
+
+    let html = `
+      <div class="modal-overlay" id="customerSelectorModal">
+        <div class="modal-content" style="max-width: 500px;">
+          <div class="modal-header">
+            <h3>Select Customer from Quotations</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+          </div>
+          <div style="margin-bottom:10px; color:#6b7280;">
+            📌 Click a customer to fill the field
+          </div>
+    `;
+
+    customerList.forEach(cust => {
+      html += `
+        <div class="customer-list-item" onclick="selectCustomer('${cust.replace(/'/g, "\\'")}')">
+          <span>${cust}</span>
+          <span class="badge">select</span>
+        </div>
+      `;
+    });
+
+    html += `</div></div>`;
+
+    const modalContainer = document.createElement('div');
+    modalContainer.id = 'modal-container';
+    modalContainer.innerHTML = html;
+    document.body.appendChild(modalContainer);
+  }
+
+  function selectCustomer(customerName) {
+    document.getElementById('customer').value = customerName;
+    closeModal();
+  }
+
+  // ----- Quotation Items Selector Modal -----
+  function openQuotationSelector(event, secId, itemIdx) {
+    event.stopPropagation();
+    activeRow = { secId, itemIdx };
+
+    if (quotationsCache.length === 0) {
+      alert("No quotation items available for this project.");
+      return;
+    }
+
+    // Group by quotation_no
+    const grouped = {};
+    quotationsCache.forEach(item => {
+      const key = item.quotation_no;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(item);
+    });
+
+    let html = `
+      <div class="modal-overlay" id="quoteSelectorModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Select Item from Quotations</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+          </div>
+          <div style="margin-bottom:10px; color:#6b7280;">
+            📌 Click an item to fill description, UOM and price
+          </div>
+    `;
+
+    for (const [no, items] of Object.entries(grouped)) {
+      html += `<div class="quotation-group"><h4>📄 ${no} (${items[0].customer})</h4>`;
+      items.forEach(item => {
+        const escapedDesc = item.description.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        html += `
+          <div class="quote-item-row">
+            <span>${item.description}</span>
+            <span>${item.UOM}</span>
+            <span>RM ${Number(item.price).toFixed(2)}</span>
+            <button class="btn-select-item" onclick="selectQuoteItem('${escapedDesc}', '${item.UOM}', ${item.price})">Select</button>
+          </div>
+        `;
+      });
+      html += `</div>`;
+    }
+    html += `</div></div>`;
+
+    const modalContainer = document.createElement('div');
+    modalContainer.id = 'modal-container';
+    modalContainer.innerHTML = html;
+    document.body.appendChild(modalContainer);
+  }
+
+  function closeModal() {
+    document.getElementById('modal-container')?.remove();
+  }
+
+  function selectQuoteItem(desc, uom, price) {
+    const sec = invoiceData.sections.find(s => s.id === activeRow.secId);
+    if (sec && sec.items[activeRow.itemIdx]) {
+      sec.items[activeRow.itemIdx].description = desc;
+      sec.items[activeRow.itemIdx].UOM = uom;
+      sec.items[activeRow.itemIdx].price = price;
+      render();
+      updateTotal();
+    }
+    closeModal();
+  }
+
+  // Click outside modal to close
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-overlay')) {
+      closeModal();
+    }
+  });
+
   function render() {
     const container = document.getElementById('sectionsContainer');
     container.innerHTML = '';
@@ -193,7 +434,14 @@
       
       let itemsHtml = sec.items.map((item, idx) => `
         <tr>
-          <td><input type="text" class="full-w" value="${item.description}" oninput="updateValue(${sec.id}, ${idx}, 'description', this.value)" placeholder="Description..."></td>
+          <td style="display: flex; align-items: center;">
+            <input type="text" class="full-w" value="${item.description}" 
+              oninput="updateValue(${sec.id}, ${idx}, 'description', this.value)" 
+              placeholder="Description...">
+            <button type="button" class="btn-quick-select" 
+              onclick="openQuotationSelector(event, ${sec.id}, ${idx})" 
+              title="Select from quotations">📋</button>
+          </td>
           <td><input type="text" class="full-w text-center uom-input" value="${item.UOM}" oninput="updateValue(${sec.id}, ${idx}, 'UOM', this.value)"></td>
           <td><input type="number" class="full-w text-center qty-input" value="${item.qty}" oninput="updateValue(${sec.id}, ${idx}, 'qty', this.value)"></td>
           <td><input type="number" class="full-w text-right" value="${item.price}" oninput="updateValue(${sec.id}, ${idx}, 'price', this.value)"></td>
