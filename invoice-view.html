@@ -36,6 +36,7 @@
     th, td { border: 1px solid var(--border); padding: var(--padding); font-size: 13px; word-wrap: break-word; }
     th { background: var(--muted-bg); font-weight: bold; }
     
+    /* Section Header Row */
     .section-header { background-color: #eee; font-weight: bold; text-align: left; }
     
     .text-right { text-align: right; }
@@ -48,106 +49,11 @@
     .signature-box { text-align: center; font-size: 13px; min-width: 220px; position: relative; }
     #company-chop { width: 110px; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); opacity: 0.8; pointer-events: none; }
 
-    /* 权限错误提示 */
-    .auth-error {
-      text-align: center;
-      padding: 60px 20px;
-      color: #dc2626;
-      font-size: 18px;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-    .auth-error a {
-      color: #2563eb;
-      text-decoration: underline;
-    }
-
-    /* ========== 移动端优化 (修复文字竖排) ========== */
-    @media (max-width: 768px) {
-      body { margin: 10px; }
-
-      /* 头部改为上下排列 */
-      .header {
-        flex-direction: column;
-        gap: 10px;
-      }
-      .company {
-        max-width: 100%;
-        width: 100%;
-      }
-      .invoice-box {
-        text-align: left;
-        width: 100%;
-        min-width: auto;
-      }
-      .invoice-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-      }
-      .invoice-actions button {
-        margin-left: 0;
-        flex: 1;
-        padding: 10px 8px;
-      }
-
-      /* 表格容器：允许横向滚动 */
-      .table-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-top: 15px;
-        border: 1px solid var(--border);
-      }
-      
-      table {
-        table-layout: auto;        /* 让列宽根据内容自动调整 */
-        min-width: 650px;           /* 保证表格足够宽，不会压缩到竖排 */
-        white-space: nowrap;        /* 防止文字换行（在需要换行的描述列单独处理）*/
-      }
-
-      /* 描述列允许正常换行，但避免竖排 */
-      td:nth-child(2), th:nth-child(2) {
-        white-space: normal;
-        word-break: break-word;
-        min-width: 180px;
-      }
-
-      /* 其他列强制不换行 */
-      td, th {
-        white-space: nowrap;
-      }
-
-      /* 调整内边距让手机阅读更舒适 */
-      th, td {
-        padding: 10px 6px;
-        font-size: 13px;
-      }
-
-      /* 总额区域 */
-      .total-area {
-        font-size: 18px;
-        padding-top: 12px;
-      }
-
-      /* 银行信息 */
-      .bank-info {
-        margin-top: 30px;
-      }
-
-      /* 签章区域 */
-      .signature-container {
-        margin-top: 40px;
-      }
-    }
-
-    /* 打印样式保持不变 */
     @media print {
       @page { size: A4 portrait; margin: 10mm; }
       body { margin: 0; zoom: 0.95; }
       .no-print, button, .invoice-actions { display: none !important; }
       tr { page-break-inside: avoid; }
-      .table-wrapper { overflow-x: visible; }
-      table { min-width: 100%; }
     }
   </style>
 </head>
@@ -185,24 +91,21 @@
   </header>
 
   <main>
-    <!-- 新增：表格包裹容器用于横向滚动 -->
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 40px;">No</th>
-            <th>Description</th>
-            <th style="width: 70px;" class="text-center">UOM</th>
-            <th style="width: 60px;" class="text-center">Qty</th>
-            <th style="width: 100px;" class="text-right">Unit Price</th>
-            <th style="width: 110px;" class="text-right">Amount (RM)</th>
-          </tr>
-        </thead>
-        <tbody id="itemsList">
-          <tr><td colspan="6" class="text-center">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;">No</th>
+          <th>Description</th>
+          <th style="width: 70px;" class="text-center">UOM</th>
+          <th style="width: 60px;" class="text-center">Qty</th>
+          <th style="width: 100px;" class="text-right">Unit Price</th>
+          <th style="width: 110px;" class="text-right">Amount (RM)</th>
+        </tr>
+      </thead>
+      <tbody id="itemsList">
+        <tr><td colspan="6" class="text-center">Loading...</td></tr>
+      </tbody>
+    </table>
 
     <div class="total-area">
       TOTAL AMOUNT (RM): <span id="totalDisplay">0.00</span>
@@ -234,33 +137,6 @@
       const invoiceId = urlParams.get('id');
       const formatCurrency = (num) => Number(num || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-      // 权限检查函数（保留）
-      async function checkAdminAuth() {
-        try {
-          const res = await fetch('/api/auth-check', { credentials: 'include' });
-          const data = await res.json();
-          if (!data.loggedIn || data.role !== 'admin') {
-            showAuthError();
-            return false;
-          }
-          return true;
-        } catch (err) {
-          console.error('Auth check failed:', err);
-          showAuthError('Authentication error. Please try logging in again.');
-          return false;
-        }
-      }
-
-      function showAuthError(message = 'You must be logged in as an administrator to view invoices.') {
-        document.body.innerHTML = `
-          <div class="auth-error">
-            <h2>Access Denied</h2>
-            <p>${message}</p>
-            <p><a href="/login.html">Go to Login</a></p>
-          </div>
-        `;
-      }
-
       if (!invoiceId) {
         qid('itemsList').innerHTML = '<tr><td colspan="6" class="text-center" style="color:red">Error: No Invoice ID provided.</td></tr>';
         return;
@@ -278,6 +154,7 @@
 
           const { invoice, sections, items } = data;
 
+          // 1. 填充主表信息
           qid('invoiceNo').textContent = invoice.invoice_no || '—';
           qid('customer').textContent = invoice.customer || '—';
           qid('invoiceDate').textContent = (invoice.created_at || '').split(' ')[0] || '—';
@@ -289,38 +166,29 @@
           badge.style.color = (status === 'UNPAID') ? 'red' : 'green';
           if (status !== 'UNPAID') qid('editBtn').style.display = 'none';
 
+          // 2. 渲染明细 (带 Section 逻辑)
           const tbody = qid('itemsList');
           tbody.innerHTML = '';
+
           let globalIndex = 1;
 
-          function createItemRow(item, index) {
-            const qty = Number(item.qty || 0);
-            const price = Number(item.price || 0);
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td class="text-center">${index}</td>
-              <td>${item.description || ''}</td>
-              <td class="text-center">${item.UOM || '-'}</td>
-              <td class="text-center">${qty}</td>
-              <td class="text-right">${formatCurrency(price)}</td>
-              <td class="text-right">${formatCurrency(qty * price)}</td>
-            `;
-            return tr;
-          }
-
+          // 处理有 Section 的情况
           if (sections && sections.length > 0) {
             sections.forEach(sec => {
+              // 渲染 Section 标题行
               const secTr = document.createElement('tr');
               secTr.className = 'section-header';
               secTr.innerHTML = `<td colspan="6" style="background:#f9f9f9; font-weight:bold;">${sec.section_title || 'Section'}</td>`;
               tbody.appendChild(secTr);
 
+              // 渲染该 Section 下的 Items
               const sectionItems = items.filter(it => it.section_id === sec.id);
               sectionItems.forEach(item => {
                 tbody.appendChild(createItemRow(item, globalIndex++));
               });
             });
 
+            // 渲染没有 Section 的残留 Items
             const orphanedItems = items.filter(it => !it.section_id);
             if (orphanedItems.length > 0) {
               const otherTr = document.createElement('tr');
@@ -331,6 +199,7 @@
               });
             }
           } else {
+            // 没有 Section，直接平铺渲染
             if (items && items.length > 0) {
               items.forEach(item => {
                 tbody.appendChild(createItemRow(item, globalIndex++));
@@ -340,6 +209,7 @@
             }
           }
 
+          // 3. HOME 按钮逻辑
           qid('homeBtn').onclick = () => {
             window.location.href = invoice.project_id ? `/project-view.html?id=${invoice.project_id}` : '/index.html';
           };
@@ -348,6 +218,21 @@
           console.error(err);
           qid('itemsList').innerHTML = `<tr><td colspan="6" class="text-center" style="color:red">Error: ${err.message}</td></tr>`;
         }
+      }
+
+      function createItemRow(item, index) {
+        const qty = Number(item.qty || 0);
+        const price = Number(item.price || 0);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="text-center">${index}</td>
+          <td>${item.description || ''}</td>
+          <td class="text-center">${item.UOM || '-'}</td>
+          <td class="text-center">${qty}</td>
+          <td class="text-right">${formatCurrency(price)}</td>
+          <td class="text-right">${formatCurrency(qty * price)}</td>
+        `;
+        return tr;
       }
 
       function initCompanySettings() {
@@ -363,10 +248,7 @@
         }
       }
 
-      document.addEventListener('DOMContentLoaded', async () => {
-        const authorized = await checkAdminAuth();
-        if (!authorized) return;
-
+      document.addEventListener('DOMContentLoaded', () => {
         initCompanySettings();
         loadInvoiceData();
       });
