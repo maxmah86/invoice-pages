@@ -5,6 +5,7 @@
   <title>Create Invoice</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    /*  */
     :root {
       --primary: #2563eb;
       --success: #16a34a;
@@ -25,7 +26,6 @@
     input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
     .project-banner { display: none; margin-bottom: 16px; padding: 10px 12px; border-radius: 6px; background: #eff6ff; color: #1d4ed8; font-size: 14px; }
 
-    /* Section Styles */
     .section-block { border: 1px solid var(--border); border-radius: 6px; margin-bottom: 25px; overflow: hidden; }
     .section-header { background: var(--gray-100); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
     .section-title-input { font-weight: bold; border: none; background: transparent; width: 60%; font-size: 15px; }
@@ -45,7 +45,6 @@
     .uom-input, .qty-input { min-width: 92px; padding: 10px 12px; font-size: 15px; }
     .text-right { text-align: right; }
 
-    /* Buttons */
     .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: 0.2s; }
     .btn-add-sec { background: var(--primary); color: white; margin-bottom: 20px; }
     .btn-add-item { background: #fff; border: 1px dashed var(--primary); color: var(--primary); width: 100%; padding: 10px; margin-top: 5px; }
@@ -56,7 +55,6 @@
     .grand-total-box { text-align: right; margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 6px; }
     .grand-total-box h3 { margin: 0; color: var(--primary); font-size: 24px; }
 
-    /* Quick select button & modal */
     .btn-quick-select {
       background: none;
       border: 1px solid var(--border);
@@ -131,7 +129,6 @@
       cursor: pointer;
     }
 
-    /* Customer list in modal */
     .customer-list-item {
       padding: 10px 15px;
       border-bottom: 1px solid #f3f4f6;
@@ -147,6 +144,14 @@
       padding: 2px 8px;
       border-radius: 12px;
       font-size: 12px;
+    }
+
+    /*  */
+    .auth-error {
+      text-align: center;
+      padding: 40px;
+      color: var(--danger);
+      font-size: 18px;
     }
 
     @media (max-width: 768px) {
@@ -166,394 +171,378 @@
 </head>
 <body>
 
-<div class="container">
-  <h2>Create New Invoice</h2>
-  <div id="projectBanner" class="project-banner"></div>
-  
-  <div class="form-group">
-    <div class="input-field">
-      <label>Invoice No</label>
-      <input type="text" id="invoice_no" placeholder="e.g. INV-2024-0001">
-    </div>
-    <div class="input-field">
-      <label>Customer / Client Name</label>
-      <div class="input-row">
-        <input type="text" id="customer" placeholder="Enter client name">
-        <button type="button" class="btn-quick-select" onclick="openCustomerSelector()" title="Select from quotations">📋</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="sectionsContainer">
-    </div>
-
-  <button class="btn btn-add-sec" onclick="addNewSection()">+ Add New Section</button>
-
-  <div class="grand-total-box">
-    <span>Grand Total Amount</span>
-    <h3 id="grandTotalLabel">RM 0.00</h3>
-  </div>
-
-  <button class="btn btn-save" id="saveBtn" onclick="submitInvoice()">SAVE & CREATE INVOICE</button>
+<div class="container" id="mainContainer">
+  <!--  JS  -->
 </div>
 
 <script>
-  const urlParams = new URLSearchParams(window.location.search);
-  const projectIdFromUrl = urlParams.get("project_id");
-  let activeProjectId = projectIdFromUrl ? Number(projectIdFromUrl) : null;
-
-  let invoiceData = {
-    sections: []
-  };
-
-  // Quotation items cache
-  let quotationsCache = [];
-  // Unique customers list derived from quotationsCache
-  let customerList = [];
-  let activeRow = { secId: null, itemIdx: null };
-
-  function generateInvoiceNoByDate() {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mi = String(d.getMinutes()).padStart(2, "0");
-    const suffix = String(Math.floor(Math.random() * 900) + 100);
-    return `INV-${yyyy}${mm}${dd}-${hh}${mi}${suffix}`;
-  }
-
-  // Load quotation items for current project
-  async function loadQuotationsForProject() {
-    if (!activeProjectId) return;
-    try {
-      const res = await fetch(`/api/project-quotation-items?project_id=${activeProjectId}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        quotationsCache = data;
-        // Extract unique customers
-        const customers = new Set();
-        data.forEach(item => { if (item.customer) customers.add(item.customer); });
-        customerList = Array.from(customers).sort();
-      }
-    } catch (e) {
-      console.warn("Failed to load quotations:", e);
-    }
-  }
-
-  // Initialize with one default section
-  function init() {
-    addNewSection("Main Works");
-    const invoiceNoInput = document.getElementById("invoice_no");
-    if (!invoiceNoInput.value.trim()) {
-      invoiceNoInput.value = generateInvoiceNoByDate();
-    }
-    if (activeProjectId) {
-      const banner = document.getElementById("projectBanner");
-      banner.style.display = "block";
-      banner.textContent = `Project ID: #${activeProjectId}`;
-      // Load quotation data for quick selections
-      loadQuotationsForProject();
-    }
-  }
-
-  function addNewSection(title = "New Section") {
-    const section = {
-      id: Date.now() + Math.random(),
-      title: title,
-      items: [{ description: "", UOM: "LOT", qty: 1, price: 0 }]
-    };
-    invoiceData.sections.push(section);
-    render();
-  }
-
-  function removeSection(secId) {
-    invoiceData.sections = invoiceData.sections.filter(s => s.id !== secId);
-    render();
-  }
-
-  function addItem(secId) {
-    const sec = invoiceData.sections.find(s => s.id === secId);
-    sec.items.push({ description: "", UOM: "LOT", qty: 1, price: 0 });
-    render();
-  }
-
-  function removeItem(secId, itemIdx) {
-    const sec = invoiceData.sections.find(s => s.id === secId);
-    sec.items.splice(itemIdx, 1);
-    render();
-  }
-
-  function updateValue(secId, itemIdx, field, val) {
-    const sec = invoiceData.sections.find(s => s.id === secId);
-    if (itemIdx === null) {
-      sec.title = val;
-    } else {
-      sec.items[itemIdx][field] = (field === 'qty' || field === 'price') ? parseFloat(val) || 0 : val;
-    }
-    updateTotal();
-  }
-
-  function updateTotal() {
-    let grandTotal = 0;
-    invoiceData.sections.forEach(sec => {
-      let secTotal = 0;
-      sec.items.forEach(item => {
-        secTotal += (item.qty * item.price);
-      });
-      grandTotal += secTotal;
-    });
-    document.getElementById('grandTotalLabel').textContent = `RM ${grandTotal.toLocaleString('en-MY', {minimumFractionDigits: 2})}`;
-    return grandTotal;
-  }
-
-  // ----- Customer Selector Modal -----
-  function openCustomerSelector() {
-    if (customerList.length === 0) {
-      alert("No customers found in quotations for this project.");
-      return;
-    }
-
-    let html = `
-      <div class="modal-overlay" id="customerSelectorModal">
-        <div class="modal-content" style="max-width: 500px;">
-          <div class="modal-header">
-            <h3>Select Customer from Quotations</h3>
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-          </div>
-          <div style="margin-bottom:10px; color:#6b7280;">
-            📌 Click a customer to fill the field
-          </div>
-    `;
-
-    customerList.forEach(cust => {
-      html += `
-        <div class="customer-list-item" onclick="selectCustomer('${cust.replace(/'/g, "\\'")}')">
-          <span>${cust}</span>
-          <span class="badge">select</span>
-        </div>
-      `;
-    });
-
-    html += `</div></div>`;
-
-    const modalContainer = document.createElement('div');
-    modalContainer.id = 'modal-container';
-    modalContainer.innerHTML = html;
-    document.body.appendChild(modalContainer);
-  }
-
-  function selectCustomer(customerName) {
-    document.getElementById('customer').value = customerName;
-    closeModal();
-  }
-
-  // ----- Quotation Items Selector Modal -----
-  function openQuotationSelector(event, secId, itemIdx) {
-    event.stopPropagation();
-    activeRow = { secId, itemIdx };
-
-    if (quotationsCache.length === 0) {
-      alert("No quotation items available for this project.");
-      return;
-    }
-
-    // Group by quotation_no
-    const grouped = {};
-    quotationsCache.forEach(item => {
-      const key = item.quotation_no;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(item);
-    });
-
-    let html = `
-      <div class="modal-overlay" id="quoteSelectorModal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3>Select Item from Quotations</h3>
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-          </div>
-          <div style="margin-bottom:10px; color:#6b7280;">
-            📌 Click an item to fill description, UOM and price
-          </div>
-    `;
-
-    for (const [no, items] of Object.entries(grouped)) {
-      html += `<div class="quotation-group"><h4>📄 ${no} (${items[0].customer})</h4>`;
-      items.forEach(item => {
-        const escapedDesc = item.description.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        html += `
-          <div class="quote-item-row">
-            <span>${item.description}</span>
-            <span>${item.UOM}</span>
-            <span>RM ${Number(item.price).toFixed(2)}</span>
-            <button class="btn-select-item" onclick="selectQuoteItem('${escapedDesc}', '${item.UOM}', ${item.price})">Select</button>
+  (function() {
+    // ----------  ----------
+    async function checkAdminAuth() {
+      try {
+        const res = await fetch('/api/auth-check', {
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (!data.loggedIn || data.role !== 'admin') {
+          // 
+          document.getElementById('mainContainer').innerHTML = `
+            <div class="auth-error">
+              <h2>Access Denied</h2>
+              <p>You must be logged in as an administrator to create invoices.</p>
+              <p><a href="/login.html" style="color: var(--primary);">Go to Login</a></p>
+            </div>
+          `;
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        document.getElementById('mainContainer').innerHTML = `
+          <div class="auth-error">
+            <h2>Authentication Error</h2>
+            <p>Unable to verify your session. Please try logging in again.</p>
+            <p><a href="/login.html" style="color: var(--primary);">Go to Login</a></p>
           </div>
         `;
-      });
-      html += `</div>`;
+        return false;
+      }
     }
-    html += `</div></div>`;
 
-    const modalContainer = document.createElement('div');
-    modalContainer.id = 'modal-container';
-    modalContainer.innerHTML = html;
-    document.body.appendChild(modalContainer);
-  }
+    // 
+    window.addEventListener('DOMContentLoaded', async () => {
+      const isAuthorized = await checkAdminAuth();
+      if (!isAuthorized) return;
 
-  function closeModal() {
-    document.getElementById('modal-container')?.remove();
-  }
-
-  function selectQuoteItem(desc, uom, price) {
-    const sec = invoiceData.sections.find(s => s.id === activeRow.secId);
-    if (sec && sec.items[activeRow.itemIdx]) {
-      sec.items[activeRow.itemIdx].description = desc;
-      sec.items[activeRow.itemIdx].UOM = uom;
-      sec.items[activeRow.itemIdx].price = price;
-      render();
-      updateTotal();
-    }
-    closeModal();
-  }
-
-  // Click outside modal to close
-  document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('modal-overlay')) {
-      closeModal();
-    }
-  });
-
-  function render() {
-    const container = document.getElementById('sectionsContainer');
-    container.innerHTML = '';
-
-    invoiceData.sections.forEach(sec => {
-      const secDiv = document.createElement('div');
-      secDiv.className = 'section-block';
-      
-      let itemsHtml = sec.items.map((item, idx) => `
-        <tr>
-          <td style="display: flex; align-items: center;">
-            <input type="text" class="full-w" value="${item.description}" 
-              oninput="updateValue(${sec.id}, ${idx}, 'description', this.value)" 
-              placeholder="Description...">
-            <button type="button" class="btn-quick-select" 
-              onclick="openQuotationSelector(event, ${sec.id}, ${idx})" 
-              title="Select from quotations">📋</button>
-          </td>
-          <td><input type="text" class="full-w text-center uom-input" value="${item.UOM}" oninput="updateValue(${sec.id}, ${idx}, 'UOM', this.value)"></td>
-          <td><input type="number" class="full-w text-center qty-input" value="${item.qty}" oninput="updateValue(${sec.id}, ${idx}, 'qty', this.value)"></td>
-          <td><input type="number" class="full-w text-right" value="${item.price}" oninput="updateValue(${sec.id}, ${idx}, 'price', this.value)"></td>
-          <td class="text-right">${(item.qty * item.price).toFixed(2)}</td>
-          <td class="text-center"><button class="btn btn-del" onclick="removeItem(${sec.id}, ${idx})">×</button></td>
-        </tr>
-      `).join('');
-
-      secDiv.innerHTML = `
-        <div class="section-header">
-          <input type="text" class="section-title-input" value="${sec.title}" oninput="updateValue(${sec.id}, null, 'title', this.value)">
-          <button class="btn btn-del" style="font-size:13px" onclick="removeSection(${sec.id})">Delete Section</button>
+      // 
+      document.getElementById('mainContainer').innerHTML = `
+        <h2>Create New Invoice</h2>
+        <div id="projectBanner" class="project-banner"></div>
+        
+        <div class="form-group">
+          <div class="input-field">
+            <label>Invoice No</label>
+            <input type="text" id="invoice_no" placeholder="e.g. INV-2024-0001">
+          </div>
+          <div class="input-field">
+            <label>Customer / Client Name</label>
+            <div class="input-row">
+              <input type="text" id="customer" placeholder="Enter client name">
+              <button type="button" class="btn-quick-select" onclick="openCustomerSelector()" title="Select from quotations"></button>
+            </div>
+          </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th class="col-desc">Description</th>
-              <th class="col-uom text-center">UOM</th>
-              <th class="col-qty text-center">Qty</th>
-              <th class="col-price text-right">Price</th>
-              <th class="col-total text-right">Total</th>
-              <th class="col-action"></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-        </table>
-        <div style="padding: 10px;">
-          <button class="btn btn-add-item" onclick="addItem(${sec.id})">+ Add Line Item</button>
+
+        <div id="sectionsContainer"></div>
+
+        <button class="btn btn-add-sec" onclick="addNewSection()">+ Add New Section</button>
+
+        <div class="grand-total-box">
+          <span>Grand Total Amount</span>
+          <h3 id="grandTotalLabel">RM 0.00</h3>
         </div>
+
+        <button class="btn btn-save" id="saveBtn" onclick="submitInvoice()">SAVE & CREATE INVOICE</button>
       `;
-      container.appendChild(secDiv);
-    });
-    updateTotal();
-  }
 
-  function sanitizeSections(rawSections = []) {
-    return rawSections
-      .map((sec, secIdx) => {
-        const cleanItems = (sec.items || [])
-          .map((item, itemIdx) => ({
+      // 
+      initInvoicePage();
+    });
+
+    // ----------  () ----------
+    function initInvoicePage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const projectIdFromUrl = urlParams.get("project_id");
+      window.activeProjectId = projectIdFromUrl ? Number(projectIdFromUrl) : null;
+
+      window.invoiceData = { sections: [] };
+      window.quotationsCache = [];
+      window.customerList = [];
+      window.activeRow = { secId: null, itemIdx: null };
+
+      window.generateInvoiceNoByDate = function() {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mi = String(d.getMinutes()).padStart(2, "0");
+        const suffix = String(Math.floor(Math.random() * 900) + 100);
+        return `INV-${yyyy}${mm}${dd}-${hh}${mi}${suffix}`;
+      };
+
+      window.loadQuotationsForProject = async function() {
+        if (!window.activeProjectId) return;
+        try {
+          const res = await fetch(`/api/project-quotation-items?project_id=${window.activeProjectId}`);
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            window.quotationsCache = data;
+            const customers = new Set();
+            data.forEach(item => { if (item.customer) customers.add(item.customer); });
+            window.customerList = Array.from(customers).sort();
+          }
+        } catch (e) {
+          console.warn("Failed to load quotations:", e);
+        }
+      };
+
+      window.init = function() {
+        window.addNewSection("Main Works");
+        const invoiceNoInput = document.getElementById("invoice_no");
+        if (!invoiceNoInput.value.trim()) {
+          invoiceNoInput.value = window.generateInvoiceNoByDate();
+        }
+        if (window.activeProjectId) {
+          const banner = document.getElementById("projectBanner");
+          banner.style.display = "block";
+          banner.textContent = `Project ID: #${window.activeProjectId}`;
+          window.loadQuotationsForProject();
+        }
+      };
+
+      window.addNewSection = function(title = "New Section") {
+        const section = {
+          id: Date.now() + Math.random(),
+          title: title,
+          items: [{ description: "", UOM: "LOT", qty: 1, price: 0 }]
+        };
+        window.invoiceData.sections.push(section);
+        window.render();
+      };
+
+      window.removeSection = function(secId) {
+        window.invoiceData.sections = window.invoiceData.sections.filter(s => s.id !== secId);
+        window.render();
+      };
+
+      window.addItem = function(secId) {
+        const sec = window.invoiceData.sections.find(s => s.id === secId);
+        sec.items.push({ description: "", UOM: "LOT", qty: 1, price: 0 });
+        window.render();
+      };
+
+      window.removeItem = function(secId, itemIdx) {
+        const sec = window.invoiceData.sections.find(s => s.id === secId);
+        sec.items.splice(itemIdx, 1);
+        window.render();
+      };
+
+      window.updateValue = function(secId, itemIdx, field, val) {
+        const sec = window.invoiceData.sections.find(s => s.id === secId);
+        if (itemIdx === null) {
+          sec.title = val;
+        } else {
+          sec.items[itemIdx][field] = (field === 'qty' || field === 'price') ? parseFloat(val) || 0 : val;
+        }
+        window.updateTotal();
+      };
+
+      window.updateTotal = function() {
+        let grandTotal = 0;
+        window.invoiceData.sections.forEach(sec => {
+          let secTotal = 0;
+          sec.items.forEach(item => { secTotal += (item.qty * item.price); });
+          grandTotal += secTotal;
+        });
+        document.getElementById('grandTotalLabel').textContent = `RM ${grandTotal.toLocaleString('en-MY', {minimumFractionDigits: 2})}`;
+        return grandTotal;
+      };
+
+      window.openCustomerSelector = function() {
+        if (window.customerList.length === 0) {
+          alert("No customers found in quotations for this project.");
+          return;
+        }
+        let html = `
+          <div class="modal-overlay" id="customerSelectorModal">
+            <div class="modal-content" style="max-width: 500px;">
+              <div class="modal-header">
+                <h3>Select Customer from Quotations</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+              </div>
+              <div style="margin-bottom:10px; color:#6b7280;"> Click a customer to fill the field</div>
+        `;
+        window.customerList.forEach(cust => {
+          html += `<div class="customer-list-item" onclick="selectCustomer('${cust.replace(/'/g, "\\'")}')"><span>${cust}</span><span class="badge">select</span></div>`;
+        });
+        html += `</div></div>`;
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'modal-container';
+        modalContainer.innerHTML = html;
+        document.body.appendChild(modalContainer);
+      };
+
+      window.selectCustomer = function(customerName) {
+        document.getElementById('customer').value = customerName;
+        window.closeModal();
+      };
+
+      window.openQuotationSelector = function(event, secId, itemIdx) {
+        event.stopPropagation();
+        window.activeRow = { secId, itemIdx };
+        if (window.quotationsCache.length === 0) {
+          alert("No quotation items available for this project.");
+          return;
+        }
+        const grouped = {};
+        window.quotationsCache.forEach(item => {
+          const key = item.quotation_no;
+          if (!grouped[key]) grouped[key] = [];
+          grouped[key].push(item);
+        });
+        let html = `
+          <div class="modal-overlay" id="quoteSelectorModal">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3>Select Item from Quotations</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+              </div>
+              <div style="margin-bottom:10px; color:#6b7280;"> Click an item to fill description, UOM and price</div>
+        `;
+        for (const [no, items] of Object.entries(grouped)) {
+          html += `<div class="quotation-group"><h4> ${no} (${items[0].customer})</h4>`;
+          items.forEach(item => {
+            const escapedDesc = item.description.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            html += `
+              <div class="quote-item-row">
+                <span>${item.description}</span>
+                <span>${item.UOM}</span>
+                <span>RM ${Number(item.price).toFixed(2)}</span>
+                <button class="btn-select-item" onclick="selectQuoteItem('${escapedDesc}', '${item.UOM}', ${item.price})">Select</button>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+        html += `</div></div>`;
+        const modalContainer = document.createElement('div');
+        modalContainer.id = 'modal-container';
+        modalContainer.innerHTML = html;
+        document.body.appendChild(modalContainer);
+      };
+
+      window.closeModal = function() {
+        document.getElementById('modal-container')?.remove();
+      };
+
+      window.selectQuoteItem = function(desc, uom, price) {
+        const sec = window.invoiceData.sections.find(s => s.id === window.activeRow.secId);
+        if (sec && sec.items[window.activeRow.itemIdx]) {
+          sec.items[window.activeRow.itemIdx].description = desc;
+          sec.items[window.activeRow.itemIdx].UOM = uom;
+          sec.items[window.activeRow.itemIdx].price = price;
+          window.render();
+          window.updateTotal();
+        }
+        window.closeModal();
+      };
+
+      document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal-overlay')) {
+          window.closeModal();
+        }
+      });
+
+      window.render = function() {
+        const container = document.getElementById('sectionsContainer');
+        container.innerHTML = '';
+        window.invoiceData.sections.forEach(sec => {
+          const secDiv = document.createElement('div');
+          secDiv.className = 'section-block';
+          let itemsHtml = sec.items.map((item, idx) => `
+            <tr>
+              <td style="display: flex; align-items: center;">
+                <input type="text" class="full-w" value="${item.description}" 
+                  oninput="updateValue(${sec.id}, ${idx}, 'description', this.value)" 
+                  placeholder="Description...">
+                <button type="button" class="btn-quick-select" 
+                  onclick="openQuotationSelector(event, ${sec.id}, ${idx})" 
+                  title="Select from quotations"></button>
+              </td>
+              <td><input type="text" class="full-w text-center uom-input" value="${item.UOM}" oninput="updateValue(${sec.id}, ${idx}, 'UOM', this.value)"></td>
+              <td><input type="number" class="full-w text-center qty-input" value="${item.qty}" oninput="updateValue(${sec.id}, ${idx}, 'qty', this.value)"></td>
+              <td><input type="number" class="full-w text-right" value="${item.price}" oninput="updateValue(${sec.id}, ${idx}, 'price', this.value)"></td>
+              <td class="text-right">${(item.qty * item.price).toFixed(2)}</td>
+              <td class="text-center"><button class="btn btn-del" onclick="removeItem(${sec.id}, ${idx})">�</button></td>
+            </tr>
+          `).join('');
+          secDiv.innerHTML = `
+            <div class="section-header">
+              <input type="text" class="section-title-input" value="${sec.title}" oninput="updateValue(${sec.id}, null, 'title', this.value)">
+              <button class="btn btn-del" style="font-size:13px" onclick="removeSection(${sec.id})">Delete Section</button>
+            </div>
+            <table>
+              <thead><tr><th class="col-desc">Description</th><th class="col-uom text-center">UOM</th><th class="col-qty text-center">Qty</th><th class="col-price text-right">Price</th><th class="col-total text-right">Total</th><th class="col-action"></th></tr></thead>
+              <tbody>${itemsHtml}</tbody>
+            </table>
+            <div style="padding: 10px;"><button class="btn btn-add-item" onclick="addItem(${sec.id})">+ Add Line Item</button></div>
+          `;
+          container.appendChild(secDiv);
+        });
+        window.updateTotal();
+      };
+
+      window.sanitizeSections = function(rawSections = []) {
+        return rawSections.map((sec, secIdx) => {
+          const cleanItems = (sec.items || []).map((item, itemIdx) => ({
             description: String(item.description || "").trim(),
             UOM: String(item.UOM || "LOT").trim() || "LOT",
             qty: Number(item.qty) || 0,
             price: Number(item.price) || 0,
             sort_order: itemIdx
-          }))
-          .filter(item => item.description && item.qty > 0 && item.price >= 0);
+          })).filter(item => item.description && item.qty > 0 && item.price >= 0);
+          return {
+            title: String(sec.title || "").trim() || `Section ${secIdx + 1}`,
+            sort_order: secIdx,
+            items: cleanItems
+          };
+        }).filter(sec => sec.items.length > 0);
+      };
 
-        return {
-          title: String(sec.title || "").trim() || `Section ${secIdx + 1}`,
-          sort_order: secIdx,
-          items: cleanItems
+      window.submitInvoice = async function() {
+        const btn = document.getElementById('saveBtn');
+        const invoice_no = document.getElementById('invoice_no').value.trim();
+        const customer = document.getElementById('customer').value.trim();
+        const sections = window.sanitizeSections(window.invoiceData.sections);
+        if (!invoice_no || !customer) { alert("Please fill in Invoice No and Customer."); return; }
+        if (sections.length === 0) { alert("Please add at least one valid item (description + qty + price)."); return; }
+        btn.disabled = true;
+        btn.textContent = "Processing...";
+        const payload = {
+          invoice_no,
+          customer,
+          project_id: window.activeProjectId || null,
+          amount: window.updateTotal(),
+          sections
         };
-      })
-      .filter(sec => sec.items.length > 0);
-  }
+        try {
+          const res = await fetch('/api/invoice-create', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const result = await res.json();
+          if (result.success) {
+            alert("Invoice successfully created!");
+            window.location.href = window.activeProjectId
+              ? `/project-view.html?id=${window.activeProjectId}`
+              : `/invoice-view.html?id=${result.id}`;
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (err) {
+          alert("Error: " + err.message);
+          btn.disabled = false;
+          btn.textContent = "SAVE & CREATE INVOICE";
+        }
+      };
 
-  async function submitInvoice() {
-    const btn = document.getElementById('saveBtn');
-    const invoice_no = document.getElementById('invoice_no').value.trim();
-    const customer = document.getElementById('customer').value.trim();
-    const sections = sanitizeSections(invoiceData.sections);
-
-    if (!invoice_no || !customer) {
-      alert("Please fill in Invoice No and Customer.");
-      return;
+      // 
+      window.init();
     }
-
-    if (sections.length === 0) {
-      alert("Please add at least one valid item (description + qty + price).");
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = "Processing...";
-
-    const payload = {
-      invoice_no,
-      customer,
-      project_id: activeProjectId || null,
-      amount: updateTotal(),
-      sections
-    };
-
-    try {
-      const res = await fetch('/api/invoice-create', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await res.json();
-      if (result.success) {
-        alert("Invoice successfully created!");
-        window.location.href = activeProjectId
-          ? `/project-view.html?id=${activeProjectId}`
-          : `/invoice-view.html?id=${result.id}`;
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (err) {
-      alert("Error: " + err.message);
-      btn.disabled = false;
-      btn.textContent = "SAVE & CREATE INVOICE";
-    }
-  }
-
-  // Run on page load
-  init();
+  })();
 </script>
 
 </body>

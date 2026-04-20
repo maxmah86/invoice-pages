@@ -49,6 +49,20 @@
     .signature-box { text-align: center; font-size: 13px; min-width: 220px; position: relative; }
     #company-chop { width: 110px; position: absolute; top: -45px; left: 50%; transform: translateX(-50%); opacity: 0.8; pointer-events: none; }
 
+    /* 权限错误提示样式 (新增) */
+    .auth-error {
+      text-align: center;
+      padding: 60px 20px;
+      color: #dc2626;
+      font-size: 18px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .auth-error a {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+
     @media print {
       @page { size: A4 portrait; margin: 10mm; }
       body { margin: 0; zoom: 0.95; }
@@ -59,6 +73,7 @@
 </head>
 
 <body>
+  <!-- 原始页面内容保持不变，若权限验证失败将用错误信息替换整个 body 内容 -->
   <header class="header">
     <div class="company">
       <div class="company-header">
@@ -85,7 +100,7 @@
         <div><strong>No:</strong> <span id="invoiceNo">—</span></div>
         <div><strong>Date:</strong> <span id="invoiceDate">—</span></div>
         <div><strong>To:</strong> <span id="customer">—</span></div>
-        <div id="statusBadge" class="status-badge no-print"></div>
+        <div id="statusBadge" class="status-badge"></div>
       </div>
     </div>
   </header>
@@ -136,6 +151,35 @@
       const urlParams = new URLSearchParams(window.location.search);
       const invoiceId = urlParams.get('id');
       const formatCurrency = (num) => Number(num || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      // ========== 新增：管理员权限检查 ==========
+      async function checkAdminAuth() {
+        try {
+          const res = await fetch('/api/auth-check', { credentials: 'include' });
+          const data = await res.json();
+          if (!data.loggedIn || data.role !== 'admin') {
+            showAuthError();
+            return false;
+          }
+          return true;
+        } catch (err) {
+          console.error('Auth check failed:', err);
+          showAuthError('Authentication error. Please try logging in again.');
+          return false;
+        }
+      }
+
+      function showAuthError(message = 'You must be logged in as an administrator to view invoices.') {
+        // 用错误提示替换整个 body 内容
+        document.body.innerHTML = `
+          <div class="auth-error">
+            <h2>Access Denied</h2>
+            <p>${message}</p>
+            <p><a href="/login.html">Go to Login</a></p>
+          </div>
+        `;
+      }
+      // ========== 权限检查结束 ==========
 
       if (!invoiceId) {
         qid('itemsList').innerHTML = '<tr><td colspan="6" class="text-center" style="color:red">Error: No Invoice ID provided.</td></tr>';
@@ -236,19 +280,23 @@
       }
 
       function initCompanySettings() {
-        if (typeof COMPANY_CONFIG === 'undefined') return;
-
-        qid('comp-name').textContent = COMPANY_CONFIG.name;
-        qid('comp-reg').textContent = `(Reg No: ${COMPANY_CONFIG.regNo})`;
-        qid('comp-address').textContent = COMPANY_CONFIG.address;
-        qid('comp-contact').textContent = `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
-        qid('company-logo').src = COMPANY_CONFIG.logoUrl;
-        qid('company-chop').src = COMPANY_CONFIG.chopUrl;
-        qid('bank-info').textContent = `${COMPANY_CONFIG.bankName} ${COMPANY_CONFIG.bankAcc}`;
-        document.querySelectorAll('.company-name-text').forEach(el => el.textContent = COMPANY_CONFIG.name);
+        if (window.COMPANY_CONFIG) {
+          qid('comp-name').textContent = COMPANY_CONFIG.name;
+          qid('comp-reg').textContent = `(Reg No: ${COMPANY_CONFIG.regNo})`;
+          qid('comp-address').textContent = COMPANY_CONFIG.address;
+          qid('comp-contact').textContent = `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
+          qid('company-logo').src = COMPANY_CONFIG.logoUrl;
+          qid('company-chop').src = COMPANY_CONFIG.chopUrl;
+          qid('bank-info').textContent = `${COMPANY_CONFIG.bankName} ${COMPANY_CONFIG.bankAcc}`;
+          document.querySelectorAll('.company-name-text').forEach(el => el.textContent = COMPANY_CONFIG.name);
+        }
       }
 
-      document.addEventListener('DOMContentLoaded', () => {
+      // ========== 修改 DOMContentLoaded：先验证权限再初始化 ==========
+      document.addEventListener('DOMContentLoaded', async () => {
+        const authorized = await checkAdminAuth();
+        if (!authorized) return; // 验证失败，页面已显示错误信息，不再继续
+
         initCompanySettings();
         loadInvoiceData();
       });
