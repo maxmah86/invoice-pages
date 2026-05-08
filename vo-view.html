@@ -6,116 +6,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="/js/config.js"></script>
 <script src="/js/company-settings.js"></script>
-
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin: 16px;
-  color: #000;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.company {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.company-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.company-logo {
-  width: 48px;
-  margin-top: 4px;
-}
-
-.company-text h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: bold;
-}
-
-.vo-box {
-  text-align: right;
-}
-
-.vo-title {
-  font-size: 26px;
-  font-weight: bold;
-}
-
-.vo-meta {
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.section {
-  margin-top: 20px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-th, td {
-  border: 1px solid #000;
-  padding: 6px;
-  font-size: 13px;
-}
-
-th {
-  background: #f0f0f0;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.total {
-  font-size: 16px;
-  font-weight: bold;
-  text-align: right;
-  margin-top: 12px;
-}
-
-.footer {
-  margin-top: 20px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.company-chop {
-  width: 120px;
-  margin-bottom: -30px;
-  opacity: 0.85;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-button {
-  margin-top: 20px;
-  padding: 8px 14px;
-  font-size: 14px;
-}
-
-@media print {
-  button {
-    display: none !important;
-  }
-}
+  body { font-family: Arial, sans-serif; margin: 16px; color: #000; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .company { font-size: 14px; line-height: 1.5; }
+  .company-header { display: flex; align-items: flex-start; gap: 10px; }
+  .company-logo { width: 48px; margin-top: 4px; }
+  .company-text h1 { margin: 0; font-size: 26px; font-weight: bold; }
+  .vo-box { text-align: right; }
+  .vo-title { font-size: 26px; font-weight: bold; }
+  .vo-meta { font-size: 14px; line-height: 1.6; }
+  .section { margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #000; padding: 6px; font-size: 13px; }
+  th { background: #f0f0f0; }
+  .text-right { text-align: right; }
+  .total { font-size: 16px; font-weight: bold; text-align: right; margin-top: 12px; }
+  .footer { margin-top: 20px; font-size: 13px; line-height: 1.6; }
+  .company-chop { width: 120px; margin-bottom: -30px; opacity: 0.85; display: block; margin-left: auto; margin-right: auto; }
+  button { margin-top: 20px; padding: 8px 14px; font-size: 14px; cursor: pointer; }
+  @media print { button { display: none !important; } }
 </style>
 </head>
-
 <body>
 
 <div class="header">
@@ -130,7 +42,6 @@ button {
     <div id="comp-address"></div>
     <div id="comp-contact"></div>
   </div>
-
   <div class="vo-box">
     <div class="vo-title">VARIATION ORDER</div>
     <div class="vo-meta">
@@ -162,10 +73,7 @@ button {
     </thead>
     <tbody id="items"></tbody>
   </table>
-
-  <div class="total">
-    TOTAL (RM): <span id="total"></span>
-  </div>
+  <div class="total">TOTAL (RM): <span id="total"></span></div>
 </div>
 
 <div class="footer">
@@ -173,14 +81,17 @@ button {
   <span id="notes"></span>
 </div>
 
-<button id="backBtn" onclick="location.href='/vos.html'">← Back</button>
-<button onclick="printVO()" style="margin-left:6px;">Print / Save PDF</button>
-<button id="editBtn" onclick="location.href='/vo-edit.html?id='+id" style="margin-left:6px;display:none;">Edit</button>
-<span id="adminBtns" style="display:none;">
-  <button id="approveBtn" onclick="approveVO()" style="margin-left:6px;background:#27ae60;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;">✓ Approve</button>
-  <button id="rejectBtn"  onclick="rejectVO()"  style="margin-left:6px;background:#c0392b;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;">✗ Reject</button>
-  <button id="convertBtn" onclick="convertVO()" style="margin-left:6px;background:#2980b9;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;display:none;">→ Convert to Invoice</button>
-</span>
+<div class="actions">
+  <button id="backBtn">← Back</button>
+  <button onclick="printVO()" style="margin-left:6px;">Print / Save PDF</button>
+  <button id="editBtn" style="margin-left:6px; display:none;">Edit</button>
+  
+  <span id="adminBtns" style="display:none;">
+    <button id="approveBtn" onclick="approveVO()" style="margin-left:6px; background:#27ae60; color:#fff; border:none; border-radius:4px; display:none;">✓ Approve</button>
+    <button id="rejectBtn" onclick="rejectVO()" style="margin-left:6px; background:#c0392b; color:#fff; border:none; border-radius:4px; display:none;">✗ Reject</button>
+    <button id="convertBtn" onclick="convertVO()" style="margin-left:6px; background:#2980b9; color:#fff; border:none; border-radius:4px; display:none;">→ Convert to Invoice</button>
+  </span>
+</div>
 
 <div style="display:flex; justify-content:flex-end; margin-top:30px;">
   <div style="text-align:center;">
@@ -191,20 +102,102 @@ button {
 
 <script>
 const id = new URLSearchParams(location.search).get("id");
+if (!id) {
+  alert("Missing VO ID");
+  location.href = "/vos.html";
+}
 
-// Auth check
 let _userRole = null;
+let _voData = null;
+
+// --- 核心逻辑：统一管理按钮显示 ---
+function updateUI() {
+  if (!_userRole || !_voData) return; // 确保权限和数据都加载完了
+
+  const vo = _voData.vo;
+  
+  // 处理返回按钮
+  const backBtn = document.getElementById("backBtn");
+  if (vo.project_id) {
+    backBtn.textContent = "← Project";
+    backBtn.onclick = () => location.href = "/project-view.html?id=" + vo.project_id;
+  } else {
+    backBtn.onclick = () => location.href = "/vos.html";
+  }
+
+  // 状态与权限控制
+  if (vo.status === "DRAFT") {
+    if (_userRole === "admin" || _userRole === "staff") {
+      const editBtn = document.getElementById("editBtn");
+      editBtn.style.display = "inline-block";
+      editBtn.onclick = () => location.href = "/vo-edit.html?id=" + id;
+    }
+    // 只有管理员能看到批准/拒绝
+    if (_userRole === "admin") {
+      document.getElementById("adminBtns").style.display = "inline";
+      document.getElementById("approveBtn").style.display = "inline-block";
+      document.getElementById("rejectBtn").style.display = "inline-block";
+    }
+  } else if (vo.status === "APPROVED") {
+    if (_userRole === "admin") {
+      document.getElementById("adminBtns").style.display = "inline";
+      document.getElementById("convertBtn").style.display = "inline-block";
+    }
+  }
+}
+
+// 1. 检查身份
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.json())
   .then(d => {
     if (!d.loggedIn) { location.replace("/login.html"); return; }
     _userRole = d.role;
-    if (d.role === "admin") {
-      document.getElementById("adminBtns").style.display = "inline";
-    }
+    updateUI();
   })
   .catch(() => location.replace("/login.html"));
 
+// 2. 加载数据
+fetch(`/api/vo-view?id=${id}`, { credentials: "include" })
+  .then(r => {
+    if (r.status === 401) throw new Error("Unauthorized");
+    if (!r.ok) throw new Error("Load failed");
+    return r.json();
+  })
+  .then(data => {
+    _voData = data;
+    const vo = data.vo;
+
+    document.getElementById("voNo").innerText        = vo.vo_no;
+    document.getElementById("voDate").innerText      = vo.created_at.split(" ")[0];
+    document.getElementById("status").innerText      = vo.status;
+    document.getElementById("quotationId").innerText = vo.quotation_id || "-";
+    document.getElementById("invoiceId").innerText   = vo.invoice_id || "-";
+    document.getElementById("title").innerText       = vo.title;
+    document.getElementById("reason").innerText      = vo.reason;
+    document.getElementById("notes").innerText       = vo.notes || "";
+
+    let total = 0;
+    const tbody = document.getElementById("items");
+    tbody.innerHTML = "";
+    data.items.forEach((i, idx) => {
+      total += Number(i.line_total);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td>${i.description}</td>
+        <td class="text-right">${i.qty}</td>
+        <td class="text-right">${Number(i.unit_price).toFixed(2)}</td>
+        <td class="text-right">${Number(i.line_total).toFixed(2)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    document.getElementById("total").innerText = total.toFixed(2);
+    
+    updateUI();
+  })
+  .catch(err => alert("Error: " + err.message));
+
+// --- 功能函数 ---
 function printVO() {
   const t = document.title;
   document.title = "vo-" + id + ".pdf";
@@ -249,67 +242,6 @@ async function convertVO() {
     location.href = "/invoice-view.html?id=" + data.invoice_id;
   } else alert("Failed: " + (data.error || ""));
 }
-
-fetch(`/api/vo-view?id=${id}`, { credentials: "include" })
-.then(r => {
-  if (r.status === 401) { location.replace("/login.html"); throw new Error(); }
-  return r.json();
-})
-.then(data => {
-  const vo = data.vo;
-
-  // Back button — go to project if linked, else vos list
-  const backBtn = document.getElementById("backBtn");
-  if (vo.project_id) {
-    backBtn.textContent = "← Project";
-    backBtn.onclick = () => location.href = "/project-view.html?id=" + vo.project_id;
-  }
-
-  document.getElementById("voNo").innerText        = vo.vo_no;
-  document.getElementById("voDate").innerText      = vo.created_at.split(" ")[0];
-  document.getElementById("status").innerText      = vo.status;
-  document.getElementById("quotationId").innerText = vo.quotation_id || "-";
-  document.getElementById("invoiceId").innerText   = vo.invoice_id || "-";
-  document.getElementById("title").innerText       = vo.title;
-  document.getElementById("reason").innerText      = vo.reason;
-  document.getElementById("notes").innerText       = vo.notes || "";
-
-  // Show approve/reject only for DRAFT, convert only for APPROVED
-  if (vo.status === "DRAFT") {
-  if (_userRole === "admin" || _userRole === "staff") {
-      document.getElementById("editBtn").style.display = "";
-    }
-    document.getElementById("approveBtn").style.display = "";
-    document.getElementById("rejectBtn").style.display  = "";
-  } else if (vo.status === "APPROVED") {
-    document.getElementById("approveBtn").style.display = "none";
-    document.getElementById("rejectBtn").style.display  = "none";
-    document.getElementById("convertBtn").style.display = "";
-  } else {
-    document.getElementById("approveBtn").style.display = "none";
-    document.getElementById("rejectBtn").style.display  = "none";
-  }
-
-  let total = 0;
-  const tbody = document.getElementById("items");
-  tbody.innerHTML = "";
-
-  data.items.forEach((i, idx) => {
-    total += Number(i.line_total);
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td>${i.description}</td>
-      <td class="text-right">${i.qty}</td>
-      <td class="text-right">${Number(i.unit_price).toFixed(2)}</td>
-      <td class="text-right">${Number(i.line_total).toFixed(2)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  document.getElementById("total").innerText = total.toFixed(2);
-});
 </script>
-
 </body>
 </html>
