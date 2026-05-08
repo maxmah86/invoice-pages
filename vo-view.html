@@ -175,6 +175,7 @@ button {
 
 <button id="backBtn" onclick="location.href='/vos.html'">← Back</button>
 <button onclick="printVO()" style="margin-left:6px;">Print / Save PDF</button>
+<button id="editBtn" onclick="location.href='/vo-edit.html?id='+id" style="margin-left:6px;display:none;">Edit</button>
 <span id="adminBtns" style="display:none;">
   <button id="approveBtn" onclick="approveVO()" style="margin-left:6px;background:#27ae60;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;">✓ Approve</button>
   <button id="rejectBtn"  onclick="rejectVO()"  style="margin-left:6px;background:#c0392b;color:#fff;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;">✗ Reject</button>
@@ -275,6 +276,9 @@ fetch(`/api/vo-view?id=${id}`, { credentials: "include" })
 
   // Show approve/reject only for DRAFT, convert only for APPROVED
   if (vo.status === "DRAFT") {
+  if (_userRole === "admin" || _userRole === "staff") {
+      document.getElementById("editBtn").style.display = "";
+    }
     document.getElementById("approveBtn").style.display = "";
     document.getElementById("rejectBtn").style.display  = "";
   } else if (vo.status === "APPROVED") {

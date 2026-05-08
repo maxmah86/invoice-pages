@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Edit VO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;padding:14px}
+h2{margin:0 0 6px}.subtitle{font-size:14px;color:#555;margin-bottom:14px}
+.card{background:#fff;padding:14px;border-radius:8px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+label{display:block;font-size:14px;font-weight:bold;margin-top:10px}
+input,textarea{width:100%;padding:10px;font-size:14px;margin-top:6px;border-radius:6px;border:1px solid #ccc;box-sizing:border-box}
+textarea{resize:vertical}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid #ddd;padding:6px}th{background:#f0f0f0}.right{text-align:right}
+.btn{width:100%;padding:12px;font-size:16px;border-radius:6px;border:none;cursor:pointer;margin-top:10px}.btn-primary{background:#2c3e50;color:#fff}.btn-add{background:#27ae60;color:#fff}.btn-cancel{background:#7f8c8d;color:#fff}
+</style>
+</head><body>
+<h2>Edit Variation Order</h2><div class="subtitle">MMAC Construction</div>
+<div class="card">
+  <label>Title</label><input id="title" placeholder="VO title">
+  <label>Reason</label><textarea id="reason" rows="3"></textarea>
+</div>
+<div class="card"><label>Items</label>
+<table><thead><tr><th>Description</th><th width="60">Qty</th><th width="90">Price</th><th width="90">Amount</th><th width="40"></th></tr></thead><tbody id="items"></tbody></table>
+<button class="btn btn-add" onclick="addItem()">+ Add Item</button></div>
+<div class="card"><div class="right">Total: RM <strong id="total">0.00</strong></div></div>
+<div class="card"><label>Notes</label><textarea id="notes" rows="3"></textarea></div>
+<div class="card"><button class="btn btn-primary" onclick="saveVO()">Save Changes</button><button class="btn btn-cancel" onclick="history.back()">Cancel</button></div>
+<script>
+const id = new URLSearchParams(location.search).get('id');
+const tbody = document.getElementById('items'); const totalEl = document.getElementById('total');
+fetch('/api/auth-check',{credentials:'include'}).then(r=>r.json()).then(d=>{if(!d.loggedIn)location.replace('/login.html')}).catch(()=>location.replace('/login.html'));
+function addItem(desc='',qty=1,price=0){const tr=document.createElement('tr');tr.innerHTML=`<td><input style="width:100%;box-sizing:border-box;" value="${(desc||'').replace(/"/g,'&quot;')}"></td><td><input type="number" value="${qty}" min="1" oninput="calc()"></td><td><input type="number" step="0.01" value="${price}" oninput="calc()"></td><td class="right">0.00</td><td><button onclick="this.closest('tr').remove();calc()" style="background:#c0392b;color:#fff;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;">✕</button></td>`;tbody.appendChild(tr);calc();}
+function calc(){let total=0;[...tbody.rows].forEach(r=>{const qty=Number(r.cells[1].children[0].value||0);const price=Number(r.cells[2].children[0].value||0);const amt=qty*price;r.cells[3].innerText=amt.toFixed(2);total+=amt;});totalEl.innerText=total.toFixed(2);}
+async function load(){if(!id){alert('Missing id');history.back();return;}const res=await fetch('/api/vo-view?id='+id,{credentials:'include'});if(!res.ok){alert('Failed to load VO');history.back();return;}const data=await res.json();const vo=data.vo;if(vo.status!=='DRAFT'){alert('Only DRAFT VO can be edited.');location.href='/vo-view.html?id='+id;return;}document.getElementById('title').value=vo.title||'';document.getElementById('reason').value=vo.reason||'';document.getElementById('notes').value=vo.notes||'';tbody.innerHTML='';(data.items||[]).forEach(i=>addItem(i.description,i.qty,i.unit_price));if((data.items||[]).length===0)addItem();}
+async function saveVO(){const items=[...tbody.rows].map(r=>({description:r.cells[0].children[0].value.trim(),qty:Number(r.cells[1].children[0].value||0),unit_price:Number(r.cells[2].children[0].value||0)})).filter(i=>i.description||i.qty||i.unit_price);const payload={id,title:document.getElementById('title').value.trim(),reason:document.getElementById('reason').value.trim(),notes:document.getElementById('notes').value.trim(),items};const res=await fetch('/api/vo-edit',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await res.json();if(data.success){alert('VO updated');location.href='/vo-view.html?id='+id;}else alert('Failed: '+(data.error||'Unknown error'));}
+load();
+</script>
+</body></html>
