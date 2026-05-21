@@ -157,7 +157,7 @@ export async function onRequestPost({ request, env }) {
       await stmt.bind(invoice_id, it.description, it.qty, it.unit_price).run();
     }
 
-    /* Update VO status to INVOICED */
+    /* Update VO status to INVOICED 
     await env.DB.prepare(`
       UPDATE variation_orders
       SET status = 'INVOICED', invoice_id = ?
@@ -169,7 +169,7 @@ export async function onRequestPost({ request, env }) {
       invoice_id,
       invoice_no,
       converted_by: user.username
-    });
+    });*/
 
   } catch (err) {
     return Response.json({
