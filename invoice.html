@@ -464,7 +464,7 @@
               <td><input type="number" class="full-w text-center qty-input" value="${item.qty}" oninput="updateValue(${sec.id}, ${idx}, 'qty', this.value)"></td>
               <td><input type="number" class="full-w text-right" value="${item.price}" oninput="updateValue(${sec.id}, ${idx}, 'price', this.value)"></td>
               <td class="text-right">${(item.qty * item.price).toFixed(2)}</td>
-              <td class="text-center"><button class="btn btn-del" onclick="removeItem(${sec.id}, ${idx})">×</button></td>
+              <td class="text-center"><button class="btn btn-del" onclick="removeItem(${sec.id}, ${idx})">Ã—</button></td>
             </tr>
           `).join('');
           secDiv.innerHTML = `

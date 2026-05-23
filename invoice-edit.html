@@ -219,8 +219,8 @@
             price: Number(item.price) || 0,
             sort_order: itemIdx
           }))
-          .filter(item => item.description && item.qty > 0 && item.price >= 0);
-
+         .filter(item => item.description && Number.isFinite(item.qty) && Number.isFinite(item.price) && item.qty !== 0);
+        
         return {
           title: String(sec.title || "").trim() || `Section ${secIdx + 1}`,
           sort_order: secIdx,
