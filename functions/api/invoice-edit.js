@@ -90,7 +90,7 @@ export async function onRequestPost({ request, env }) {
               price: Number(it.price) || 0,
               sort_order: Number(it.sort_order) || idx
             }))
-            .filter((it) => it.description && it.qty > 0 && it.price >= 0)
+           .filter((it) => it.description && Number.isFinite(it.qty) && Number.isFinite(it.price) && it.qty !== 0)
         }))
         .filter((sec) => sec.items.length > 0)
     : [

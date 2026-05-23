@@ -37,8 +37,8 @@ export async function onRequestPost({ request, env }) {
 
     const hasValidItem = sections.some((sec) =>
       Array.isArray(sec.items) &&
-      sec.items.some((item) => String(item.description || "").trim() && Number(item.qty) > 0 && Number(item.price) >= 0)
-    );
+      sec.items.some((item) => String(item.description || "").trim() && Number.isFinite(Number(item.qty)) && Number.isFinite(Number(item.price)) && Number(item.qty) !== 0)
+                                      );
 
     if (!hasValidItem) {
       return new Response(JSON.stringify({ success: false, error: "Invoice must include at least one valid item" }), {
