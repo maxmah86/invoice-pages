@@ -164,7 +164,8 @@ function render() {
   Object.keys(groups).forEach(customer => {
     const block = document.createElement("div");
     block.className = "customer-block";
-
+    // Running balance should reflect outstanding amount only
+    // so it matches the "Outstanding Balance" summary.
     let balance = 0;
 
     block.innerHTML = `
@@ -193,7 +194,10 @@ function render() {
       if (inv.status === "UNPAID") debit = inv.amount;
       if (inv.status === "PAID") credit = inv.amount;
 
-      if (inv.status !== "VOID") balance += (debit - credit);
+            if (inv.status === "UNPAID") {
+        balance += inv.amount;
+      }
+
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
