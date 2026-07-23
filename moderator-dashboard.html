@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MMAC Management System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2c3e50">
+<script src="/js/company-settings.js"></script>
+
+<style>
+:root {
+  --bg: #f3f6fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #2563eb;
+  --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Inter", "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, #dbeafe 0%, transparent 40%),
+    radial-gradient(circle at top right, #e0e7ff 0%, transparent 35%),
+    var(--bg);
+  margin: 0;
+  padding: 18px;
+  color: var(--text);
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-top: 4px;
+  margin-bottom: 18px;
+  font-size: 0.95rem;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+.card {
+  background: color-mix(in srgb, var(--card) 90%, #f8fafc 10%);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  border: 1px solid #e2e8f0;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 1.06rem;
+}
+
+.card p {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions a {
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+  padding: 12px;
+  text-decoration: none;
+  font-size: 0.92rem;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.actions a:hover {
+  transform: translateY(-1px);
+  opacity: 0.96;
+}
+
+.btn-primary { background: #1d4ed8; }
+
+.logout {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.logout button {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h1 id="comp-name">MMAC CONSTRUCTION</h1>
+<div class="subtitle" id="comp-reg"></div>
+
+<div class="section">
+  <div class="card">
+    <h2>Projects</h2>
+    <p>View and manage all active project lists.</p>
+    <div class="actions">
+      <a class="btn-primary" href="/project-list.html">Project List</a>
+    </div>
+  </div>
+</div>
+
+<div class="logout">
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+if (typeof applyCompanySettings === "function") applyCompanySettings();
+if (typeof COMPANY_CONFIG !== "undefined") {
+  document.title = COMPANY_CONFIG.name + " — Management System";
+  const regEl = document.getElementById("comp-reg");
+  if (regEl && COMPANY_CONFIG.regNo) regEl.textContent = COMPANY_CONFIG.regNo;
+}
+
+// 检查登录状态并允许 admin 和 moderator 角色进入
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => {
+    if (!r.ok) location.replace("/login.html");
+    return r.json();
+  })
+  .then(d => {
+    const allowedRoles = ["admin", "moderator"];
+    if (!allowedRoles.includes(d.role)) {
+      location.replace("/work-checklist.html");
+    }
+  })
+  .catch(() => location.replace("/login.html"));
+
+async function logout() {
+  await fetch("/api/logout", { method: "POST", credentials: "include" });
+  location.replace("/login.html");
+}
+</script>
+
+</body>
+</html>
