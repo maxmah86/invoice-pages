@@ -319,9 +319,33 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
 </div>
 
 <script>
-/* ── Auth ── */
+let currentUserRole = "";
+
+/* ── Auth Check (允许 Admin & Moderator 访问) ── */
 fetch("/api/auth-check", { credentials: "include" })
-  .then(r => { if (!r.ok) location.replace("/login.html"); })
+  .then(r => {
+    if (!r.ok) {
+      location.replace("/login.html");
+      return Promise.reject();
+    }
+    return r.json();
+  })
+  .then(user => {
+    const role = (user.role || "").toString().trim().toLowerCase();
+    currentUserRole = role;
+
+    if (role !== "admin" && role !== "moderator") {
+      alert("权限不足：只有管理员和协调员可以访问此页面。");
+      location.replace("/index.html");
+      return;
+    }
+
+    // 🔒 Moderator 隐藏核心财务 Dashboard 栏目
+    if (role === "moderator") {
+      const dash = document.querySelector(".dashboard");
+      if (dash) dash.style.display = "none";
+    }
+  })
   .catch(() => location.replace("/login.html"));
 
 const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", {
@@ -355,18 +379,11 @@ function buildMonthOptions() {
 
 /* ── Reset Function ── */
 function resetAllFilters() {
-  // 1. Reset Status Chips
   _statusFilter = "";
   document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
   document.querySelector('.chip[data-val=""]').classList.add("active");
-
-  // 2. Reset Search Input
   document.getElementById("searchQ").value = "";
-
-  // 3. Reset Month Filter to Default (All Time)
   document.getElementById("monthFilter").value = "";
-
-  // 4. Reload Data
   load();
 }
 
@@ -388,6 +405,12 @@ async function load() {
 
   try {
     const res  = await fetch("/api/project-list?" + params, { credentials: "include" });
+    
+    if (res.status === 403) {
+      wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">无权访问此数据</div>`;
+      return;
+    }
+
     const data = await res.json();
     const rows = Array.isArray(data) ? data : [];
 
@@ -457,7 +480,7 @@ async function load() {
           </div>
           <div class="mini-label">
             <span>Invoiced ${RM(p.total_invoiced)}</span>
-            <span class="mini-profit">Profit ${RM(profit)}</span>
+            ${currentUserRole === "admin" ? `<span class="mini-profit">Profit ${RM(profit)}</span>` : ""}
             <span>${invoicePct}%</span>
           </div>
         </div>` : ""}

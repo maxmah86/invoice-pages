@@ -201,48 +201,77 @@ const id = new URL(location.href).searchParams.get("id");
 const CURRENCY = (typeof CONFIG !== 'undefined' && CONFIG.CURRENCY) ? CONFIG.CURRENCY : "RM";
 const qid = (id) => document.getElementById(id);
 
-/* ================= LOAD DATA ================= */
-fetch("/api/quotation-view?id=" + id, { credentials: "include" })
-  .then(r => r.json())
-  .then(json => {
-    if (!json.success) {
-      alert(json.error || "Load failed");
+let currentUserRole = "";
+
+/* ===== 1. AUTH CHECK (权限检查) ===== */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(d => {
+    if (!d.loggedIn) {
+      location.replace("/login.html");
+      return;
+    }
+    currentUserRole = (d.role || "").toString().trim().toLowerCase();
+    
+    // 如果允许所有登录用户查看详情，这里保留；如果只允许 admin 和 moderator 查看页面：
+    if (currentUserRole !== "admin" && currentUserRole !== "moderator") {
+      alert("权限不足");
+      location.replace("/index.html");
       return;
     }
 
-    const q = json.data;
-    const sections = q.sections || [];
-    const status = (q.status || "").toUpperCase().trim();
+    // 鉴权通过后加载数据
+    loadQuotationData();
+  })
+  .catch(() => location.replace("/login.html"));
 
-    /* ===== Header ===== */
-    qid("quotation_no").innerText = q.quotation_no;
-    qid("quotation_date").innerText = q.created_at?.slice(0,10) || "";
-    qid("customer").innerText = q.customer;
-    qid("project_title").innerText = q.project_title || "";
-    qid("project_address").innerText = q.project_address || "";
-    qid("terms").innerText = q.terms_snapshot || "";
-    
-    if(status !== "OPEN") {
-      qid("status-badge").innerText = "[" + status + "]";
-    }
+/* ================= LOAD DATA ================= */
+function loadQuotationData() {
+  fetch("/api/quotation-view?id=" + id, { credentials: "include" })
+    .then(r => r.json())
+    .then(json => {
+      if (!json.success) {
+        alert(json.error || "Load failed");
+        return;
+      }
 
-    /* ===== Button Logic ===== */
-    const homeTarget = q.project_id ? '/project-view.html?id=' + q.project_id : '/index.html';
-    qid('homeBtn').onclick = () => location.href = homeTarget;
+      const q = json.data;
+      const sections = q.sections || [];
+      const status = (q.status || "").toUpperCase().trim();
 
-    // 根据状态显示按钮
-    if (status === "OPEN") {
-      qid("btn-edit").style.display = "inline-block";
-      qid("btn-approve").style.display = "inline-block";
-      qid("btn-reject").style.display = "inline-block";
-      // OPEN 状态下通常也可以转换，或者根据你的流程决定
-      qid("btn-convert").style.display = "inline-block"; 
-    } else if (status === "ACCEPTED") {
-      qid("btn-convert").style.display = "inline-block";
-    }
+      /* ===== Header ===== */
+      qid("quotation_no").innerText = q.quotation_no;
+      qid("quotation_date").innerText = q.created_at?.slice(0,10) || "";
+      qid("customer").innerText = q.customer;
+      qid("project_title").innerText = q.project_title || "";
+      qid("project_address").innerText = q.project_address || "";
+      qid("terms").innerText = q.terms_snapshot || "";
+      
+      if(status !== "OPEN") {
+        qid("status-badge").innerText = "[" + status + "]";
+      }
 
-    renderItems(sections, Number(q.discount) || 0);
-  });
+      /* ===== Button Logic ===== */
+      const homeTarget = q.project_id ? '/project-view.html?id=' + q.project_id : '/index.html';
+      qid('homeBtn').onclick = () => location.href = homeTarget;
+
+      // 仅针对授权角色（admin 或 moderator）显示操作按钮
+      const isAuthorized = currentUserRole === "admin" || currentUserRole === "moderator";
+
+      if (isAuthorized) {
+        if (status === "OPEN") {
+          qid("btn-edit").style.display = "inline-block";
+          qid("btn-approve").style.display = "inline-block";
+          qid("btn-reject").style.display = "inline-block";
+          qid("btn-convert").style.display = "inline-block"; 
+        } else if (status === "ACCEPTED") {
+          qid("btn-convert").style.display = "inline-block";
+        }
+      }
+
+      renderItems(sections, Number(q.discount) || 0);
+    });
+}
 
 /* ================= ACTIONS ================= */
 function goEdit() {
@@ -286,7 +315,7 @@ async function rejectQuotation() {
 async function convertInvoice() {
   if (!confirm("Convert this quotation to invoice?")) return;
   try {
-    const res = await fetch("/api/quotation-to-invoice", { // 统一使用你后端对应的 API 路径
+    const res = await fetch("/api/quotation-to-invoice", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

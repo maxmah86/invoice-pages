@@ -47,6 +47,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; color: #000; }
   transition: opacity 0.2s;
 }
 .status-btn:active { opacity: 0.7; }
+.status-btn.disabled { cursor: default; opacity: 0.9 !important; }
 .s-active    { background: #27ae60; color: #fff; }
 .s-on_hold   { background: #f39c12; color: #fff; }
 .s-completed { background: #2980b9; color: #fff; }
@@ -166,12 +167,12 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   </div>
 </div>
 
-<!-- Stats -->
-<div class="stats-wrap">
+<!-- Stats (仅限 Admin 查看) -->
+<div class="stats-wrap admin-only" id="statsWrap">
   <div class="stats-grid">
 
     <div class="stat-card full blue">
-      <button class="sync-btn" onclick="updateContractValue()">⟳ Sync</button>
+      <button class="sync-btn" id="btnSyncContract" onclick="updateContractValue()">⟳ Sync</button>
       <div class="stat-label">Contract Value</div>
       <div class="stat-value" id="statContract">RM 0.00</div>
       <div class="stat-sub" id="statVO">Incl. Approved VO: RM 0.00</div>
@@ -210,7 +211,7 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="plNotes"></div>
 </div>
 
-<!-- Quotations -->
+<!-- Quotations (Admin & Moderator 皆可见且可添加) -->
 <div class="section-card">
   <div class="section-header">
     <h2>Quotations</h2>
@@ -219,8 +220,8 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="listQuotations"></div>
 </div>
 
-<!-- Variation Orders -->
-<div class="section-card">
+<!-- Variation Orders (仅 Admin 可见) -->
+<div class="section-card admin-only">
   <div class="section-header">
     <h2>Variation Orders</h2>
     <a href="#" class="add-link" id="btnAddVO">+ Add</a>
@@ -228,8 +229,8 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="listVO"></div>
 </div>
 
-<!-- Invoices -->
-<div class="section-card">
+<!-- Invoices (仅 Admin 可见) -->
+<div class="section-card admin-only">
   <div class="section-header">
     <h2>Invoices</h2>
     <a href="#" class="add-link" id="btnAddInvoice">+ Add</a>
@@ -237,8 +238,8 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="listInvoices"></div>
 </div>
 
-<!-- Purchase Orders -->
-<div class="section-card">
+<!-- Purchase Orders (仅 Admin 可见) -->
+<div class="section-card admin-only">
   <div class="section-header">
     <h2>Purchase Orders</h2>
     <a href="#" class="add-link" id="btnAddPO">+ Add</a>
@@ -246,8 +247,8 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="listPO"></div>
 </div>
 
-<!-- Purchase Invoices -->
-<div class="section-card">
+<!-- Purchase Invoices (仅 Admin 可见) -->
+<div class="section-card admin-only">
   <div class="section-header">
     <h2>Purchase Invoices</h2>
     <a href="#" class="add-link" id="btnAddPI">+ Add</a>
@@ -255,8 +256,8 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="listPI"></div>
 </div>
 
-<!-- Payslips -->
-<div class="section-card">
+<!-- Payslips (仅 Admin 可见) -->
+<div class="section-card admin-only">
   <div class="section-header">
     <h2>Payslips</h2>
     <a href="#" class="add-link" id="btnAddLabour">+ Add</a>
@@ -264,8 +265,8 @@ td.amount-col { text-align: right; font-weight: bold; color: #1a2636; white-spac
   <div id="listLabour"></div>
 </div>
 
-<!-- Expenses -->
-<div class="section-card">
+<!-- Expenses (仅 Admin 可见) -->
+<div class="section-card admin-only">
   <div class="section-header">
     <h2>Expenses</h2>
     <a href="#" class="add-link" id="btnAddExpense">+ Add</a>
@@ -280,7 +281,36 @@ const urlParams = new URLSearchParams(window.location.search);
 const projectId = urlParams.get("id");
 if (!projectId) { alert("Project ID missing"); location.href = "/project-list.html"; }
 
+let currentUserRole = "";
 let projectData = null;
+
+/* ── Auth Check (仅允许 Admin 和 Moderator) ── */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => {
+    if (!r.ok) {
+      location.replace("/login.html");
+      return Promise.reject();
+    }
+    return r.json();
+  })
+  .then(user => {
+    const role = (user.role || "").toString().trim().toLowerCase();
+    currentUserRole = role;
+
+    if (role !== "admin" && role !== "moderator") {
+      alert("权限不足：只有管理员或协调员可以访问此页面。");
+      location.replace("/index.html");
+      return;
+    }
+
+    // 🔒 权限控制：如果是 Moderator，只保留 Quotation 板块
+    if (role === "moderator") {
+      document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
+    }
+
+    loadAll();
+  })
+  .catch(() => location.replace("/login.html"));
 
 /* ── Load all ── */
 async function loadAll() {
@@ -292,22 +322,28 @@ async function loadAll() {
     projectData = data;
 
     renderHeader(data.project);
-    renderFinancials(data.financials);
-    renderQuotations(data.quotations);
-    renderVO(data.variation_orders);
-    renderInvoices(data.invoices);
-    renderPO(data.purchase_orders);
-    renderPI(data.purchase_invoices);
-    renderLabour(data.daily_labours);
-    renderExpenses(data.expenses);
 
+    // 无论 Admin 还是 Moderator 都允许新增 Quotation
     document.getElementById("btnAddQuotation").href = `/quotation.html?project_id=${projectId}`;
-    document.getElementById("btnAddVO").href        = `/vo.html?project_id=${projectId}`;
-    document.getElementById("btnAddInvoice").href   = `/invoice.html?project_id=${projectId}`;
-    document.getElementById("btnAddPO").href        = `/po.html?project_id=${projectId}`;
-    document.getElementById("btnAddPI").href        = `/purchase-invoice.html?project_id=${projectId}`;
-    document.getElementById("btnAddLabour").href    = `/daily-labour-create.html?project_id=${projectId}`;
-    document.getElementById("btnAddExpense").href   = `/expense.html?project_id=${projectId}`;
+    renderQuotations(data.quotations);
+
+    // 仅 Admin 渲染并设置其它板块
+    if (currentUserRole === "admin") {
+      renderFinancials(data.financials);
+      renderVO(data.variation_orders);
+      renderInvoices(data.invoices);
+      renderPO(data.purchase_orders);
+      renderPI(data.purchase_invoices);
+      renderLabour(data.daily_labours);
+      renderExpenses(data.expenses);
+
+      document.getElementById("btnAddVO").href        = `/vo.html?project_id=${projectId}`;
+      document.getElementById("btnAddInvoice").href   = `/invoice.html?project_id=${projectId}`;
+      document.getElementById("btnAddPO").href        = `/po.html?project_id=${projectId}`;
+      document.getElementById("btnAddPI").href        = `/purchase-invoice.html?project_id=${projectId}`;
+      document.getElementById("btnAddLabour").href    = `/daily-labour-create.html?project_id=${projectId}`;
+      document.getElementById("btnAddExpense").href   = `/expense.html?project_id=${projectId}`;
+    }
 
   } catch (err) { alert("Failed to load: " + err.message); }
 }
@@ -323,8 +359,14 @@ function renderHeader(p) {
 
   const status = (p.status || "ACTIVE").toUpperCase();
   const sClass = { ACTIVE: "s-active", ON_HOLD: "s-on_hold", COMPLETED: "s-completed" }[status] || "s-active";
-  document.getElementById("projStatusWrap").innerHTML =
-    `Status: <button class="status-btn ${sClass}" onclick="toggleStatus('${status}')">${status.replace("_"," ")}</button>`;
+
+  if (currentUserRole === "admin") {
+    document.getElementById("projStatusWrap").innerHTML =
+      `Status: <button class="status-btn ${sClass}" onclick="toggleStatus('${status}')">${status.replace("_"," ")}</button>`;
+  } else {
+    document.getElementById("projStatusWrap").innerHTML =
+      `Status: <button class="status-btn ${sClass} disabled">${status.replace("_"," ")}</button>`;
+  }
 
   if (p.notes && p.notes.trim()) {
     const nc = document.getElementById("plNotesCard");
@@ -333,8 +375,9 @@ function renderHeader(p) {
   }
 }
 
-/* ── Status toggle ── */
+/* ── Status toggle (Admin 专属) ── */
 async function toggleStatus(cur) {
+  if (currentUserRole !== "admin") return;
   const cycle = ["ACTIVE", "ON_HOLD", "COMPLETED"];
   const next  = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
   if (!confirm(`Change status to ${next.replace("_"," ")}?`)) return;
@@ -494,6 +537,7 @@ function renderExpenses(list) {
 
 /* ── Sync contract value ── */
 async function updateContractValue() {
+  if (currentUserRole !== "admin") return;
   const d    = projectData;
   const qSum = d.quotations.reduce((s, q) => s + Number(q.grand_total || 0), 0);
   const vSum = d.variation_orders.filter(v => v.status === "APPROVED").reduce((s, v) => s + Number(v.amount || 0), 0);
@@ -523,8 +567,6 @@ function statusBadge(s) {
 function empty(msg) {
   return `<div class="empty-row">${msg}</div>`;
 }
-
-loadAll();
 </script>
 </body>
 </html>

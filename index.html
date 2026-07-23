@@ -15,11 +15,16 @@
   --card: #ffffff;
   --text: #0f172a;
   --muted: #64748b;
+  --primary: #2563eb;
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #dc2626;
   --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
   --radius: 14px;
 }
 
 * { box-sizing: border-box; }
+
 body {
   font-family: "Inter", "Segoe UI", Arial, sans-serif;
   background:
@@ -30,9 +35,28 @@ body {
   padding: 18px;
   color: var(--text);
 }
-h1 { margin: 0; font-size: 1.8rem; }
-.subtitle { color: var(--muted); margin-top: 4px; margin-bottom: 18px; font-size: 0.95rem; }
-.section { margin-top: 16px; }
+
+h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-top: 4px;
+  margin-bottom: 18px;
+  font-size: 0.95rem;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+/* 默认隐藏 Admin 专属元素，避免未授权用户看到闪烁 */
+.admin-only, [data-role="admin"] {
+  display: none !important;
+}
+
 .card {
   background: color-mix(in srgb, var(--card) 90%, #f8fafc 10%);
   border-radius: var(--radius);
@@ -41,27 +65,47 @@ h1 { margin: 0; font-size: 1.8rem; }
   box-shadow: var(--shadow);
   border: 1px solid #e2e8f0;
 }
-.card h2 { margin: 0 0 8px; font-size: 1.06rem; }
-.card p { margin: 0 0 12px; font-size: 0.9rem; color: var(--muted); }
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 1.06rem;
+}
+
+.card p {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
 
 .filter-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(100px, 1fr));
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
   gap: 10px;
   margin-bottom: 12px;
 }
-.filter-grid label { display: block; font-size: 0.82rem; color: var(--muted); }
+
+.filter-grid label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
 .filter-grid select {
-  width: 100%; margin-top: 5px; padding: 10px;
-  border-radius: 10px; border: 1px solid #cbd5e1;
-  font-size: 0.92rem; background: #fff;
+  width: 100%;
+  margin-top: 5px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.92rem;
+  background: #fff;
 }
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
 }
+
 .summary-item {
   text-align: center;
   padding: 14px 10px;
@@ -71,21 +115,37 @@ h1 { margin: 0; font-size: 1.8rem; }
   color: #fff;
   line-height: 1.45;
 }
+
 .summary-item.invoice { background: linear-gradient(135deg, #16a34a, #22c55e); }
 .summary-item.salary  { background: linear-gradient(135deg, #7c3aed, #a855f7); }
 .summary-item.po      { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #111827; }
-.summary-item.pi      { background: linear-gradient(135deg, #0ea5e9, #38bdf8); }
 .summary-item.quotation { background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
 .summary-item.profit { background: linear-gradient(135deg, #0f172a, #334155); }
 .summary-item.profit.negative { background: linear-gradient(135deg, #b91c1c, #ef4444); }
 
-.actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.actions a {
-  flex: 1; min-width: 140px; text-align: center; padding: 10px;
-  text-decoration: none; font-size: 0.88rem; border-radius: 10px;
-  color: #fff; font-weight: 600; transition: transform 0.15s ease, opacity 0.15s ease;
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
-.actions a:hover { transform: translateY(-1px); opacity: 0.96; }
+
+.actions a {
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+  padding: 10px;
+  text-decoration: none;
+  font-size: 0.88rem;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.actions a:hover {
+  transform: translateY(-1px);
+  opacity: 0.96;
+}
 
 .btn-primary { background: #1d4ed8; }
 .btn-success { background: #16a34a; }
@@ -93,11 +153,21 @@ h1 { margin: 0; font-size: 1.8rem; }
 .btn-info    { background: #0284c7; }
 .btn-purple  { background: #7c3aed; }
 .btn-gray    { background: #475569; }
+.btn-danger  { background: #dc2626; }
 
-.logout { margin-top: 24px; text-align: center; }
+.logout {
+  margin-top: 24px;
+  text-align: center;
+}
+
 .logout button {
-  background: #dc2626; color: #fff; border: none;
-  padding: 10px 18px; font-size: 0.9rem; border-radius: 10px; cursor: pointer;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -107,33 +177,17 @@ h1 { margin: 0; font-size: 1.8rem; }
 <h1 id="comp-name">MMAC CONSTRUCTION</h1>
 <div class="subtitle" id="comp-reg"></div>
 
-<div class="section">
+<!-- Dashboard Summary (已加上 admin-only，Moderator 自动隐藏) -->
+<div class="section admin-only">
   <div class="card">
     <h2>Dashboard Summary</h2>
 
     <div class="filter-grid">
       <label>
-        Mode
-        <select id="periodPicker">
-          <option value="month">By Month</option>
-          <option value="quarter">By Quarter</option>
-          <option value="year">By Year</option>
-        </select>
-      </label>
-      <label>
         Year
         <select id="yearPicker"></select>
       </label>
-      <label id="quarterWrap">
-        Quarter
-        <select id="quarterPicker">
-          <option value="1">Q1</option>
-          <option value="2">Q2</option>
-          <option value="3">Q3</option>
-          <option value="4">Q4</option>
-        </select>
-      </label>
-      <label id="monthWrap">
+      <label>
         Month
         <select id="monthPicker"></select>
       </label>
@@ -143,28 +197,149 @@ h1 { margin: 0; font-size: 1.8rem; }
       <div class="summary-item invoice" id="invTotal">Invoice<br>RM 0.00</div>
       <div class="summary-item salary" id="salTotal">Salary<br>RM 0.00</div>
       <div class="summary-item po" id="poTotal">PO<br>RM 0.00</div>
-      <div class="summary-item pi" id="piTotal">PI<br>RM 0.00</div>
       <div class="summary-item quotation" id="quoTotal">Accepted Quo<br>RM 0.00</div>
       <div class="summary-item profit" id="profitTotal">Profit<br>RM 0.00</div>
     </div>
   </div>
 </div>
 
-<div class="section"><div class="card"><h2>Projects</h2><p>Manage projects, track invoices, POs, quotations and P&amp;L per project.</p><div class="actions"><a class="btn-success" href="/project-create.html">New Project</a><a class="btn-primary" href="/project-list.html">Project List</a></div></div></div>  
-<div class="section"><div class="card"><h2>Invoice</h2><div class="actions"><a class="btn-primary" href="/invoices.html">Invoice List</a></div></div></div>
-<div class="section"><div class="card"><h2>Purchase Invoice</h2><p>Subcon claims for labour and material.</p><div class="actions"><a class="btn-primary" href="/purchase-invoices.html">Purchase Invoice List</a><a class="btn-success" href="/purchase-invoice.html">New Purchase Invoice</a></div></div></div>
-<div class="section"><div class="card"><h2>Quotation</h2><p>Quotation creation, list and terms settings.</p><div class="actions"><a class="btn-primary" href="/quotations.html">Quotation List</a><a class="btn-gray" href="/quotation-terms.html">Quotation Terms</a></div></div></div>
-<div class="section"><div class="card"><h2>Statement</h2><p>Customer statements and outstanding balances.</p><div class="actions"><a class="btn-purple" href="/statement.html">View Statements</a></div></div></div>
-<div class="section"><div class="card"><h2>Item Catalog</h2><p>Reusable items for quotation, invoice and VO.</p><div class="actions"><a class="btn-purple" href="/item-catalogs.html">Manage Item Catalog</a></div></div></div>
-<div class="section"><div class="card"><h2>Work Checklists</h2><p>Site work progress and checklists.</p><div class="actions"><a class="btn-success" href="/work-checklist.html">Work Checklists</a><a class="btn-primary" href="/create-checklist.html">Create Checklist</a></div></div></div>
-<div class="section"><div class="card"><h2>Payslip</h2><div class="actions"><a class="btn-success" href="/daily-labour-create.html">Add Payslip</a><a class="btn-primary" href="/daily-labours.html">Payslip List</a></div></div></div>
-<div class="section"><div class="card"><h2>Expenses</h2><p>Petty cash, utilities, rental, services and other operational costs.</p><div class="actions"><a class="btn-success" href="/expense.html">Add Expense</a><a class="btn-primary" href="/expenses.html">Expense List</a></div></div></div>
-<div class="section"><div class="card"><h2>Variation Orders (VO)</h2><div class="actions"><a class="btn-primary" href="/vos.html">VO List</a></div></div></div>
-<div class="section"><div class="card"><h2>Purchase Order</h2><div class="actions"><a class="btn-warning" href="/po.html">Create PO</a><a class="btn-primary" href="/pos.html">PO List</a><a class="btn-gray" href="/po-summary.html">PO Summary</a></div></div></div>
-<div class="section"><div class="card"><h2>Employees</h2><div class="actions"><a class="btn-info" href="/employee.html">Add Employee</a><a class="btn-primary" href="/employees.html">Employee List</a></div></div></div>
-<div class="section"><div class="card"><h2>Salaries</h2><div class="actions"><a class="btn-purple" href="/salaries.html">Salary Management</a></div></div></div>
+<div class="section admin-only">
+  <div class="card">
+    <h2>Invoice</h2>
+    <div class="actions">
+      <a class="btn-primary" href="/invoices.html">Invoice List</a>
+    </div>
+  </div>
+</div>
 
-<div class="logout"><button onclick="logout()">Logout</button></div>
+<div class="section admin-only">
+  <div class="card">
+    <h2>Purchase Invoice</h2>
+    <p>Subcon claims for labour and material.</p>
+    <div class="actions">
+      <a class="btn-primary" href="/purchase-invoices.html">Purchase Invoice List</a>
+      <a class="btn-success" href="/purchase-invoice.html">New Purchase Invoice</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Quotation</h2>
+    <p>Quotation creation, list and terms settings.</p>
+    <div class="actions">
+      <a class="btn-primary" href="/quotations.html">Quotation List</a>
+      <a class="btn-gray" href="/quotation-terms.html">Quotation Terms</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Statement</h2>
+    <p>Customer statements and outstanding balances.</p>
+    <div class="actions">
+      <a class="btn-purple" href="/statement.html">View Statements</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Item Catalog</h2>
+    <p>Reusable items for quotation, invoice and VO.</p>
+    <div class="actions">
+      <a class="btn-purple" href="/item-catalogs.html">Manage Item Catalog</a>
+    </div>
+  </div>
+</div>
+
+<!-- Projects Section (Moderator 和 Admin 都能看到，但 Moderator 只能看到 Project List) -->
+<div class="section">
+  <div class="card">
+    <h2>Projects</h2>
+    <p>Manage projects, track invoices, POs, quotations and P&amp;L per project.</p>
+    <div class="actions">
+      <a class="btn-success admin-only" href="/project-create.html">New Project</a>
+      <a class="btn-primary" href="/project-list.html">Project List</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Work Checklists</h2>
+    <p>Site work progress and checklists.</p>
+    <div class="actions">
+      <a class="btn-success" href="/work-checklist.html">Work Checklists</a>
+      <a class="btn-primary" href="/create-checklist.html">Create Checklist</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Payslip</h2>
+    <div class="actions">
+      <a class="btn-success" href="/daily-labour-create.html">Add Payslip</a>
+      <a class="btn-primary" href="/daily-labours.html">Payslip List</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Expenses</h2>
+    <p>Petty cash, utilities, rental, services and other operational costs.</p>
+    <div class="actions">
+      <a class="btn-success" href="/expense.html">Add Expense</a>
+      <a class="btn-primary" href="/expenses.html">Expense List</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Variation Orders (VO)</h2>
+    <div class="actions">
+      <a class="btn-primary" href="/vos.html">VO List</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Purchase Order</h2>
+    <div class="actions">
+      <a class="btn-warning" href="/po.html">Create PO</a>
+      <a class="btn-primary" href="/pos.html">PO List</a>
+      <a class="btn-gray" href="/po-summary.html">PO Summary</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Employees</h2>
+    <div class="actions">
+      <a class="btn-info" href="/employee.html">Add Employee</a>
+      <a class="btn-primary" href="/employees.html">Employee List</a>
+    </div>
+  </div>
+</div>
+
+<div class="section admin-only">
+  <div class="card">
+    <h2>Salaries</h2>
+    <div class="actions">
+      <a class="btn-purple" href="/salaries.html">Salary Management</a>
+    </div>
+  </div>
+</div>
+
+<div class="logout">
+  <button onclick="logout()">Logout</button>
+</div>
 
 <script>
 if (typeof applyCompanySettings === "function") applyCompanySettings();
@@ -174,23 +349,42 @@ if (typeof COMPANY_CONFIG !== "undefined") {
   if (regEl && COMPANY_CONFIG.regNo) regEl.textContent = COMPANY_CONFIG.regNo;
 }
 
+/* ── Auth Check & 角色权限控制 ── */
 fetch("/api/auth-check", { credentials: "include" })
-  .then(r => { if (!r.ok) location.replace("/login.html"); return r.json(); })
-  .then(d => { if (d.role !== "admin") location.replace("/work-checklist.html"); })
+  .then(r => {
+    if (!r.ok) location.replace("/login.html");
+    return r.json();
+  })
+  .then(d => {
+    const allowedRoles = ["admin", "moderator"];
+    
+    // 如果没有角色或角色不在允许列表中（即普通用户），才跳转到 work-checklist
+    if (!d.role || !allowedRoles.includes(d.role)) {
+      location.replace("/work-checklist.html");
+      return;
+    }
+
+    // Admin 与 Moderator 都会停留在 index.html
+    // 如果是 Admin，显示所有标注了 admin-only 的模块并加载 Dashboard 数据
+    if (d.role === "admin") {
+      document.querySelectorAll(".admin-only, [data-role='admin']").forEach(el => {
+        el.style.setProperty("display", "block", "important");
+      });
+      
+      initDatePickers();
+      loadSummary();
+    }
+    // Moderator 角色停留在 index.html，因默认 CSS 控制，页面只保留显示 Projects 模块
+  })
   .catch(() => location.replace("/login.html"));
 
-const periodInput = document.getElementById("periodPicker");
 const yearInput = document.getElementById("yearPicker");
-const quarterInput = document.getElementById("quarterPicker");
 const monthInput = document.getElementById("monthPicker");
-const quarterWrap = document.getElementById("quarterWrap");
-const monthWrap = document.getElementById("monthWrap");
 
 function initDatePickers() {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
-  const currentQuarter = Math.floor((currentMonth - 1) / 3) + 1;
 
   for (let y = currentYear - 5; y <= currentYear + 1; y++) {
     const opt = document.createElement("option");
@@ -208,41 +402,27 @@ function initDatePickers() {
     if (m === currentMonth) opt.selected = true;
     monthInput.appendChild(opt);
   }
-
-  quarterInput.value = String(currentQuarter);
 }
 
-function queryString() {
-  const period = periodInput.value;
-  const year = yearInput.value;
-  if (period === "year") return `period=year&year=${year}`;
-  if (period === "quarter") return `period=quarter&year=${year}&quarter=${quarterInput.value}`;
-  return `period=month&month=${yearInput.value}-${monthInput.value}`;
-}
-
-function syncFilterDisplay() {
-  const p = periodInput.value;
-  monthWrap.style.display = p === "month" ? "block" : "none";
-  quarterWrap.style.display = p === "quarter" ? "block" : "none";
+function selectedYearMonth() {
+  return `${yearInput.value}-${monthInput.value}`;
 }
 
 async function loadSummary() {
-  const q = queryString();
+  const ym = selectedYearMonth();
   try {
-    const [i, s, p, pi, pr, qn] = await Promise.all([
-      fetch(`/api/dashboard-invoice-total?${q}`).then(r => r.json()),
-      fetch(`/api/dashboard-salary-total?${q}`).then(r => r.json()),
-      fetch(`/api/dashboard-po-total?${q}`).then(r => r.json()),
-      fetch(`/api/dashboard-pi-total?${q}`).then(r => r.json()),
-      fetch(`/api/dashboard-profit?${q}`).then(r => r.json()),
-      fetch(`/api/dashboard-quotation-total?${q}`).then(r => r.json())
+    const [i, s, p, pr, q] = await Promise.all([
+      fetch(`/api/dashboard-invoice-total?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-salary-total?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-po-total?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-profit?month=${ym}`).then(r => r.json()),
+      fetch(`/api/dashboard-quotation-total?month=${ym}`).then(r => r.json())
     ]);
 
     document.getElementById("invTotal").innerHTML = `Invoice<br>RM ${Number(i.total || 0).toFixed(2)}`;
     document.getElementById("salTotal").innerHTML = `Salary<br>RM ${Number(s.total || 0).toFixed(2)}`;
     document.getElementById("poTotal").innerHTML = `PO<br>RM ${Number(p.total || 0).toFixed(2)}`;
-    document.getElementById("piTotal").innerHTML = `PI<br>RM ${Number(pi.total || 0).toFixed(2)}`;
-    document.getElementById("quoTotal").innerHTML = `Accepted Quo<br>RM ${Number(qn.total || 0).toFixed(2)}`;
+    document.getElementById("quoTotal").innerHTML = `Accepted Quo<br>RM ${Number(q.total || 0).toFixed(2)}`;
 
     const profit = Number(pr.profit || 0);
     const profitTotal = document.getElementById("profitTotal");
@@ -253,13 +433,8 @@ async function loadSummary() {
   }
 }
 
-periodInput.addEventListener("change", () => { syncFilterDisplay(); loadSummary(); });
 yearInput.addEventListener("change", loadSummary);
-quarterInput.addEventListener("change", loadSummary);
 monthInput.addEventListener("change", loadSummary);
-initDatePickers();
-syncFilterDisplay();
-loadSummary();
 
 async function logout() {
   await fetch("/api/logout", { method: "POST", credentials: "include" });

@@ -90,34 +90,42 @@ async function login() {
     return;
   }
 
-  const res = await fetch("/api/login", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
-  });
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
 
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    errorBox.textContent = e.error || "Login failed";
-    return;
-  }
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      errorBox.textContent = e.error || "Login failed";
+      return;
+    }
 
-  // 🔑 登录成功后 → 再查一次 auth-check 拿 role
-  const auth = await fetch("/api/auth-check", {
-    credentials: "include"
-  }).then(r => r.json());
+    // 🔑 登录成功后 → 再查一次 auth-check 拿 role
+    const auth = await fetch("/api/auth-check", {
+      credentials: "include"
+    }).then(r => r.json());
 
-  if (!auth.loggedIn) {
-    errorBox.textContent = "Session error, please login again";
-    return;
-  }
+    if (!auth.loggedIn) {
+      errorBox.textContent = "Session error, please login again";
+      return;
+    }
 
-  // ✅ 按角色跳转
-  if (auth.role === "admin") {
-    location.replace("/index.html");
-  } else {
-    location.replace("/work-checklist.html");
+    // 转为小写比对，更稳健
+    const role = (auth.role || "").toString().trim().toLowerCase();
+
+    // ✅ 修改重点：admin 和 moderator 都进入 /index.html；只有普通 user 去 /work-checklist.html
+    if (role === "admin" || role === "moderator") {
+      location.replace("/index.html");
+    } else {
+      location.replace("/work-checklist.html");
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    errorBox.textContent = "Network or server error";
   }
 }
 </script>
