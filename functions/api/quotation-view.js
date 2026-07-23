@@ -9,7 +9,7 @@ export async function onRequestGet({ request, env }) {
   }
 
   /* ===============================
-   * Admin auth
+   * Auth Check (允许 Admin 和 Moderator)
    * =============================== */
   const authRes = await fetch(new URL("/api/auth-check", request.url), {
     headers: {
@@ -23,7 +23,8 @@ export async function onRequestGet({ request, env }) {
     return jsonError("Not logged in", 401);
   }
 
-  if (auth.role !== "admin") {
+  // 修改：同时允许 admin 和 moderator 访问
+  if (auth.role !== "admin" && auth.role !== "moderator") {
     return jsonError("Permission denied", 403);
   }
 
