@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Quotation</title>
+<title>Quotation View</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="/js/config.js"></script>
@@ -29,6 +29,7 @@ body {
 #company-logo {
   width: 80px;
   height: auto;
+  display: none; /* 默认隐藏，有图片路径时显示 */
 }
 
 .company-header {
@@ -58,13 +59,8 @@ th {
   background: #f0f0f0;
 }
 
-.right {
-  text-align: right;
-}
-
-.center {
-  text-align: center;
-}
+.right { text-align: right; }
+.center { text-align: center; }
 
 /* ===== SECTION ===== */
 .section-title td {
@@ -82,6 +78,7 @@ th {
 .project-info {
   margin-top: 20px;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 /* ===== TERMS ===== */
@@ -105,11 +102,12 @@ th {
 
 .signature-box img {
   width: 120px;
+  display: none;
 }
 
 /* ===== PRINT ===== */
 @media print {
-  .no-print { display: none; }
+  .no-print { display: none !important; }
   tr { page-break-inside: avoid; }
 }
 </style>
@@ -120,13 +118,13 @@ th {
 <div class="no-print" id="action-buttons" style="text-align:right; margin-bottom:10px;">
   <button id="homeBtn" type="button">HOME</button>
   <button id="btn-edit" onclick="goEdit()" style="display:none;">Edit</button>
-  <button id="btn-approve" onclick="approveQuotation()" style="display:none; background:#28a745; color:white; border:none; padding:4px 8px; border-radius:4px;">Approve</button>
-  <button id="btn-convert" onclick="convertInvoice()" style="display:none; background:#007bff; color:white; border:none; padding:4px 8px; border-radius:4px;">Convert to Invoice</button>
-  <button id="btn-reject" onclick="rejectQuotation()" style="display:none;">Reject</button>
+  <button id="btn-approve" onclick="approveQuotation()" style="display:none; background:#28a745; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Approve</button>
+  <button id="btn-convert" onclick="convertInvoice()" style="display:none; background:#007bff; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Convert to Invoice</button>
+  <button id="btn-reject" onclick="rejectQuotation()" style="display:none; cursor:pointer;">Reject</button>
 </div>
 
-<div class="no-print" style="text-align:right">
-  <button onclick="window.print()">Print</button>
+<div class="no-print" style="text-align:right; margin-bottom:15px;">
+  <button onclick="window.print()" style="padding:4px 12px; cursor:pointer;">Print</button>
 </div>
 
 <div class="header">
@@ -138,16 +136,16 @@ th {
         <div id="comp-reg"></div>
       </div>
     </div>
-    <address style="font-style: normal;">
+    <address style="font-style: normal; margin-top: 5px;">
       <div id="comp-address"></div>
       <div id="comp-contact"></div>
     </address>
   </div>
 
   <div style="text-align: right;">
-    <h2>QUOTATION</h2>
-    <div id="status-badge" style="font-weight: bold; color: #d73a49; margin-bottom: 5px;"></div>
-    <div>No: <span id="quotation_no"></span></div>
+    <h2 style="margin: 0;">QUOTATION</h2>
+    <div id="status-badge" style="font-weight: bold; color: #d73a49; margin-top: 5px;"></div>
+    <div style="margin-top: 5px;">No: <span id="quotation_no"></span></div>
     <div>Date: <span id="quotation_date"></span></div>
   </div>
 </div>
@@ -181,7 +179,6 @@ th {
     </div>
 </div>
 
-
 <div class="terms">
   <strong>Terms & Conditions</strong>
   <div id="terms"></div>
@@ -189,9 +186,9 @@ th {
 
 <div class="signature">
   <div class="signature-box">
-    <img id="company-chop">
+    <img id="company-chop" alt="Company Chop">
     <div id="authorized-title"></div>
-    <div><strong id="authorized-name"></strong></div>
+    <div style="margin-top: 5px;"><strong id="authorized-name"></strong></div>
   </div>
 </div>
 
@@ -199,83 +196,103 @@ th {
 /* ===== BASIC ===== */
 const id = new URL(location.href).searchParams.get("id");
 const CURRENCY = (typeof CONFIG !== 'undefined' && CONFIG.CURRENCY) ? CONFIG.CURRENCY : "RM";
-const qid = (id) => document.getElementById(id);
+const qid = (elementId) => document.getElementById(elementId);
 
 let currentUserRole = "";
 
+/* ===== SECURITY: XSS HTML ESCAPER ===== */
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 /* ===== 1. AUTH CHECK (权限检查) ===== */
-fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.ok ? r.json() : Promise.reject())
-  .then(d => {
-    if (!d.loggedIn) {
-      location.replace("/login.html");
-      return;
-    }
-    currentUserRole = (d.role || "").toString().trim().toLowerCase();
-    
-    // 如果允许所有登录用户查看详情，这里保留；如果只允许 admin 和 moderator 查看页面：
-    if (currentUserRole !== "admin" && currentUserRole !== "moderator") {
-      alert("权限不足");
-      location.replace("/index.html");
-      return;
-    }
-
-    // 鉴权通过后加载数据
-    loadQuotationData();
-  })
-  .catch(() => location.replace("/login.html"));
-
-/* ================= LOAD DATA ================= */
-function loadQuotationData() {
-  fetch("/api/quotation-view?id=" + id, { credentials: "include" })
-    .then(r => r.json())
-    .then(json => {
-      if (!json.success) {
-        alert(json.error || "Load failed");
+if (!id) {
+  alert("Quotation ID is missing!");
+  location.replace("/index.html");
+} else {
+  fetch("/api/auth-check", { credentials: "include" })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => {
+      if (!d.loggedIn) {
+        location.replace("/login.html");
+        return;
+      }
+      currentUserRole = (d.role || "").toString().trim().toLowerCase();
+      
+      // 校验访问权限：仅限 admin 和 moderator
+      if (currentUserRole !== "admin" && currentUserRole !== "moderator") {
+        alert("权限不足");
+        location.replace("/index.html");
         return;
       }
 
-      const q = json.data;
-      const sections = q.sections || [];
-      const status = (q.status || "").toUpperCase().trim();
+      // 加载数据与公司信息
+      loadQuotationData();
+      initCompanySettings();
+    })
+    .catch(() => location.replace("/login.html"));
+}
 
-      /* ===== Header ===== */
-      qid("quotation_no").innerText = q.quotation_no;
-      qid("quotation_date").innerText = q.created_at?.slice(0,10) || "";
-      qid("customer").innerText = q.customer;
-      qid("project_title").innerText = q.project_title || "";
-      qid("project_address").innerText = q.project_address || "";
-      qid("terms").innerText = q.terms_snapshot || "";
-      
-      if(status !== "OPEN") {
-        qid("status-badge").innerText = "[" + status + "]";
+/* ================= LOAD DATA ================= */
+async function loadQuotationData() {
+  try {
+    const res = await fetch("/api/quotation-view?id=" + encodeURIComponent(id), { credentials: "include" });
+    if (!res.ok) throw new Error("HTTP error " + res.status);
+    
+    const json = await res.json();
+    if (!json.success) {
+      alert(json.error || "Load failed");
+      return;
+    }
+
+    const q = json.data;
+    const sections = q.sections || [];
+    const status = (q.status || "").toUpperCase().trim();
+
+    /* ===== Header ===== */
+    qid("quotation_no").innerText = q.quotation_no || "";
+    qid("quotation_date").innerText = q.created_at ? q.created_at.slice(0, 10) : "";
+    qid("customer").innerText = q.customer || "";
+    qid("project_title").innerText = q.project_title || "";
+    qid("project_address").innerText = q.project_address || "";
+    qid("terms").innerText = q.terms_snapshot || "";
+    
+    if (status && status !== "OPEN") {
+      qid("status-badge").innerText = "[" + status + "]";
+    }
+
+    /* ===== Button Logic ===== */
+    const homeTarget = q.project_id ? '/project-view.html?id=' + q.project_id : '/index.html';
+    qid('homeBtn').onclick = () => location.href = homeTarget;
+
+    const isAuthorized = currentUserRole === "admin" || currentUserRole === "moderator";
+
+    if (isAuthorized) {
+      if (status === "OPEN") {
+        qid("btn-edit").style.display = "inline-block";
+        qid("btn-approve").style.display = "inline-block";
+        qid("btn-reject").style.display = "inline-block";
+        qid("btn-convert").style.display = "inline-block"; 
+      } else if (status === "ACCEPTED") {
+        qid("btn-convert").style.display = "inline-block";
       }
+    }
 
-      /* ===== Button Logic ===== */
-      const homeTarget = q.project_id ? '/project-view.html?id=' + q.project_id : '/index.html';
-      qid('homeBtn').onclick = () => location.href = homeTarget;
-
-      // 仅针对授权角色（admin 或 moderator）显示操作按钮
-      const isAuthorized = currentUserRole === "admin" || currentUserRole === "moderator";
-
-      if (isAuthorized) {
-        if (status === "OPEN") {
-          qid("btn-edit").style.display = "inline-block";
-          qid("btn-approve").style.display = "inline-block";
-          qid("btn-reject").style.display = "inline-block";
-          qid("btn-convert").style.display = "inline-block"; 
-        } else if (status === "ACCEPTED") {
-          qid("btn-convert").style.display = "inline-block";
-        }
-      }
-
-      renderItems(sections, Number(q.discount) || 0);
-    });
+    renderItems(sections, Number(q.discount) || 0);
+  } catch (err) {
+    alert("Error loading quotation: " + err.message);
+  }
 }
 
 /* ================= ACTIONS ================= */
 function goEdit() {
-  location.href = "/quotation-edit.html?id=" + id;
+  location.href = "/quotation-edit.html?id=" + encodeURIComponent(id);
 }
 
 async function approveQuotation() {
@@ -323,7 +340,7 @@ async function convertInvoice() {
     });
     const json = await res.json();
     if (json.success) {
-      location.href = "/invoice-view.html?id=" + json.invoice_id;
+      location.href = "/invoice-view.html?id=" + encodeURIComponent(json.invoice_id);
     } else {
       alert(json.error || "Convert failed");
     }
@@ -338,17 +355,17 @@ function renderItems(sections, discount) {
   let rowIdx = 1;
 
   sections.forEach(sec => {
-    // 渲染分段标题
+    // 渲染分段标题 (做安全转义)
     if (sec.section_title) {
       tbody.insertAdjacentHTML(
         "beforeend",
-        `<tr class="section-title"><td colspan="6">${sec.section_title}</td></tr>`
+        `<tr class="section-title"><td colspan="6">${escapeHtml(sec.section_title)}</td></tr>`
       );
     }
 
     let sectionTotal = 0;
 
-    sec.items.forEach(it => {
+    (sec.items || []).forEach(it => {
       const qty = Number(it.qty) || 0;
       const price = Number(it.unit_price) || 0;
       const line = Number(it.line_total || (qty * price)); // 自动兜底计算
@@ -359,8 +376,8 @@ function renderItems(sections, discount) {
       tbody.insertAdjacentHTML("beforeend", `
         <tr>
           <td class="center">${rowIdx++}</td>
-          <td>${it.description}</td>
-          <td class="center">${it.UOM || "-"}</td>
+          <td>${escapeHtml(it.description)}</td>
+          <td class="center">${escapeHtml(it.UOM || "-")}</td>
           <td class="center ${qty === 0 ? 'amount-zero' : ''}">${qty}</td>
           <td class="right ${price === 0 ? 'amount-zero' : ''}">${price.toFixed(2)}</td>
           <td class="right ${line === 0 ? 'amount-zero' : ''}">${line.toFixed(2)}</td>
@@ -390,34 +407,44 @@ function renderItems(sections, discount) {
   // 渲染总计
   tbody.insertAdjacentHTML("beforeend", `
     <tr class="grand-total">
-      <td colspan="5" class="right">TOTAL (${CURRENCY})</td>
+      <td colspan="5" class="right">TOTAL (${escapeHtml(CURRENCY)})</td>
       <td class="right">${(grandTotal - discount).toFixed(2)}</td>
     </tr>
   `);
 }
 
-/* ================= COMPANY ================= */
-document.addEventListener("DOMContentLoaded", () => {
-  if (!window.COMPANY_CONFIG) return;
+/* ================= COMPANY SETTINGS ================= */
+function initCompanySettings() {
+  if (typeof COMPANY_CONFIG === "undefined") return;
 
   const names = document.querySelectorAll(".company-name");
-  names.forEach(el => el.innerText = COMPANY_CONFIG.name);
+  names.forEach(el => el.innerText = COMPANY_CONFIG.name || "");
 
-  qid("company-logo").src = COMPANY_CONFIG.logoUrl || "";
-  qid("comp-name").innerText = COMPANY_CONFIG.name;
+  if (COMPANY_CONFIG.logoUrl) {
+    const logo = qid("company-logo");
+    logo.src = COMPANY_CONFIG.logoUrl;
+    logo.style.display = "block";
+  }
+
+  qid("comp-name").innerText = COMPANY_CONFIG.name || "";
   qid("comp-reg").innerText = COMPANY_CONFIG.regNo || "";
   qid("comp-address").innerText = COMPANY_CONFIG.address || "";
   qid("comp-contact").innerText =
-    `Tel: ${COMPANY_CONFIG.phone} | Email: ${COMPANY_CONFIG.email}`;
+    `Tel: ${COMPANY_CONFIG.phone || '-'} | Email: ${COMPANY_CONFIG.email || '-'}`;
 
   qid("bank-info").innerText =
-    `${COMPANY_CONFIG.bankName} : ${COMPANY_CONFIG.bankAcc}`;
+    `${COMPANY_CONFIG.bankName || '-'} : ${COMPANY_CONFIG.bankAcc || '-'}`;
 
-  qid("company-chop").src = COMPANY_CONFIG.chopUrl || "";
+  if (COMPANY_CONFIG.chopUrl) {
+    const chop = qid("company-chop");
+    chop.src = COMPANY_CONFIG.chopUrl;
+    chop.style.display = "inline-block";
+  }
+
   qid("authorized-title").innerText =
     COMPANY_CONFIG.authorizedTitle || "Authorized Signature";
-  qid("authorized-name").innerText = COMPANY_CONFIG.name;
-});
+  qid("authorized-name").innerText = COMPANY_CONFIG.name || "";
+}
 </script>
 
 </body>

@@ -284,6 +284,17 @@ if (!projectId) { alert("Project ID missing"); location.href = "/project-list.ht
 let currentUserRole = "";
 let projectData = null;
 
+/* ── 安全 HTML 转义函数 ── */
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 /* ── Auth Check (仅允许 Admin 和 Moderator) ── */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => {
@@ -303,7 +314,7 @@ fetch("/api/auth-check", { credentials: "include" })
       return;
     }
 
-    // 🔒 权限控制：如果是 Moderator，只保留 Quotation 板块
+    // 🔒 权限控制：如果是 Moderator，隐藏所有仅 Admin 可见的板块
     if (role === "moderator") {
       document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
     }
@@ -323,13 +334,13 @@ async function loadAll() {
 
     renderHeader(data.project);
 
-    // 无论 Admin 还是 Moderator 都允许新增 Quotation
+    // Admin 与 Moderator 均可查看/新增 Quotation
     document.getElementById("btnAddQuotation").href = `/quotation.html?project_id=${projectId}`;
     renderQuotations(data.quotations);
 
     // 仅 Admin 渲染并设置其它板块
     if (currentUserRole === "admin") {
-      renderFinancials(data.financials);
+      renderFinancials(data.financials || {});
       renderVO(data.variation_orders);
       renderInvoices(data.invoices);
       renderPO(data.purchase_orders);
@@ -350,9 +361,10 @@ async function loadAll() {
 
 /* ── Header ── */
 function renderHeader(p) {
-  document.title = p.project_name + " — Project";
+  if (!p) return;
+  document.title = escapeHtml(p.project_name) + " — Project";
   document.getElementById("projNo").textContent     = p.project_no || "";
-  document.getElementById("projName").textContent   = p.project_name;
+  document.getElementById("projName").textContent   = p.project_name || "";
   document.getElementById("projClient").textContent = p.client_name || "";
   document.getElementById("projType").textContent   = (p.project_type || "").replace(/_/g, " ");
   document.getElementById("projStart").textContent  = p.start_date ? p.start_date.slice(0, 10) : "—";
@@ -362,10 +374,10 @@ function renderHeader(p) {
 
   if (currentUserRole === "admin") {
     document.getElementById("projStatusWrap").innerHTML =
-      `Status: <button class="status-btn ${sClass}" onclick="toggleStatus('${status}')">${status.replace("_"," ")}</button>`;
+      `Status: <button class="status-btn ${sClass}" onclick="toggleStatus('${status}')">${escapeHtml(status.replace("_"," "))}</button>`;
   } else {
     document.getElementById("projStatusWrap").innerHTML =
-      `Status: <button class="status-btn ${sClass} disabled">${status.replace("_"," ")}</button>`;
+      `Status: <button class="status-btn ${sClass} disabled">${escapeHtml(status.replace("_"," "))}</button>`;
   }
 
   if (p.notes && p.notes.trim()) {
@@ -381,37 +393,55 @@ async function toggleStatus(cur) {
   const cycle = ["ACTIVE", "ON_HOLD", "COMPLETED"];
   const next  = cycle[(cycle.indexOf(cur) + 1) % cycle.length];
   if (!confirm(`Change status to ${next.replace("_"," ")}?`)) return;
-  const res = await fetch("/api/project-update-status", {
-    method: "POST", credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ project_id: projectId, status: next })
-  });
-  if ((await res.json()).success) loadAll();
+  
+  try {
+    const res = await fetch("/api/project-update-status", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId, status: next })
+    });
+    const result = await res.json();
+    if (result.success) loadAll();
+    else alert("Status update failed: " + (result.message || "Unknown error"));
+  } catch (err) {
+    alert("Network error: " + err.message);
+  }
 }
 
 /* ── Financials ── */
 function renderFinancials(f) {
-  document.getElementById("statContract").textContent  = RM(f.contract_value);
-  document.getElementById("statVO").textContent        = "Incl. Approved VO: " + RM(f.total_vo);
-  document.getElementById("statInvoiced").textContent  = RM(f.total_invoiced);
-  document.getElementById("statCollected").textContent = RM(f.total_collected);
-  document.getElementById("statOutstanding").textContent = "Outstanding: " + RM(f.total_outstanding);
+  const contractVal = Number(f.contract_value || 0);
+  const totalInvoiced = Number(f.total_invoiced || 0);
+  const totalCollected = Number(f.total_collected || 0);
+  const totalOutstanding = Number(f.total_outstanding || 0);
+  const totalVO = Number(f.total_vo || 0);
 
-  const pct = f.contract_value > 0 ? Math.round((f.total_invoiced / f.contract_value) * 100) : 0;
+  const po = Number(f.total_po || 0);
+  const pi = Number(f.total_purchase_invoices || 0);
+  const labour = Number(f.total_labour || 0);
+  const expenses = Number(f.total_expenses || 0);
+
+  document.getElementById("statContract").textContent    = RM(contractVal);
+  document.getElementById("statVO").textContent          = "Incl. Approved VO: " + RM(totalVO);
+  document.getElementById("statInvoiced").textContent    = RM(totalInvoiced);
+  document.getElementById("statCollected").textContent   = RM(totalCollected);
+  document.getElementById("statOutstanding").textContent = "Outstanding: " + RM(totalOutstanding);
+
+  const pct = contractVal > 0 ? Math.round((totalInvoiced / contractVal) * 100) : 0;
   document.getElementById("statInvoicePct").textContent = pct + "% of contract";
 
-  const cost = (f.total_po || 0) + (f.total_purchase_invoices || 0) + (f.total_labour || 0) + (f.total_expenses || 0);
+  const cost = po + pi + labour + expenses;
   document.getElementById("statCost").textContent = RM(cost);
   document.getElementById("statCostSub").textContent =
-    `PO: ${RM(f.total_po)} | PI: ${RM(f.total_purchase_invoices)} | Payslip: ${RM(f.total_labour)} | Exp: ${RM(f.total_expenses)}`;
+    `PO: ${RM(po)} | PI: ${RM(pi)} | Payslip: ${RM(labour)} | Exp: ${RM(expenses)}`;
 
-  const profit = f.total_invoiced - cost;
+  const profit = totalInvoiced - cost;
   const profitEl = document.getElementById("statProfit");
   profitEl.textContent = RM(profit);
   profitEl.className   = "stat-value " + (profit < 0 ? "red" : profit > 0 ? "green" : "");
 
-  const margin = f.total_invoiced > 0
-    ? ((profit / f.total_invoiced) * 100).toFixed(1) + "% margin"
+  const margin = totalInvoiced > 0
+    ? ((profit / totalInvoiced) * 100).toFixed(1) + "% margin"
     : "No invoices yet";
   document.getElementById("statProfitSub").textContent = margin;
 }
@@ -423,8 +453,8 @@ function renderQuotations(list) {
   w.innerHTML = "<table>" + list.map(q => `
     <tr class="clickable" onclick="location.href='/quotation-view.html?id=${q.id}'">
       <td>
-        <div class="doc-no">${q.quotation_no}</div>
-        <div class="doc-sub">${q.customer || ""} · ${(q.created_at || "").slice(0,10)}</div>
+        <div class="doc-no">${escapeHtml(q.quotation_no)}</div>
+        <div class="doc-sub">${escapeHtml(q.customer || "")} · ${(q.created_at || "").slice(0,10)}</div>
       </td>
       <td class="amount-col">
         ${RM(q.grand_total)}<br>
@@ -440,8 +470,8 @@ function renderVO(list) {
   w.innerHTML = "<table>" + list.map(v => `
     <tr class="clickable" onclick="location.href='/vo-view.html?id=${v.id}'">
       <td>
-        <div class="doc-no">${v.vo_no || "VO-" + v.id}</div>
-        <div class="doc-sub">${v.title || ""} · ${(v.created_at || "").slice(0,10)}</div>
+        <div class="doc-no">${escapeHtml(v.vo_no || "VO-" + v.id)}</div>
+        <div class="doc-sub">${escapeHtml(v.title || "")} · ${(v.created_at || "").slice(0,10)}</div>
       </td>
       <td class="amount-col">
         ${RM(v.amount)}<br>
@@ -457,8 +487,8 @@ function renderInvoices(list) {
   w.innerHTML = "<table>" + list.map(i => `
     <tr class="clickable" onclick="location.href='/invoice-view.html?id=${i.id}'">
       <td>
-        <div class="doc-no">${i.invoice_no}</div>
-        <div class="doc-sub">${i.customer || ""} · ${(i.created_at || "").slice(0,10)}</div>
+        <div class="doc-no">${escapeHtml(i.invoice_no)}</div>
+        <div class="doc-sub">${escapeHtml(i.customer || "")} · ${(i.created_at || "").slice(0,10)}</div>
       </td>
       <td class="amount-col">
         ${RM(i.amount)}<br>
@@ -474,8 +504,8 @@ function renderPO(list) {
   w.innerHTML = "<table>" + list.map(p => `
     <tr class="clickable" onclick="location.href='/po-view.html?id=${p.id}'">
       <td>
-        <div class="doc-no">${p.po_no}</div>
-        <div class="doc-sub">${p.supplier_name || ""} · ${(p.po_date || "").slice(0,10)}</div>
+        <div class="doc-no">${escapeHtml(p.po_no)}</div>
+        <div class="doc-sub">${escapeHtml(p.supplier_name || "")} · ${(p.po_date || "").slice(0,10)}</div>
       </td>
       <td class="amount-col">
         ${RM(p.total)}<br>
@@ -491,8 +521,8 @@ function renderPI(list) {
   w.innerHTML = "<table>" + list.map(p => `
     <tr class="clickable" onclick="location.href='/purchase-invoice-view.html?id=${p.id}'">
       <td>
-        <div class="doc-no">${p.pi_no}</div>
-        <div class="doc-sub">${p.subcon_name || ""} · ${(p.claim_date || "").slice(0,10)}</div>
+        <div class="doc-no">${escapeHtml(p.pi_no)}</div>
+        <div class="doc-sub">${escapeHtml(p.subcon_name || "")} · ${(p.claim_date || "").slice(0,10)}</div>
       </td>
       <td class="amount-col">
         ${RM(p.net_amount)}<br>
@@ -508,8 +538,8 @@ function renderLabour(list) {
   w.innerHTML = "<table>" + list.map(l => `
     <tr class="clickable" onclick="location.href='/daily-labour-view.html?id=${l.id}'">
       <td>
-        <div class="doc-no">${l.worker_name}</div>
-        <div class="doc-sub">${l.job || ""} · ${(l.labour_date || "").slice(0,10)}</div>
+        <div class="doc-no">${escapeHtml(l.worker_name)}</div>
+        <div class="doc-sub">${escapeHtml(l.job || "")} · ${(l.labour_date || "").slice(0,10)}</div>
       </td>
       <td class="amount-col">
         ${RM(l.amount)}<br>
@@ -525,8 +555,8 @@ function renderExpenses(list) {
   w.innerHTML = "<table>" + list.map(e => `
     <tr class="clickable" onclick="location.href='/expense-view.html?id=${e.id}'">
       <td>
-        <div class="doc-no">${e.description}</div>
-        <div class="doc-sub">${e.category} · ${(e.expense_date || "").slice(0,10)}${e.vendor ? " · " + e.vendor : ""}</div>
+        <div class="doc-no">${escapeHtml(e.description)}</div>
+        <div class="doc-sub">${escapeHtml(e.category || "")} · ${(e.expense_date || "").slice(0,10)}${e.vendor ? " · " + escapeHtml(e.vendor) : ""}</div>
       </td>
       <td class="amount-col">
         ${RM(e.amount)}<br>
@@ -539,16 +569,26 @@ function renderExpenses(list) {
 async function updateContractValue() {
   if (currentUserRole !== "admin") return;
   const d    = projectData;
-  const qSum = d.quotations.reduce((s, q) => s + Number(q.grand_total || 0), 0);
-  const vSum = d.variation_orders.filter(v => v.status === "APPROVED").reduce((s, v) => s + Number(v.amount || 0), 0);
+  if (!d) return;
+
+  const qSum = (d.quotations || []).reduce((s, q) => s + Number(q.grand_total || 0), 0);
+  const vSum = (d.variation_orders || []).filter(v => (v.status || "").toUpperCase() === "APPROVED").reduce((s, v) => s + Number(v.amount || 0), 0);
   const total = qSum + vSum;
+
   if (!confirm(`Sync Contract Value to ${RM(total)}?\n(Quotations + Approved VO)`)) return;
-  const res = await fetch("/api/project-update-value", {
-    method: "POST", credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ project_id: projectId, contract_value: total })
-  });
-  if ((await res.json()).success) loadAll();
+
+  try {
+    const res = await fetch("/api/project-update-value", {
+      method: "POST", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId, contract_value: total })
+    });
+    const result = await res.json();
+    if (result.success) loadAll();
+    else alert("Update failed: " + (result.message || "Unknown error"));
+  } catch (err) {
+    alert("Network error: " + err.message);
+  }
 }
 
 /* ── Helpers ── */
@@ -560,12 +600,13 @@ function statusBadge(s) {
     DRAFT:     "b-gray",    OPEN:     "b-yellow",  UNPAID:   "b-yellow", ON_HOLD:   "b-orange",
     REJECTED:  "b-red",     VOID:     "b-red",     INVOICED: "b-blue",   COMPLETED: "b-blue"
   };
-  const cls = map[(s || "").toUpperCase()] || "b-gray";
-  return `<span class="badge ${cls}">${s || "—"}</span>`;
+  const statusUpper = (s || "").toUpperCase();
+  const cls = map[statusUpper] || "b-gray";
+  return `<span class="badge ${cls}">${escapeHtml(s || "—")}</span>`;
 }
 
 function empty(msg) {
-  return `<div class="empty-row">${msg}</div>`;
+  return `<div class="empty-row">${escapeHtml(msg)}</div>`;
 }
 </script>
 </body>

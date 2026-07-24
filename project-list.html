@@ -149,7 +149,6 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
 }
 .chip.active { background: #ebf5ff; border-color: #3b82f6; color: #1d4ed8; }
 
-/* Reset button style */
 .chip.reset-btn {
   margin-left: auto;
   border-color: #cbd5e0;
@@ -226,10 +225,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
 .status-badge.COMPLETED { background: #cce5ff; color: #004085; }
 .status-badge.ON_HOLD   { background: #fff3cd; color: #856404; }
 
-/* Progress mini bar */
-.mini-progress {
-  margin-top: 8px;
-}
+.mini-progress { margin-top: 8px; }
 .mini-bar {
   height: 4px;
   background: #e2e8f0;
@@ -250,10 +246,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   justify-content: space-between;
   gap: 8px;
 }
-.mini-profit {
-  color: #38a169;
-  font-weight: bold;
-}
+.mini-profit { color: #38a169; font-weight: bold; }
 
 .empty-msg {
   text-align: center;
@@ -270,7 +263,7 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
   <button class="nav-btn new"  onclick="location.href='/project-create.html'">+ New Project</button>
 </div>
 
-<div class="dashboard">
+<div class="dashboard" id="dashBoard">
   <div class="dash-top">
     <div>
       <div class="dash-label">Total Contract Value</div>
@@ -321,7 +314,18 @@ body { font-family: Arial, sans-serif; background: #f0f2f5; }
 <script>
 let currentUserRole = "";
 
-/* ── Auth Check (允许 Admin & Moderator 访问) ── */
+const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", {
+  minimumFractionDigits: 2, maximumFractionDigits: 2
+});
+const RMk = n => {
+  const v = Number(n || 0);
+  return v >= 1000 ? "RM " + (v / 1000).toFixed(1) + "k" : RM(v);
+};
+
+let _statusFilter = "";
+let _searchTimer  = null;
+
+/* ── Auth Check ── */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => {
     if (!r.ok) {
@@ -334,32 +338,18 @@ fetch("/api/auth-check", { credentials: "include" })
     const role = (user.role || "").toString().trim().toLowerCase();
     currentUserRole = role;
 
-    if (role !== "admin" && role !== "moderator") {
-      alert("权限不足：只有管理员和协调员可以访问此页面。");
-      location.replace("/index.html");
-      return;
-    }
-
-    // 🔒 Moderator 隐藏核心财务 Dashboard 栏目
-    if (role === "moderator") {
-      const dash = document.querySelector(".dashboard");
+    // 非 admin 角色隐藏财务 Dashboard
+    if (role !== "admin") {
+      const dash = document.getElementById("dashBoard");
       if (dash) dash.style.display = "none";
     }
+
+    buildMonthOptions();
+    load();
   })
   .catch(() => location.replace("/login.html"));
 
-const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", {
-  minimumFractionDigits: 2, maximumFractionDigits: 2
-});
-const RMk = n => {
-  const v = Number(n || 0);
-  return v >= 1000 ? "RM " + (v / 1000).toFixed(1) + "k" : RM(v);
-};
-
-let _statusFilter = "";
-let _searchTimer  = null;
-
-/* ── Build month dropdown (last 3 years) ── */
+/* ── Build Month Dropdown ── */
 function buildMonthOptions() {
   const sel   = document.getElementById("monthFilter");
   const now   = new Date();
@@ -377,7 +367,7 @@ function buildMonthOptions() {
   }
 }
 
-/* ── Reset Function ── */
+/* ── Reset Filter ── */
 function resetAllFilters() {
   _statusFilter = "";
   document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
@@ -387,58 +377,101 @@ function resetAllFilters() {
   load();
 }
 
-/* ── Load ── */
+/* ── Load Projects (带路由自动兼容与抓包诊断) ── */
 async function load() {
-  const q      = document.getElementById("searchQ").value.trim();
-  const month  = document.getElementById("monthFilter").value;
+  const q     = document.getElementById("searchQ").value.trim();
+  const month = document.getElementById("monthFilter").value;
 
   const params = new URLSearchParams();
   if (_statusFilter) params.set("status", _statusFilter);
   if (q)             params.set("q", q);
-
-  if (month) {
-    params.set("start_month", month);
-  }
+  if (month)         params.set("start_month", month);
 
   const wrap = document.getElementById("projectList");
   wrap.innerHTML = `<div class="empty-msg">Loading...</div>`;
 
+  // 双路探测：避免后端文件名复数/单数命名混淆导致的 404
+  const apiUrls = [
+    "/api/projects-list?" + params.toString(),
+    "/api/project-list?"  + params.toString()
+  ];
+
+  let res = null;
+  let responseText = "";
+
+  for (const url of apiUrls) {
+    try {
+      const tempRes = await fetch(url, { credentials: "include" });
+      
+      if (tempRes.status === 401) {
+        location.replace("/login.html");
+        return;
+      }
+
+      const rawText = await tempRes.text();
+      // 如果拿到的是 HTML 网页内容（以 < 开头），说明该路由不存在或抛出了报错页，继续探测下一个路径
+      if (rawText.trim().startsWith("<")) {
+        responseText = rawText;
+        continue;
+      }
+
+      // 获取到了正常的非 HTML 数据
+      res = tempRes;
+      responseText = rawText;
+      break; 
+    } catch (e) {
+      console.error("Fetch attempt error:", url, e);
+    }
+  }
+
+  // 探测完毕，若两路均返回了 HTML 错误页，直接显示抓包提示
+  if (!res) {
+    console.error("Server HTML Raw Response:", responseText);
+    wrap.innerHTML = `
+      <div class="empty-msg" style="color:#e53e3e; text-align:left; background:#fff; padding:15px; border-radius:8px; border:1px solid #fed7d7;">
+        <b>⚠️ 接口请求异常 (HTTP 404 / 500)</b><br>
+        <small style="font-size:12px; color:#4a5568; display:block; margin-top:6px; line-height:1.5;">
+          后端未匹配到 API 路由或抛出了崩溃页面。<br>
+          <b>服务器响应片段：</b><br>
+          <code style="background:#edf2f7; padding:2px 4px; border-radius:4px; font-size:11px;">
+            ${responseText.slice(0, 120).replace(/</g, "&lt;")}
+          </code>
+        </small>
+      </div>`;
+    return;
+  }
+
   try {
-    const res  = await fetch("/api/project-list?" + params, { credentials: "include" });
-    
-    if (res.status === 403) {
-      wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">无权访问此数据</div>`;
-      return;
+    const data = JSON.parse(responseText);
+    const rows = Array.isArray(data) ? data : (data.data || []);
+
+    /* ── Dashboard (Only Admin) ── */
+    if (currentUserRole === "admin") {
+      const totalContract  = rows.reduce((s, p) => s + (Number(p.contract_value)  || 0), 0);
+      const totalInvoiced  = rows.reduce((s, p) => s + (Number(p.total_invoiced)  || 0), 0);
+      const totalCollected = rows.reduce((s, p) => s + (Number(p.total_collected) || 0), 0);
+      const totalProfit    = rows.reduce((s, p) => {
+        const totalCost = (Number(p.total_po) || 0)
+          + (Number(p.total_purchase_invoices) || 0)
+          + (Number(p.total_labour) || 0)
+          + (Number(p.total_expenses) || 0);
+        return s + ((Number(p.total_invoiced) || 0) - totalCost);
+      }, 0);
+
+      document.getElementById("dashTotal").textContent     = RM(totalContract);
+      document.getElementById("statCount").textContent     = rows.length;
+      document.getElementById("statInvoiced").textContent  = RMk(totalInvoiced);
+      document.getElementById("statCollected").textContent = RMk(totalCollected);
+      document.getElementById("statProfit").textContent    = RMk(totalProfit);
+
+      const periodLabel = month
+        ? new Date(month + "-01").toLocaleDateString("en-MY", { month: "long", year: "numeric" })
+        : "All Time";
+      document.getElementById("dashSub").textContent =
+        rows.length + " project" + (rows.length !== 1 ? "s" : "") + " · " + periodLabel;
     }
 
-    const data = await res.json();
-    const rows = Array.isArray(data) ? data : [];
-
-    /* Dashboard */
-    const totalContract  = rows.reduce((s, p) => s + (Number(p.contract_value)  || 0), 0);
-    const totalInvoiced  = rows.reduce((s, p) => s + (Number(p.total_invoiced)  || 0), 0);
-    const totalCollected = rows.reduce((s, p) => s + (Number(p.total_collected) || 0), 0);
-    const totalProfit = rows.reduce((s, p) => {
-      const totalCost = (Number(p.total_po) || 0)
-        + (Number(p.total_purchase_invoices) || 0)
-        + (Number(p.total_labour) || 0)
-        + (Number(p.total_expenses) || 0);
-      return s + ((Number(p.total_invoiced) || 0) - totalCost);
-    }, 0);
-
-    document.getElementById("dashTotal").textContent    = RM(totalContract);
-    document.getElementById("statCount").textContent    = rows.length;
-    document.getElementById("statInvoiced").textContent = RMk(totalInvoiced);
-    document.getElementById("statCollected").textContent = RMk(totalCollected);
-    document.getElementById("statProfit").textContent = RMk(totalProfit);
-
-    const periodLabel = month
-      ? new Date(month + "-01").toLocaleDateString("en-MY", { month: "long", year: "numeric" })
-      : "All Time";
-    document.getElementById("dashSub").textContent =
-      rows.length + " project" + (rows.length !== 1 ? "s" : "") + " · " + periodLabel;
-
-    /* List */
+    /* ── Render List ── */
     wrap.innerHTML = "";
     if (!rows.length) {
       wrap.innerHTML = `<div class="empty-msg">No projects found</div>`;
@@ -446,14 +479,15 @@ async function load() {
     }
 
     rows.forEach(p => {
-      const invoicePct = p.contract_value > 0
-        ? Math.min(100, Math.round((p.total_invoiced / p.contract_value) * 100))
-        : 0;
-      const totalCost = (Number(p.total_po) || 0)
+      const contractVal = Number(p.contract_value) || 0;
+      const invoicedVal = Number(p.total_invoiced) || 0;
+      const invoicePct  = contractVal > 0 ? Math.min(100, Math.round((invoicedVal / contractVal) * 100)) : 0;
+      
+      const totalCost   = (Number(p.total_po) || 0)
         + (Number(p.total_purchase_invoices) || 0)
         + (Number(p.total_labour) || 0)
         + (Number(p.total_expenses) || 0);
-      const profit = (Number(p.total_invoiced) || 0) - totalCost;
+      const profit      = invoicedVal - totalCost;
 
       const card = document.createElement("div");
       card.className = "project-card";
@@ -461,8 +495,8 @@ async function load() {
 
       card.innerHTML = `
         <div class="card-top">
-          <div class="proj-name">${p.project_name}</div>
-          <div class="contract-val">${RM(p.contract_value)}</div>
+          <div class="proj-name">${p.project_name || "Untitled Project"}</div>
+          <div class="contract-val">${RM(contractVal)}</div>
         </div>
         <div class="card-meta">
           <span>👤 ${p.client_name || "—"}</span>
@@ -473,13 +507,13 @@ async function load() {
           <span class="proj-no">${p.project_no || ""}</span>
           <span class="status-badge ${p.status || "ACTIVE"}">${p.status || "ACTIVE"}</span>
         </div>
-        ${p.contract_value > 0 ? `
+        ${contractVal > 0 ? `
         <div class="mini-progress">
           <div class="mini-bar">
             <div class="mini-fill" style="width:${invoicePct}%"></div>
           </div>
           <div class="mini-label">
-            <span>Invoiced ${RM(p.total_invoiced)}</span>
+            <span>Invoiced ${RM(invoicedVal)}</span>
             ${currentUserRole === "admin" ? `<span class="mini-profit">Profit ${RM(profit)}</span>` : ""}
             <span>${invoicePct}%</span>
           </div>
@@ -490,11 +524,11 @@ async function load() {
     });
 
   } catch (err) {
-    wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">Failed to load: ${err.message}</div>`;
+    wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">JSON Parse Error: ${err.message}</div>`;
   }
 }
 
-/* ── Status chips ── */
+/* ── Events ── */
 document.querySelectorAll(".chip:not(.reset-btn)").forEach(chip => {
   chip.addEventListener("click", () => {
     document.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
@@ -504,17 +538,12 @@ document.querySelectorAll(".chip:not(.reset-btn)").forEach(chip => {
   });
 });
 
-/* ── Events ── */
 document.getElementById("resetFilter").onclick = resetAllFilters;
 document.getElementById("monthFilter").onchange = load;
 document.getElementById("searchQ").oninput = () => {
   clearTimeout(_searchTimer);
   _searchTimer = setTimeout(load, 300);
 };
-
-/* ── Init ── */
-buildMonthOptions();
-load();
 </script>
 </body>
 </html>

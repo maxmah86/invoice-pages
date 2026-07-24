@@ -1,142 +1,218 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Create Project</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{
-font-family: Arial, sans-serif;
-margin:20px;
-background:#f5f5f5;
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f0f2f5;
+  color: #1a2636;
 }
 
-h2{
-margin-bottom:20px;
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.form-group{
-margin-bottom:15px;
+.nav-back {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: #2c7be5;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: bold;
 }
 
-label{
-display:block;
-margin-bottom:5px;
-font-size:14px;
+h2 {
+  margin-bottom: 20px;
+  font-size: 20px;
+  color: #1a2636;
 }
 
-/* 增加必填星号样式 */
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #4a5568;
+}
+
 label.required::after {
   content: " *";
   color: #e53e3e;
 }
 
-input, select, textarea{
-width:100%;
-padding:10px;
-border:1px solid #ccc;
-border-radius:6px;
-font-size:14px;
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  transition: border-color 0.15s;
 }
 
-button{
-width:100%;
-padding:12px;
-border:none;
-background:#2c7be5;
-color:white;
-font-size:16px;
-border-radius:6px;
-cursor:pointer;
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #2c7be5;
 }
 
-button:hover{
-background:#1a5fd0;
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: #27ae60;
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #219653;
+}
+
+button:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
 }
 </style>
 </head>
 
 <body>
 
-<h2>Create Project</h2>
+<div class="container">
+  <a href="javascript:history.back()" class="nav-back">← Back</a>
+  <h2>Create Project</h2>
 
-<div class="form-group">
-<label class="required">Project Name</label>
-<input id="project_name" placeholder="Enter project name">
+  <div class="form-group">
+    <label class="required">Project Name</label>
+    <input id="project_name" placeholder="Enter project name">
+  </div>
+
+  <div class="form-group">
+    <label class="required">Client Name</label>
+    <input id="client_name" placeholder="Enter client name">
+  </div>
+
+  <div class="form-group">
+    <label>Project Type</label>
+    <select id="project_type">
+      <option value="contract">Contract</option>
+      <option value="direct_job">Direct Job</option>
+      <option value="repair">Repair</option>
+      <option value="maintenance">Maintenance</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label>Contract Value (RM)</label>
+    <input id="contract_value" type="number" step="0.01" value="0.00">
+  </div>
+
+  <div class="form-group">
+    <label class="required">Start Date</label>
+    <input id="start_date" type="date">
+  </div>
+
+  <div class="form-group">
+    <label>Notes</label>
+    <textarea id="notes" placeholder="Optional notes..."></textarea>
+  </div>
+
+  <button id="btnSubmit" onclick="createProject()">Create Project</button>
 </div>
-
-<div class="form-group">
-<label class="required">Client Name</label>
-<input id="client_name" placeholder="Enter client name">
-</div>
-
-<div class="form-group">
-<label>Project Type</label>
-<select id="project_type">
-<option value="contract">Contract</option>
-<option value="direct_job">Direct Job</option>
-<option value="repair">Repair</option>
-<option value="maintenance">Maintenance</option>
-</select>
-</div>
-
-<div class="form-group">
-<label>Contract Value (RM)</label>
-<input id="contract_value" type="number" value="0">
-</div>
-
-<div class="form-group">
-<label class="required">Start Date</label>
-<input id="start_date" type="date">
-</div>
-
-<div class="form-group">
-<label>Notes</label>
-<textarea id="notes" placeholder="Optional notes..."></textarea>
-</div>
-
-<button onclick="createProject()">Create Project</button>
 
 <script>
-// Auth check — admin only
+/* ── Auth check: 允许 Admin 与 Moderator 访问 ── */
 fetch("/api/auth-check", { credentials: "include" })
   .then(r => r.ok ? r.json() : Promise.reject())
-  .then(d => { if (d.role !== "admin") location.replace("/index.html"); })
+  .then(user => {
+    const role = (user.role || "").toString().trim().toLowerCase();
+    if (role !== "admin" && role !== "moderator") {
+      alert("Permission denied: Only Admins and Moderators can create projects.");
+      location.replace("/index.html");
+    }
+  })
   .catch(() => location.replace("/login.html"));
 
-async function createProject(){
+async function createProject() {
+  const btn = document.getElementById("btnSubmit");
+  
   const data = {
     project_name: document.getElementById("project_name").value.trim(),
-    client_name: document.getElementById("client_name").value.trim(),
+    client_name:  document.getElementById("client_name").value.trim(),
     project_type: document.getElementById("project_type").value,
-    contract_value: document.getElementById("contract_value").value,
-    start_date: document.getElementById("start_date").value,
-    notes: document.getElementById("notes").value
+    contract_value: Number(document.getElementById("contract_value").value) || 0,
+    start_date:   document.getElementById("start_date").value,
+    notes:        document.getElementById("notes").value.trim()
   };
 
-  // 增加 start_date 的非空校验
+  /* ── 必填项前端校验 ── */
   if (!data.project_name || !data.client_name || !data.start_date) {
-    alert("Project Name, Client Name, and Start Date are required.");
+    alert("Please fill in all required fields (Project Name, Client Name, Start Date).");
     return;
   }
 
-  const res = await fetch("/api/project-create",{
-    method:"POST",
-    credentials: "include",
-    headers:{
-      "Content-Type":"application/json"
-    },
-    body: JSON.stringify(data)
-  });
+  btn.disabled = true;
+  btn.textContent = "Creating...";
 
-  const result = await res.json();
+  try {
+    const res = await fetch("/api/project-create", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
 
-  if(result.success){
-    alert("Project created");
-    window.location = "/project-view.html?id=" + result.id;
-  } else {
-    alert("Error: " + (result.error || "Failed to create project"));
+    if (res.status === 401) {
+      location.replace("/login.html");
+      return;
+    }
+
+    /* 防止 API 返回 HTML 时造成前端解析崩溃 */
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error("Non-JSON Response:", text);
+      throw new Error(`Server returned HTTP ${res.status}. Check API route /api/project-create`);
+    }
+
+    const result = await res.json();
+
+    if (result.success || result.id) {
+      alert("Project created successfully!");
+      window.location.href = "/project-view.html?id=" + (result.id || result.project_id);
+    } else {
+      alert("Error: " + (result.error || "Failed to create project"));
+    }
+  } catch (err) {
+    console.error("Create Project Error:", err);
+    alert("Failed: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Create Project";
   }
 }
 </script>

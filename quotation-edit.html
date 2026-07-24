@@ -39,6 +39,8 @@ input, select {
   font-size:16px;
   margin-top:6px;
   box-sizing: border-box; 
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 .section {
@@ -46,6 +48,7 @@ input, select {
   border-radius:8px;
   padding:10px;
   margin-top:10px;
+  background: #fafafa;
 }
 
 .item {
@@ -57,6 +60,7 @@ input, select {
 .row {
   display:flex;
   gap:6px;
+  margin-top:6px;
 }
 .row .uom-input { flex: 0.5; }
 .row .qty-input { flex: 0.5; }
@@ -65,7 +69,8 @@ input, select {
 .subtotal {
   text-align:right;
   font-weight:bold;
-  margin-top:6px;
+  margin-top:8px;
+  color: #333;
 }
 
 .btn {
@@ -86,6 +91,7 @@ input, select {
   font-weight:bold;
   text-align:right;
   margin-top: 10px;
+  color: #2c3e50;
 }
 </style>
 </head>
@@ -95,7 +101,7 @@ input, select {
 <h2>Edit Quotation</h2>
 
 <div class="box">
-  <label>Customer Name</label>
+  <label>Customer Name *</label>
   <input type="text" id="customer" placeholder="Enter customer name">
 
   <label>Project Title</label>
@@ -107,110 +113,135 @@ input, select {
 
 <div class="box">
   <label>Terms & Conditions</label>
-  <select id="terms_id"></select>
+  <select id="terms_id">
+    <option value="">-- Select Terms --</option>
+  </select>
 </div>
 
 <div class="box">
   <h3>Sections</h3>
   <div id="sections"></div>
-  <button class="btn btn-add" onclick="addSection()">+ Add New Section</button>
+  <button type="button" class="btn btn-add" onclick="addSection()">+ Add New Section</button>
 </div>
 
 <div class="box">
   <label>Discount (RM)</label>
-  <input type="number" id="discount" value="0" oninput="calc()">
+  <input type="number" id="discount" value="0" min="0" step="0.01" oninput="calc()">
   <div class="total" id="grandTotal">Total: RM 0.00</div>
 </div>
 
-<button class="btn btn-save" onclick="save()">Save Quotation</button>
-<button class="btn btn-cancel" onclick="history.back()">Cancel</button>
+<button type="button" class="btn btn-save" id="saveBtn" onclick="save()">Save Quotation</button>
+<button type="button" class="btn btn-cancel" onclick="history.back()">Cancel</button>
 
 <datalist id="catalogs"></datalist>
 
 <script>
 /* =========================================================
- * Auth Guard (允许 Admin 与 Moderator)
- * ========================================================= */
-fetch("/api/auth-check", { credentials: "include" })
-  .then(r => r.ok ? r.json() : Promise.reject())
-  .then(d => {
-    const role = (d.role || "").toString().trim().toLowerCase();
-    
-    // 拦截未登录
-    if (!d.loggedIn) {
-      location.replace("/login.html");
-      return;
-    }
-    
-    // 拦截既不是 admin 也不是 moderator 的用户
-    if (role !== "admin" && role !== "moderator") {
-      alert("Permission denied: Only Admin or Moderator can edit quotation.");
-      location.replace("/index.html");
-      return;
-    }
-
-    // 鉴权通过，显示 UI
-    document.body.style.display = "block";
-  })
-  .catch(() => location.replace("/login.html"));
-
-/* =========================================================
- * Globals
+ * Globals & Helpers
  * ========================================================= */
 const sectionsEl = document.getElementById("sections");
 const quotationId = new URL(location.href).searchParams.get("id");
 
-/* =========================================================
- * Load Terms
- * ========================================================= */
-fetch("/api/quotation-terms-list", { credentials: "include" })
-  .then(r => r.json())
-  .then(list => {
-    const sel = document.getElementById("terms_id");
-    sel.innerHTML = `<option value="">-- Select Terms --</option>`;
-    list.forEach(t => {
-      const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = t.title;
-      sel.appendChild(opt);
-    });
-  });
+// 安全的字符串 HTML 属性转义函数
+function escapeAttr(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 /* =========================================================
- * Load Item Catalog
+ * 1. Auth Guard (允许 Admin 与 Moderator)
  * ========================================================= */
-fetch("/api/item-catalog-list", { credentials: "include" })
-  .then(r => r.json())
-  .then(list => {
-    const dl = document.getElementById("catalogs");
-    dl.innerHTML = "";
-    list
-      .filter(i => Number(i.is_active) === 1)
-      .forEach(i => {
+async function checkAuth() {
+  try {
+    const r = await fetch("/api/auth-check", { credentials: "include" });
+    if (!r.ok) throw new Error("Unauthorized");
+    const d = await r.json();
+    
+    if (!d.loggedIn) {
+      location.replace("/login.html");
+      return false;
+    }
+
+    const role = (d.role || "").toString().trim().toLowerCase();
+    if (role !== "admin" && role !== "moderator") {
+      alert("Permission denied: Only Admin or Moderator can edit quotation.");
+      location.replace("/index.html");
+      return false;
+    }
+
+    document.body.style.display = "block";
+    return true;
+  } catch (err) {
+    location.replace("/login.html");
+    return false;
+  }
+}
+
+/* =========================================================
+ * 2. Load Terms & Catalog Async (封装为 Promise)
+ * ========================================================= */
+function loadTerms() {
+  return fetch("/api/quotation-terms-list", { credentials: "include" })
+    .then(r => r.json())
+    .then(list => {
+      const sel = document.getElementById("terms_id");
+      sel.innerHTML = `<option value="">-- Select Terms --</option>`;
+      list.forEach(t => {
         const opt = document.createElement("option");
-        opt.value = i.description;
-        opt.dataset.price = i.default_amount;
-        dl.appendChild(opt);
+        opt.value = t.id;
+        opt.textContent = t.title;
+        sel.appendChild(opt);
       });
-  });
+    })
+    .catch(err => console.error("Load Terms Error:", err));
+}
+
+function loadCatalogs() {
+  return fetch("/api/item-catalog-list", { credentials: "include" })
+    .then(r => r.json())
+    .then(list => {
+      const dl = document.getElementById("catalogs");
+      dl.innerHTML = "";
+      list
+        .filter(i => Number(i.is_active) === 1)
+        .forEach(i => {
+          const opt = document.createElement("option");
+          opt.value = i.description;
+          opt.dataset.price = i.default_amount;
+          dl.appendChild(opt);
+        });
+    })
+    .catch(err => console.error("Load Catalog Error:", err));
+}
 
 /* =========================================================
- * Section / Item UI
+ * 3. Section / Item UI 操作
  * ========================================================= */
 function addSection(title = "") {
   const sec = document.createElement("div");
   sec.className = "section box";
   sec.innerHTML = `
     <div style="display:flex; gap:10px;">
-        <input placeholder="Section Title" value="${title}" style="font-weight:bold; flex:1;">
-        <button class="btn-cancel" style="width:auto; padding:0 10px; margin-top:6px; border-radius:4px;"
-          onclick="this.parentElement.parentElement.remove(); calc();">Remove</button>
+        <input placeholder="Section Title" value="${escapeAttr(title)}" style="font-weight:bold; flex:1;">
+        <button type="button" class="btn-cancel btn-remove-sec" style="width:auto; padding:0 10px; margin-top:6px; border-radius:4px;">Remove</button>
     </div>
     <div class="items"></div>
-    <button class="btn btn-add" style="font-size:13px; padding:8px; background:#f1f1f1; color:#333;"
+    <button type="button" class="btn btn-add" style="font-size:13px; padding:8px; background:#e2e8f0; color:#333;"
       onclick="addItem(this)">+ Add Item</button>
     <div class="subtotal">Subtotal: RM <span>0.00</span></div>
   `;
+
+  // 安全绑定移除 Section 事件
+  sec.querySelector(".btn-remove-sec").onclick = () => {
+    sec.remove();
+    calc();
+  };
+
   sectionsEl.appendChild(sec);
   return sec;
 }
@@ -224,34 +255,45 @@ function addItemFromData(container, it = {}) {
   const div = document.createElement("div");
   div.className = "item";
   div.innerHTML = `
-    <input list="catalogs" placeholder="Item Description" class="desc-input" value="${it.description || ""}">
+    <input list="catalogs" placeholder="Item Description" class="desc-input" value="${escapeAttr(it.description || '')}">
     <div class="row">
-      <input type="text" placeholder="UOM" class="uom-input" value="${it.UOM || ""}">
-      <input type="number" placeholder="Qty" class="qty-input" value="${it.qty || 1}">
-      <input type="number" placeholder="Price" class="price-input" value="${it.unit_price || it.price || 0}">
+      <input type="text" placeholder="UOM" class="uom-input" value="${escapeAttr(it.UOM || '')}">
+      <input type="number" placeholder="Qty" class="qty-input" value="${it.qty !== undefined ? it.qty : 1}">
+      <input type="number" placeholder="Price" class="price-input" value="${it.unit_price !== undefined ? it.unit_price : (it.price || 0)}">
     </div>
-    <div style="text-align:right;">
-      <small style="color:red; cursor:pointer;" onclick="this.closest('.item').remove(); calc();">Remove Item</small>
+    <div style="text-align:right; margin-top:4px;">
+      <small style="color:#e74c3c; cursor:pointer;" class="btn-remove-item">Remove Item</small>
     </div>
   `;
+
+  div.querySelector(".btn-remove-item").onclick = () => {
+    div.remove();
+    calc();
+  };
+
   container.appendChild(div);
 
   const desc = div.querySelector(".desc-input");
   const priceInput = div.querySelector(".price-input");
 
-  desc.onchange = () => {
+  // 当用户在 Catalog 中选中时，实时自动填入价格
+  const updatePriceFromCatalog = () => {
     const opt = [...document.querySelectorAll("#catalogs option")]
       .find(o => o.value === desc.value);
-    if (opt) priceInput.value = opt.dataset.price;
+    if (opt && opt.dataset.price) {
+      priceInput.value = opt.dataset.price;
+    }
     calc();
   };
 
-  div.querySelectorAll("input").forEach(i => i.oninput = calc);
+  desc.addEventListener("input", updatePriceFromCatalog);
+  div.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
+  
   calc();
 }
 
 /* =========================================================
- * Calculation
+ * 4. Calculation
  * ========================================================= */
 function calc() {
   let grand = 0;
@@ -262,69 +304,89 @@ function calc() {
       const price = Number(it.querySelector(".price-input").value) || 0;
       sub += qty * price;
     });
-    sec.querySelector(".subtotal span").textContent = sub.toFixed(2);
+    const subSpan = sec.querySelector(".subtotal span");
+    if (subSpan) subSpan.textContent = sub.toFixed(2);
     grand += sub;
   });
+  
   const discount = Number(document.getElementById("discount").value) || 0;
   document.getElementById("grandTotal").textContent =
     `Total: RM ${Math.max(0, grand - discount).toFixed(2)}`;
 }
 
 /* =========================================================
- * Load quotation for edit (VIEW → EDIT)
+ * 5. Load quotation for edit (VIEW → EDIT)
  * ========================================================= */
 async function loadQuotationForEdit() {
   if (!quotationId) {
-    addSection();
-    addItem(document.querySelector(".btn-add"));
+    alert("Quotation ID is missing!");
+    location.href = "/index.html";
     return;
   }
 
-  const res = await fetch("/api/quotation-view?id=" + quotationId, {
-    credentials: "include"
-  });
-  const json = await res.json();
-  if (!json.success) {
-    alert(json.error || "Load failed");
-    return;
-  }
-
-  const q = json.data;
-
-  document.getElementById("customer").value = q.customer || "";
-  document.getElementById("project_title").value = q.project_title || "";
-  document.getElementById("project_address").value = q.project_address || "";
-  document.getElementById("discount").value = q.discount || 0;
-
-  if (q.terms_id) document.getElementById("terms_id").value = q.terms_id;
-
-  sectionsEl.innerHTML = "";
-
-  (q.sections || []).forEach(sec => {
-    const secEl = addSection(sec.section_title);
-    const itemsContainer = secEl.querySelector(".items");
-    itemsContainer.innerHTML = "";
-    (sec.items || []).forEach(it => {
-      addItemFromData(itemsContainer, it);
+  try {
+    const res = await fetch("/api/quotation-view?id=" + encodeURIComponent(quotationId), {
+      credentials: "include"
     });
-  });
+    
+    if (!res.ok) throw new Error("HTTP error " + res.status);
+    
+    const json = await res.json();
+    if (!json.success) {
+      alert(json.error || "Load failed");
+      return;
+    }
 
-  calc();
+    const q = json.data;
+
+    document.getElementById("customer").value = q.customer || "";
+    document.getElementById("project_title").value = q.project_title || "";
+    document.getElementById("project_address").value = q.project_address || "";
+    document.getElementById("discount").value = q.discount || 0;
+
+    // 此处 loadTerms 已通过 Promise.all 完成，可安全给 Select 赋值
+    if (q.terms_id) {
+      document.getElementById("terms_id").value = q.terms_id;
+    }
+
+    sectionsEl.innerHTML = "";
+
+    const sections = q.sections || [];
+    if (sections.length > 0) {
+      sections.forEach(sec => {
+        const secEl = addSection(sec.section_title);
+        const itemsContainer = secEl.querySelector(".items");
+        itemsContainer.innerHTML = "";
+        (sec.items || []).forEach(it => {
+          addItemFromData(itemsContainer, it);
+        });
+      });
+    } else {
+      // 兜底：若该 Quotation 没有 Section，则初始化一个空 Section
+      const secEl = addSection();
+      addItem(secEl.querySelector(".btn-add"));
+    }
+
+    calc();
+  } catch (err) {
+    alert("Error loading quotation data: " + err.message);
+  }
 }
 
 /* =========================================================
- * Save (EDIT)
+ * 6. Save (EDIT)
  * ========================================================= */
 async function save() {
   const customer = document.getElementById("customer").value.trim();
   if (!customer) {
-    alert("Customer required");
+    alert("Customer Name is required.");
     return;
   }
 
   const sections = [];
   document.querySelectorAll(".section").forEach(sec => {
-    const title = sec.querySelector("input").value.trim();
+    const titleInput = sec.querySelector("input");
+    const title = titleInput ? titleInput.value.trim() : "";
     if (!title) return;
 
     const items = [];
@@ -343,41 +405,62 @@ async function save() {
   });
 
   if (!sections.length) {
-    alert("At least one section required");
+    alert("At least one section with valid items is required.");
     return;
   }
 
   const payload = {
-    id: quotationId,
+    id: Number(quotationId),
     customer,
-    project_title: document.getElementById("project_title").value,
-    project_address: document.getElementById("project_address").value,
+    project_title: document.getElementById("project_title").value.trim(),
+    project_address: document.getElementById("project_address").value.trim(),
     terms_id: document.getElementById("terms_id").value || null,
     discount: Number(document.getElementById("discount").value) || 0,
     sections
   };
 
-  const res = await fetch("/api/quotation-edit", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  const saveBtn = document.getElementById("saveBtn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Saving...";
 
-  const json = await res.json();
-  if (!json.success) {
-    alert(json.error || "Save failed");
-    return;
+  try {
+    const res = await fetch("/api/quotation-edit", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (!json.success) {
+      alert("Save failed: " + (json.error || "Unknown error"));
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save Quotation";
+      return;
+    }
+
+    alert("Quotation updated successfully.");
+    location.href = "/quotation-view.html?id=" + encodeURIComponent(quotationId);
+  } catch (err) {
+    alert("Network error, please try again.");
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Save Quotation";
   }
-
-  alert("Quotation updated");
-  location.href = "/quotation-view.html?id=" + quotationId;
 }
 
 /* =========================================================
- * Init
+ * 7. Sequential Init Sequence
  * ========================================================= */
-loadQuotationForEdit();
+async function init() {
+  const isAuthed = await checkAuth();
+  if (!isAuthed) return;
+
+  // 使用 Promise.all 保证基础配置（Terms, Catalog）加载完成后再拉取 Quotation 详情回显
+  await Promise.all([loadTerms(), loadCatalogs()]);
+  await loadQuotationForEdit();
+}
+
+window.addEventListener("DOMContentLoaded", init);
 </script>
 </body>
 </html>
