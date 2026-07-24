@@ -1,4 +1,4 @@
-export async function onRequestGet({ request, env }) {
+Export async function onRequestGet({ request, env }) {
   const db = env.DB;
 
   const { searchParams } = new URL(request.url);
@@ -23,7 +23,6 @@ export async function onRequestGet({ request, env }) {
     return jsonError("Not logged in", 401);
   }
 
-  // 修改：同时允许 admin 和 moderator 访问
   if (auth.role !== "admin" && auth.role !== "moderator") {
     return jsonError("Permission denied", 403);
   }
@@ -40,6 +39,26 @@ export async function onRequestGet({ request, env }) {
 
     if (!quotation) {
       return jsonError("Quotation not found", 404);
+    }
+
+    /* ===============================
+     * 核心权限防护：关联项目归属权校验
+     * =============================== */
+    if (auth.role !== "admin") {
+      if (quotation.project_id) {
+        // 查询对应的项目创建者
+        const project = await db.prepare(`
+          SELECT id, created_by FROM projects WHERE id = ?
+        `).bind(quotation.project_id).first();
+
+        // 如果项目不存在，或者不是当前 Moderator 创建的，拒绝访问
+        if (!project || project.created_by !== auth.id) {
+          return jsonError("Permission denied: You do not have access to this quotation", 403);
+        }
+      } else {
+        // 如果报价单未关联项目，可根据你的业务规则判断（例如不允许普通 moderator 查看未关联项目的全局报价单）
+        // 或者如果 quotations 表也有 created_by 字段，则校验 quotation.created_by === auth.id
+      }
     }
 
     /* ===============================
