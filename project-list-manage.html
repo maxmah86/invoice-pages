@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Manage Projects (Admin Only)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; background: #f0f2f5; }
+
+/* ── Nav ── */
+.nav-bar {
+  background: #1a2636;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: sticky; top: 0; z-index: 10;
+}
+.nav-btn {
+  padding: 8px 14px; border: none; border-radius: 6px;
+  font-size: 13px; font-weight: bold; cursor: pointer; color: #fff;
+}
+.nav-btn.home { background: #4a5568; }
+.nav-btn.new  { background: #27ae60; margin-left: auto; }
+
+/* ── Search Bar ── */
+.search-bar {
+  padding: 12px;
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+.search-bar input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  background: #f8fafc;
+}
+.search-bar input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #fff;
+}
+
+/* ── Simple Project List ── */
+.list-wrap { padding: 12px 12px 60px; }
+
+.project-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #e8edf3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.proj-info { flex: 1; }
+
+.proj-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #1a2636;
+  margin-bottom: 4px;
+}
+
+.proj-sub {
+  font-size: 12px;
+  color: #718096;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Delete Button ── */
+.btn-delete {
+  background: #e53e3e;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-delete:hover {
+  background: #c53030;
+}
+
+.empty-msg {
+  text-align: center;
+  color: #a0aec0;
+  padding: 50px 20px;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <button class="nav-btn home" onclick="location.href='/index.html'">🏠 Home</button>
+  <button class="nav-btn new"  onclick="location.href='/project-create.html'">+ New Project</button>
+</div>
+
+<div class="search-bar">
+  <input type="text" id="searchQ" placeholder="🔍 Search project name or client...">
+</div>
+
+<div class="list-wrap" id="projectList">
+  <div class="empty-msg">Verifying admin permissions...</div>
+</div>
+
+<script>
+let _searchTimer = null;
+
+const RM = n => "RM " + Number(n || 0).toLocaleString("en-MY", {
+  minimumFractionDigits: 2, maximumFractionDigits: 2
+});
+
+/* ── Strict Admin Check ── */
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => {
+    if (!r.ok) {
+      location.replace("/login.html");
+      return Promise.reject();
+    }
+    return r.json();
+  })
+  .then(user => {
+    const role = (user.role || "").toString().trim().toLowerCase();
+    
+    if (role !== "admin") {
+      document.getElementById("projectList").innerHTML = `
+        <div class="empty-msg" style="color: #e53e3e; background: #fff; padding: 30px; border-radius: 8px; border: 1px solid #fed7d7;">
+          <h2>🚫 Access Denied</h2>
+          <p style="margin-top: 8px; color: #4a5568;">Only administrators can access project management & deletion features.</p>
+        </div>
+      `;
+      document.getElementById("searchQ").disabled = true;
+      return;
+    }
+
+    loadProjects();
+  })
+  .catch(() => location.replace("/login.html"));
+
+/* ── Load Projects (双路兼容与错误防爆) ── */
+async function loadProjects() {
+  const q = document.getElementById("searchQ").value.trim();
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+
+  const wrap = document.getElementById("projectList");
+  wrap.innerHTML = `<div class="empty-msg">Loading...</div>`;
+
+  // 探测单数与复数路由
+  const apiUrls = [
+    "/api/projects-list?" + params.toString(),
+    "/api/project-list?"  + params.toString()
+  ];
+
+  let res = null;
+  let responseText = "";
+
+  for (const url of apiUrls) {
+    try {
+      const tempRes = await fetch(url, { credentials: "include" });
+      if (tempRes.status === 401) {
+        location.replace("/login.html");
+        return;
+      }
+
+      const rawText = await tempRes.text();
+      if (rawText.trim().startsWith("<")) {
+        responseText = rawText;
+        continue;
+      }
+
+      res = tempRes;
+      responseText = rawText;
+      break; 
+    } catch (e) {
+      console.error("Fetch error:", url, e);
+    }
+  }
+
+  if (!res) {
+    wrap.innerHTML = `
+      <div class="empty-msg" style="color:#e53e3e; text-align:left; background:#fff; padding:15px; border-radius:8px; border:1px solid #fed7d7;">
+        <b>⚠️ 接口请求异常 (HTTP 404 / 500)</b><br>
+        <small style="font-size:12px; color:#4a5568; display:block; margin-top:6px; line-height:1.5;">
+          无法找到 API 路由。请检查 Cloudflare Functions 对应的文件名。<br>
+          <b>服务器返回内容片段：</b><br>
+          <code style="background:#edf2f7; padding:2px 4px; border-radius:4px; font-size:11px;">
+            ${responseText.slice(0, 100).replace(/</g, "&lt;")}
+          </code>
+        </small>
+      </div>`;
+    return;
+  }
+
+  try {
+    const data = JSON.parse(responseText);
+    const rows = Array.isArray(data) ? data : (data.data || []);
+
+    wrap.innerHTML = "";
+    if (!rows.length) {
+      wrap.innerHTML = `<div class="empty-msg">No projects found</div>`;
+      return;
+    }
+
+    rows.forEach(p => {
+      const item = document.createElement("div");
+      item.className = "project-item";
+
+      item.innerHTML = `
+        <div class="proj-info">
+          <div class="proj-title">${p.project_name || "Untitled Project"}</div>
+          <div class="proj-sub">
+            <span><b>No:</b> ${p.project_no || "—"}</span>
+            <span><b>Client:</b> ${p.client_name || "—"}</span>
+            <span><b>Val:</b> ${RM(p.contract_value)}</span>
+          </div>
+        </div>
+        <button class="btn-delete" onclick="deleteProject('${p.id}', '${escapeHtml(p.project_name || '')}')">
+          🗑 Delete
+        </button>
+      `;
+
+      wrap.appendChild(item);
+    });
+
+  } catch (err) {
+    wrap.innerHTML = `<div class="empty-msg" style="color:#e53e3e;">JSON Parse Error: ${err.message}</div>`;
+  }
+}
+
+/* ── Delete Project (Admin Only) ── */
+async function deleteProject(id, name) {
+  const confirmMsg = `⚠️ 警告 (Warning)！\n\n确定要删除项目 "${name}" 吗？\n\n注意：此操作将彻底删除此项目下的所有内容，包括：\n• Invoices (发票)\n• Quotations (报价单)\n• VOs (变动单)\n• POs (采购单 / 采购发票)\n• Labour & Expenses (工钱与开销记账)\n\n此操作无法撤销！`;
+
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const res = await fetch("/api/project-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      alert("❌ 删除失败: " + (result.error || "权限不足或未知错误"));
+      return;
+    }
+
+    alert("✅ 删除成功！项目及其所有相关单据已全数清空。");
+    loadProjects();
+  } catch (err) {
+    alert("❌ 请求异常: " + err.message);
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+}
+
+/* ── Search Event ── */
+document.getElementById("searchQ").oninput = () => {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(loadProjects, 300);
+};
+</script>
+</body>
+</html>
