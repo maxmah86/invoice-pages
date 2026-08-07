@@ -571,11 +571,19 @@ async function updateContractValue() {
   const d    = projectData;
   if (!d) return;
 
-  const qSum = (d.quotations || []).reduce((s, q) => s + Number(q.grand_total || 0), 0);
-  const vSum = (d.variation_orders || []).filter(v => (v.status || "").toUpperCase() === "APPROVED").reduce((s, v) => s + Number(v.amount || 0), 0);
+  // 仅累加 ACCEPTED 的 Quotations[span_1](start_span)[span_1](end_span)
+  const qSum = (d.quotations || [])
+    .filter(q => (q.status || "").toUpperCase() === "ACCEPTED")
+    .reduce((s, q) => s + Number(q.grand_total || 0), 0);
+
+  // 仅累加 APPROVED 的 Variation Orders[span_2](start_span)[span_2](end_span)
+  const vSum = (d.variation_orders || [])
+    .filter(v => (v.status || "").toUpperCase() === "APPROVED")
+    .reduce((s, v) => s + Number(v.amount || 0), 0);
+
   const total = qSum + vSum;
 
-  if (!confirm(`Sync Contract Value to ${RM(total)}?\n(Quotations + Approved VO)`)) return;
+  if (!confirm(`Sync Contract Value to ${RM(total)}?\n(Accepted Quotations + Approved VO)`)) return;
 
   try {
     const res = await fetch("/api/project-update-value", {
