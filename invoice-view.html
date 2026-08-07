@@ -29,6 +29,11 @@
     .invoice-title { font-size: 32px; font-weight: bold; color: #333; }
     .invoice-actions { margin-bottom: 10px; }
     .invoice-actions button { padding: 6px 12px; font-size: 13px; margin-left: 5px; cursor: pointer; }
+    
+    /* 增加作废按钮样式（可选） */
+    #voidBtn { background-color: #dc2626; color: white; border: 1px solid #dc2626; border-radius: 3px; }
+    #voidBtn:hover { background-color: #b91c1c; }
+
     .status-badge { font-weight: bold; font-size: 16px; margin-top: 5px; display: inline-block; }
 
     /* TABLE STRUCTURE */
@@ -57,46 +62,16 @@
     @media (max-width: 768px) {
       body { margin: 10px; }
 
-      /* 头部：保持左右排列，允许换行 */
-      .header {
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-      .company {
-        max-width: 100%;
-        flex: 1 1 60%;
-      }
-      .invoice-box {
-        text-align: right;        /* 保持右对齐 */
-        flex: 1 1 35%;
-        min-width: 180px;
-      }
-      .invoice-actions {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 5px;
-      }
-      .invoice-actions button {
-        margin-left: 0;
-        padding: 8px 10px;
-        font-size: 13px;
-      }
+      .header { flex-wrap: wrap; gap: 12px; }
+      .company { max-width: 100%; flex: 1 1 60%; }
+      .invoice-box { text-align: right; flex: 1 1 35%; min-width: 180px; }
+      .invoice-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+      .invoice-actions button { margin-left: 0; padding: 8px 10px; font-size: 13px; }
 
-      /* 表格滚动 */
-      .table-wrapper {
-        margin-top: 10px;
-      }
+      .table-wrapper { margin-top: 10px; }
       
-      /* 描述列允许换行，其他列不换行 */
-      td:nth-child(2), th:nth-child(2) {
-        white-space: normal;
-        word-break: break-word;
-        min-width: 180px;
-      }
-      td, th {
-        white-space: nowrap;
-      }
+      td:nth-child(2), th:nth-child(2) { white-space: normal; word-break: break-word; min-width: 180px; }
+      td, th { white-space: nowrap; }
 
       th, td { padding: 8px 6px; }
       .total-area { font-size: 18px; }
@@ -131,10 +106,12 @@
 
     <div class="invoice-box">
       <div class="invoice-title">INVOICE</div>
+      <!-- 1. 添加 VOID 按钮 -->
       <div class="invoice-actions no-print">
         <button id="homeBtn">HOME</button>
         <button id="printBtn">PRINT / PDF</button>
         <button id="editBtn">EDIT</button>
+        <button id="voidBtn">VOID</button>
       </div>
       <div class="invoice-meta">
         <div><strong>No:</strong> <span id="invoiceNo">—</span></div>
@@ -229,6 +206,34 @@
       qid('printBtn').onclick = () => window.print();
       qid('editBtn').onclick = () => { window.location.href = `/invoice-edit.html?id=${invoiceId}`; };
 
+      // 2. 绑定 VOID 点击事件
+      qid('voidBtn').onclick = async () => {
+        // 弹出输入框，提示用户输入作废原因
+        const reason = prompt("Are you sure you want to VOID this invoice? Please enter reason:");
+        if (reason === null) return; // 用户点击了取消
+
+        try {
+          // 发送 POST 请求调用后端的 onRequestPost 接口（注意：请确保 Endpoint 路径对应你的 API 路由）
+          const res = await fetch('/api/invoice-void', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: invoiceId, reason: reason }),
+            credentials: 'include'
+          });
+
+          const result = await res.json();
+          if (res.ok && result.success) {
+            alert('Invoice has been successfully voided.');
+            location.reload(); // 刷新页面展示更新后的状态
+          } else {
+            alert('Failed to void invoice: ' + (result.error || 'Unknown error'));
+          }
+        } catch (err) {
+          console.error('Void error:', err);
+          alert('Error voiding invoice.');
+        }
+      };
+
       async function loadInvoiceData() {
         try {
           const response = await fetch(`/api/invoice-view?id=${encodeURIComponent(invoiceId)}`, { credentials: 'include' });
@@ -242,11 +247,22 @@
           qid('invoiceDate').textContent = (invoice.created_at || '').split(' ')[0] || '—';
           qid('totalDisplay').textContent = formatCurrency(invoice.amount);
 
+          // 3. 处理状态及按钮的显示/隐藏逻辑
           const status = (invoice.status || "UNPAID").toUpperCase();
           const badge = qid('statusBadge');
           badge.textContent = status;
-          badge.style.color = (status === 'UNPAID') ? 'red' : 'green';
-          if (status !== 'UNPAID') qid('editBtn').style.display = 'none';
+
+          if (status === 'VOID') {
+            badge.style.color = '#dc2626';
+            badge.style.textDecoration = 'line-through';
+            qid('editBtn').style.display = 'none';
+            qid('voidBtn').style.display = 'none';
+          } else if (status === 'PAID') {
+            badge.style.color = 'green';
+            qid('editBtn').style.display = 'none';
+          } else { // UNPAID 或其他状态
+            badge.style.color = 'red';
+          }
 
           const tbody = qid('itemsList');
           tbody.innerHTML = '';
@@ -309,10 +325,8 @@
         }
       }
 
-      // 补充公司信息填充（兼容 company-settings.js 未覆盖的字段）
       function fillMissingCompanyFields() {
         if (window.COMPANY_CONFIG) {
-          // 这些字段 company-settings.js 可能没有设置，我们手动补上
           const beneficiary = document.getElementById('beneficiary-name');
           if (beneficiary) beneficiary.textContent = COMPANY_CONFIG.name;
           
@@ -324,19 +338,12 @@
         }
       }
 
-      // 页面启动
       document.addEventListener('DOMContentLoaded', async () => {
         const authorized = await checkAdminAuth();
         if (!authorized) return;
 
-        // 先让 company-settings.js 自动填充（它监听 DOMContentLoaded 并执行 applyCompanySettings）
-        // 但我们需要等待它执行完毕，这里使用 setTimeout 或微任务确保执行顺序
         await new Promise(resolve => setTimeout(resolve, 0));
-        
-        // 补充缺失的字段
         fillMissingCompanyFields();
-        
-        // 加载发票数据
         loadInvoiceData();
       });
     })();
