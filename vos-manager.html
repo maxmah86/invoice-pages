@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Variation Orders Manager</title>
+<title>Variation Orders</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -77,26 +77,29 @@ h1 {
   margin-top: 4px;
 }
 
-/* 新增：操作按钮区域及样式 */
+/* 对应你圈起来的右侧按钮区域样式 */
 .actions {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  padding-left: 10px;
 }
 
-.btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  border-radius: 4px;
+.action-btn {
+  background: none;
   border: none;
   cursor: pointer;
-  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 2px 4px;
 }
 
-.btn-edit { background: #1c7ed6; }
-.btn-edit:hover { background: #1864ab; }
+.btn-edit { color: #1c7ed6; }
+.btn-edit:hover { text-decoration: underline; }
 
-.btn-delete { background: #c92a2a; }
-.btn-delete:hover { background: #a61e4d; }
+.btn-delete { color: #c92a2a; }
+.btn-delete:hover { text-decoration: underline; }
 
 .empty {
   text-align: center;
@@ -108,7 +111,7 @@ h1 {
 
 <body>
 
-<h1>Variation Orders Manager</h1>
+<h1>Variation Orders</h1>
 
 <button onclick="location.href='/index.html'" style="background:#7f8c8d;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:14px;cursor:pointer;margin-bottom:12px;">Home</button>
 
@@ -165,7 +168,7 @@ async function load() {
     const div = document.createElement("div");
     div.className = "vo-item";
     
-    // 左侧：原有的 VO 信息，保留了点击跳转到详情页的功能
+    // 左侧信息区域（点击可跳转查看详情）
     const infoDiv = document.createElement("div");
     infoDiv.className = "vo-info";
     infoDiv.onclick = () => location.href = `/vo-view.html?id=${v.id}`;
@@ -177,26 +180,24 @@ async function load() {
     `;
     div.appendChild(infoDiv);
 
-    // 右侧：新增的 Edit 和 Delete 按钮区域（支持所有状态）
+    // 右侧你所圈出的操作区域：edit 和 delete 按钮
     const actionsDiv = document.createElement("div");
     actionsDiv.className = "actions";
 
-    // Edit 按钮
     const editBtn = document.createElement("button");
-    editBtn.className = "btn btn-edit";
-    editBtn.textContent = "Edit";
+    editBtn.className = "action-btn btn-edit";
+    editBtn.textContent = "edit";
     editBtn.onclick = (e) => {
-      e.stopPropagation(); // 阻止触发外层详情跳转
+      e.stopPropagation(); // 阻止触发左侧的跳转
       location.href = `/vo-edit.html?id=${v.id}`;
     };
     actionsDiv.appendChild(editBtn);
 
-    // Delete 按钮
     const deleteBtn = document.createElement("button");
-    deleteBtn.className = "btn btn-delete";
-    deleteBtn.textContent = "Delete";
+    deleteBtn.className = "action-btn btn-delete";
+    deleteBtn.textContent = "delete";
     deleteBtn.onclick = (e) => {
-      e.stopPropagation(); // 阻止触发外层详情跳转
+      e.stopPropagation(); // 阻止触发左侧的跳转
       deleteVo(v.id, v.vo_no);
     };
     actionsDiv.appendChild(deleteBtn);
@@ -206,7 +207,6 @@ async function load() {
   });
 }
 
-// 删除请求函数
 async function deleteVo(id, voNo) {
   if (!confirm(`Are you sure you want to delete Variation Order: ${voNo}?`)) return;
 
@@ -220,7 +220,7 @@ async function deleteVo(id, voNo) {
 
     const result = await res.json();
     if (res.ok && result.success) {
-      load(); // 成功后重新加载列表
+      load(); // 删除成功后刷新列表
     } else {
       alert("Failed to delete: " + (result.error || "Unknown error"));
     }
