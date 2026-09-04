@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Variation Orders Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 14px;
+}
+
+h1 {
+  margin: 0 0 12px;
+}
+
+.card {
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.filter input,
+.filter select {
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  flex: 1;
+}
+
+.vo-item {
+  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vo-item:last-child {
+  border-bottom: none;
+}
+
+.vo-info {
+  flex: 1;
+  cursor: pointer;
+}
+
+.vo-no {
+  font-weight: bold;
+}
+
+.status {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.status.DRAFT { color: #555; }
+.status.APPROVED { color: #2f9e44; }
+.status.REJECTED { color: #c92a2a; }
+.status.INVOICED { color: #1c7ed6; }
+
+.amount {
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+}
+
+.btn-edit { background: #1c7ed6; }
+.btn-edit:hover { background: #1864ab; }
+
+.btn-delete { background: #c92a2a; }
+.btn-delete:hover { background: #a61e4d; }
+
+.empty {
+  text-align: center;
+  color: #777;
+  padding: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Variation Orders Manager</h1>
+
+<button onclick="location.href='/index.html'" style="background:#7f8c8d;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:14px;cursor:pointer;margin-bottom:12px;">Home</button>
+
+<div class="card filter">
+  <select id="status">
+    <option value="">All Status</option>
+    <option>DRAFT</option>
+    <option>APPROVED</option>
+    <option>REJECTED</option>
+    <option>INVOICED</option>
+  </select>
+
+  <input type="month" id="month">
+  <input placeholder="Search" id="q">
+</div>
+
+<div class="card" id="list"></div>
+
+<script>
+fetch("/api/auth-check", { credentials: "include" })
+  .then(r => r.json())
+  .then(d => { if (!d.loggedIn) location.replace("/login.html"); })
+  .catch(() => location.replace("/login.html"));
+
+const statusEl = document.getElementById("status");
+const monthEl = document.getElementById("month");
+const qEl = document.getElementById("q");
+const listEl = document.getElementById("list");
+
+monthEl.value = ""; // show all months by default
+
+async function load() {
+  listEl.innerHTML = "Loading...";
+
+  const params = new URLSearchParams();
+  if (statusEl.value) params.set("status", statusEl.value);
+  if (monthEl.value) params.set("month", monthEl.value);
+  if (qEl.value) params.set("q", qEl.value);
+
+  const res = await fetch(`/api/vo-list?${params}`, {
+    credentials: "include"
+  });
+
+  const data = await res.json();
+  const rows = data.rows || [];
+  listEl.innerHTML = "";
+
+  if (!rows.length) {
+    listEl.innerHTML = `<div class="empty">No records</div>`;
+    return;
+  }
+
+  rows.forEach(v => {
+    const div = document.createElement("div");
+    div.className = "vo-item";
+    
+    // 左侧信息区域（点击可跳转到详情页）
+    const infoDiv = document.createElement("div");
+    infoDiv.className = "vo-info";
+    infoDiv.onclick = () => location.href = `/vo-view.html?id=${v.id}`;
+    infoDiv.innerHTML = `
+      <div class="vo-no">${v.vo_no}</div>
+      <div>${v.title || "-"}</div>
+      <div class="status ${v.status}">${v.status}</div>
+      <div class="amount">RM ${Number(v.amount).toFixed(2)}</div>
+    `;
+    div.appendChild(infoDiv);
+
+    // 右侧操作按钮区域
+    const actionsDiv = document.createElement("div");
+    actionsDiv.className = "actions";
+
+    // 只有 DRAFT 状态才允许编辑和删除（对应后端限制）
+    if (v.status === "DRAFT") {
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn btn-edit";
+      editBtn.textContent = "Edit";
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        location.href = `/vo-edit.html?id=${v.id}`;
+      };
+      actionsDiv.appendChild(editBtn);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "btn btn-delete";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteVo(v.id, v.vo_no);
+      };
+      actionsDiv.appendChild(deleteBtn);
+    }
+
+    div.appendChild(actionsDiv);
+    listEl.appendChild(div);
+  });
+}
+
+async function deleteVo(id, voNo) {
+  if (!confirm(`Are you sure you want to delete Variation Order: ${voNo}?`)) return;
+
+  try {
+    const res = await fetch("/api/vo-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+      credentials: "include"
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+      load(); // 重新加载列表
+    } else {
+      alert("Failed to delete: " + (result.error || "Unknown error"));
+    }
+  } catch (err) {
+    alert("Network error: " + err.message);
+  }
+}
+
+statusEl.onchange = load;
+monthEl.onchange = load;
+qEl.oninput = () => setTimeout(load, 300);
+
+load();
+</script>
+
+</body>
+</html>
