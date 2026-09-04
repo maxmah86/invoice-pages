@@ -176,30 +176,27 @@ async function load() {
     `;
     div.appendChild(infoDiv);
 
-    // 右侧操作按钮区域
+    // 右侧操作按钮区域（所有状态均显示 Edit 和 Delete）
     const actionsDiv = document.createElement("div");
     actionsDiv.className = "actions";
 
-    // 只有 DRAFT 状态才允许编辑和删除（对应后端限制）
-    if (v.status === "DRAFT") {
-      const editBtn = document.createElement("button");
-      editBtn.className = "btn btn-edit";
-      editBtn.textContent = "Edit";
-      editBtn.onclick = (e) => {
-        e.stopPropagation();
-        location.href = `/vo-edit.html?id=${v.id}`;
-      };
-      actionsDiv.appendChild(editBtn);
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn btn-edit";
+    editBtn.textContent = "Edit";
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      location.href = `/vo-edit.html?id=${v.id}`;
+    };
+    actionsDiv.appendChild(editBtn);
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "btn btn-delete";
-      deleteBtn.textContent = "Delete";
-      deleteBtn.onclick = (e) => {
-        e.stopPropagation();
-        deleteVo(v.id, v.vo_no);
-      };
-      actionsDiv.appendChild(deleteBtn);
-    }
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn btn-delete";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteVo(v.id, v.vo_no);
+    };
+    actionsDiv.appendChild(deleteBtn);
 
     div.appendChild(actionsDiv);
     listEl.appendChild(div);
