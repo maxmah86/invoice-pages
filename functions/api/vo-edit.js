@@ -14,9 +14,8 @@ export async function onRequestPost({ request, env }) {
   if (!title || !title.trim()) return Response.json({ error: "Title is required" }, { status: 400 });
   if (!Array.isArray(items) || items.length === 0) return Response.json({ error: "At least one item is required" }, { status: 400 });
 
-  const vo = await env.DB.prepare(`SELECT status FROM variation_orders WHERE id = ?`).bind(id).first();
+  const vo = await env.DB.prepare(`SELECT id FROM variation_orders WHERE id = ?`).bind(id).first();
   if (!vo) return Response.json({ error: "VO not found" }, { status: 404 });
-  if (vo.status !== "DRAFT") return Response.json({ error: "Only DRAFT VO can be edited" }, { status: 400 });
 
   let amount = 0;
   for (const i of items) amount += (Number(i.qty) || 0) * (Number(i.unit_price) || 0);
