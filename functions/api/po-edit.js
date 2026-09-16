@@ -82,13 +82,15 @@ export async function onRequestPost({ request, env }) {
   }
 
   /* ===============================
-     RE-CALCULATE TOTALS
+     RE-CALCULATE TOTALS (兼容 unit_price 和 price)
      =============================== */
   let subtotal = 0;
 
   const normalizedItems = items.map(it => {
     const qty = Number(it.qty) || 0;
-    const unit = Number(it.unit_price) || 0;
+    // 兼容处理：无论前端传的是 unit_price 还是 price，都能正确读取
+    const rawPrice = it.unit_price !== undefined ? it.unit_price : it.price;
+    const unit = Number(rawPrice) || 0;
     const line = qty * unit;
     subtotal += line;
 
