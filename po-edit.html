@@ -6,12 +6,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-/* 复用 po.html 的样式以保持 UI 一致性 */
+/* 复用样式以保持 UI 一致性 */
 body { font-family: Arial, sans-serif; margin: 16px; color: #000; }
 h1 { margin-bottom: 12px; }
 .form-group { margin-bottom: 14px; }
 label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 4px; }
-input, textarea { width: 100%; box-sizing: border-box; padding: 6px; font-size: 14px; }
+input, select, textarea { width: 100%; box-sizing: border-box; padding: 6px; font-size: 14px; }
 textarea { min-height: 60px; }
 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 th, td { border: 1px solid #000; padding: 6px; font-size: 13px; }
@@ -30,6 +30,14 @@ button { padding: 8px 14px; font-size: 14px; margin-top: 10px; cursor: pointer; 
 <div id="loadingOverlay">Loading PO Data...</div>
 
 <h1>Edit Purchase Order</h1>
+
+<!-- 关联项目选择框 -->
+<div class="form-group">
+  <label>Project (Optional)</label>
+  <select id="project_id">
+    <option value="">-- None (General PO) --</option>
+  </select>
+</div>
 
 <div class="form-group">
   <label>Supplier Name *</label>
@@ -104,19 +112,47 @@ if (!poId) {
 }
 
 /**
- * 1. 初始化：加载现有 PO 数据
+ * 初始化页面数据
  */
-async function loadPOData() {
+async function initPage() {
     try {
-        const res = await fetch(`/api/po-view?id=${poId}`, { credentials: "include" });
-        if (res.status === 401) {
+        // 1. 获取项目列表和 PO 详情
+        const [projRes, poRes] = await Promise.all([
+            fetch("/api/project-list", { credentials: "include" }),
+            fetch(`/api/po-view?id=${poId}`, { credentials: "include" })
+        ]);
+
+        if (poRes.status === 401 || projRes.status === 401) {
             location.replace("/login.html");
             return;
         }
-        const result = await res.json();
+
+        const projData = projRes.ok ? await projRes.json() : [];
+        const projList = Array.isArray(projData) ? projData : (projData.projects || []);
+
+        const result = await poRes.json();
         const po = result.po;
 
-        // 填充主表单字段
+        console.log("Loaded PO Data:", po); // 在 F12 控制台查看完整的 PO 对象，确认里面有没有 project_id
+
+        // 2. 填充项目下拉列表
+        const select = document.getElementById("project_id");
+        projList.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.id;
+            opt.textContent = `${p.project_no ? p.project_no + ' - ' : ''}${p.project_name} (${p.client_name || 'No Client'})`;
+            select.appendChild(opt);
+        });
+
+        // 3. 精准匹配并设置 project_id
+        if (po.project_id !== null && po.project_id !== undefined && po.project_id !== "") {
+            select.value = String(po.project_id);
+            console.log("Assigned project_id to select:", po.project_id);
+        } else {
+            select.value = ""; // 如果原本为空，保持 None
+        }
+
+        // 4. 填充其他主表单字段
         document.getElementById("supplier_name").value = po.supplier_name || "";
         document.getElementById("po_date").value = po.po_date || "";
         document.getElementById("issued_by").value = po.issued_by || "";
@@ -125,7 +161,7 @@ async function loadPOData() {
         document.getElementById("delivery_time").value = po.delivery_time || "";
         document.getElementById("notes").value = po.notes || "";
 
-        // 填充项目行
+        // 5. 填充项目行
         const tbody = document.getElementById("items");
         tbody.innerHTML = ""; 
         if (result.items && result.items.length > 0) {
@@ -142,7 +178,7 @@ async function loadPOData() {
 }
 
 /**
- * 2. 动态添加行功能
+ * 动态添加行功能
  */
 function addRow(item = {}) {
   const tbody = document.getElementById("items");
@@ -152,7 +188,7 @@ function addRow(item = {}) {
     <td></td>
     <td><input class="desc" value="${item.description || ""}"></td>
     <td><input type="number" class="qty text-right" value="${item.qty || 0}" oninput="calc()"></td>
-    <td><input type="number" class="price text-right" value="${item.price || 0}" oninput="calc()"></td>
+    <td><input type="number" class="price text-right" value="${item.unit_price !== undefined ? item.unit_price : (item.price || 0)}" oninput="calc()"></td>
     <td class="text-right amount">0.00</td>
     <td><button onclick="this.closest('tr').remove(); calc()">X</button></td>
   `;
@@ -162,7 +198,7 @@ function addRow(item = {}) {
 }
 
 /**
- * 3. 自动计算总额
+ * 自动计算总额
  */
 function calc() {
   let total = 0;
@@ -178,7 +214,7 @@ function calc() {
 }
 
 /**
- * 4. 提交更新
+ * 提交更新
  */
 async function updatePO() {
   const errorBox = document.getElementById("errorBox");
@@ -189,7 +225,7 @@ async function updatePO() {
     items.push({
       description: tr.querySelector(".desc").value,
       qty: Number(tr.querySelector(".qty").value) || 0,
-      price: Number(tr.querySelector(".price").value) || 0
+      unit_price: Number(tr.querySelector(".price").value) || 0
     });
   });
 
@@ -198,8 +234,11 @@ async function updatePO() {
     return;
   }
 
+  const selectedProjId = document.getElementById("project_id").value;
+
   const payload = {
-    id: poId, // 必须包含 ID 以供后端识别更新对象
+    id: poId,
+    project_id: selectedProjId ? Number(selectedProjId) : null,
     supplier_name: document.getElementById("supplier_name").value,
     po_date: document.getElementById("po_date").value,
     issued_by: document.getElementById("issued_by").value,
@@ -224,7 +263,7 @@ async function updatePO() {
     }
 
     alert("PO updated successfully");
-    location.href = `/po-view.html?id=${poId}`; // 返回查看页面
+    location.href = `/po-view.html?id=${poId}`;
 
   } catch (err) {
     errorBox.style.display = "block";
@@ -233,7 +272,7 @@ async function updatePO() {
 }
 
 // 启动加载
-loadPOData();
+initPage();
 </script>
 
 </body>
