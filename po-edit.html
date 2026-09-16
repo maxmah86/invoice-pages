@@ -104,8 +104,8 @@ button { padding: 8px 14px; font-size: 14px; margin-top: 10px; cursor: pointer; 
 
 <script>
 const poId = new URLSearchParams(location.search).get("id");
-let projectsMap = {}; // 文本到 ID 的映射
-let idToTextMap = {}; // ID 到文本的映射
+let projectsMap = {}; 
+let idToTextMap = {}; 
 
 if (!poId) {
     alert("No PO ID provided");
@@ -130,7 +130,6 @@ async function initPage() {
         const result = await poRes.json();
         const po = result.po;
 
-        // 填充 datalist 选项和构建映射
         const datalist = document.getElementById("project_list_options");
         projList.forEach(p => {
             const text = `${p.project_no ? p.project_no + ' - ' : ''}${p.project_name} (${p.client_name || 'No Client'})`;
@@ -142,7 +141,7 @@ async function initPage() {
             datalist.appendChild(opt);
         });
 
-        // 设置当前 PO 关联的项目回显
+        // 回显项目
         if (po.project_id !== null && po.project_id !== undefined && po.project_id !== "") {
             const currentProjText = idToTextMap[String(po.project_id)] || `Project ID: ${po.project_id}`;
             document.getElementById("project_search").value = currentProjText;
@@ -150,7 +149,6 @@ async function initPage() {
             document.getElementById("project_search").value = "-- None (General PO) --";
         }
 
-        // 填充其他字段
         document.getElementById("supplier_name").value = po.supplier_name || "";
         document.getElementById("po_date").value = po.po_date || "";
         document.getElementById("issued_by").value = po.issued_by || "";
@@ -178,11 +176,13 @@ function addRow(item = {}) {
   const tbody = document.getElementById("items");
   const tr = document.createElement("tr");
 
+  const priceVal = item.unit_price !== undefined ? item.unit_price : (item.price || 0);
+
   tr.innerHTML = `
     <td></td>
     <td><input class="desc" value="${item.description || ""}"></td>
     <td><input type="number" class="qty text-right" value="${item.qty || 0}" oninput="calc()"></td>
-    <td><input type="number" class="price text-right" value="${item.unit_price !== undefined ? item.unit_price : (item.price || 0)}" oninput="calc()"></td>
+    <td><input type="number" class="price text-right" value="${priceVal}" oninput="calc()"></td>
     <td class="text-right amount">0.00</td>
     <td><button onclick="this.closest('tr').remove(); calc()">X</button></td>
   `;
@@ -210,10 +210,12 @@ async function updatePO() {
 
   const items = [];
   document.querySelectorAll("#items tr").forEach(tr => {
+    const priceVal = Number(tr.querySelector(".price").value) || 0;
     items.push({
       description: tr.querySelector(".desc").value,
       qty: Number(tr.querySelector(".qty").value) || 0,
-      unit_price: Number(tr.querySelector(".price").value) || 0
+      price: priceVal,
+      unit_price: priceVal // 双保险：同时传 price 和 unit_price
     });
   });
 
@@ -222,7 +224,6 @@ async function updatePO() {
     return;
   }
 
-  // 根据用户输入的文字转换回对应的 project_id
   const searchInputVal = document.getElementById("project_search").value.trim();
   let finalProjectId = null;
   if (searchInputVal && searchInputVal !== "-- None (General PO) --") {
