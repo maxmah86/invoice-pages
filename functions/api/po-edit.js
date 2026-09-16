@@ -49,7 +49,7 @@ export async function onRequestPost({ request, env }) {
     );
   }
 
-  const { id, supplier_name, items } = body;
+  const { id, project_id, supplier_name, po_date, issued_by, delivery_address, delivery_date, delivery_time, notes, items } = body;
 
   if (!id || !supplier_name || !Array.isArray(items)) {
     return new Response(
@@ -103,17 +103,31 @@ export async function onRequestPost({ request, env }) {
   const total = subtotal;
 
   /* ===============================
-     UPDATE PO HEADER
+     UPDATE PO HEADER (含 project_id)
      =============================== */
   await env.DB.prepare(`
     UPDATE purchase_orders
-    SET supplier_name = ?,
+    SET project_id = ?,
+        supplier_name = ?,
+        po_date = ?,
+        issued_by = ?,
+        delivery_address = ?,
+        delivery_date = ?,
+        delivery_time = ?,
+        notes = ?,
         subtotal = ?,
         total = ?,
         updated_at = datetime('now')
     WHERE id = ?
   `).bind(
+    project_id ? Number(project_id) : null,
     supplier_name,
+    po_date || null,
+    issued_by || "",
+    delivery_address || "",
+    delivery_date || null,
+    delivery_time || "",
+    notes || "",
     subtotal,
     total,
     id

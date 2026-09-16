@@ -13,7 +13,6 @@ export async function onRequestPost({ request, env }) {
     SELECT id, username, role FROM users WHERE session_token = ?
   `).bind(token).first();
 
-  // 允许 admin 或 user 角色创建 PO，你可以根据需求调整
   if (!user) {
     return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
   }
@@ -59,7 +58,6 @@ export async function onRequestPost({ request, env }) {
 
   let seq = 1;
   if (maxRow?.max_no) {
-    // 假设编号格式为 PO202603270001
     const lastSeq = parseInt(maxRow.max_no.slice(-4), 10);
     if (!isNaN(lastSeq)) seq = lastSeq + 1;
   }
@@ -69,7 +67,7 @@ export async function onRequestPost({ request, env }) {
      4. 执行数据库插入 (事务)
      =============================== */
   try {
-    // 计算总额
+    // 计算总额（同时兼容 subtotal 和 total 字段）
     const total_amount = items.reduce((sum, i) => sum + (Number(i.qty) * Number(i.price)), 0);
 
     // 1. 插入主表 purchase_orders
@@ -77,8 +75,8 @@ export async function onRequestPost({ request, env }) {
       INSERT INTO purchase_orders (
         po_no, po_date, supplier_name, project_id, issued_by, 
         delivery_address, delivery_date, delivery_time, 
-        notes, total, status, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', datetime('now'))
+        notes, subtotal, total, status, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', datetime('now'))
     `).bind(
       po_no,
       po_date || new Date().toISOString().slice(0, 10),
@@ -89,6 +87,7 @@ export async function onRequestPost({ request, env }) {
       delivery_date || null,
       delivery_time || "",
       notes || "",
+      total_amount,
       total_amount
     ).run();
 

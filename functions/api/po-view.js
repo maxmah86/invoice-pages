@@ -100,7 +100,8 @@ export async function onRequestGet({ request, env }) {
         delivery_date: po.delivery_date,
         delivery_time: po.delivery_time,
         subtotal: po.subtotal,
-        total: po.total
+        total: po.total,
+        project_id: po.project_id // <-- 补上这一行，将 project_id 传给前端
       },
       items: itemsResult.results
     }),
