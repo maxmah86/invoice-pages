@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
-/* 复用样式以保持 UI 一致性 */
 body { font-family: Arial, sans-serif; margin: 16px; color: #000; }
 h1 { margin-bottom: 12px; }
 .form-group { margin-bottom: 14px; }
@@ -31,12 +30,13 @@ button { padding: 8px 14px; font-size: 14px; margin-top: 10px; cursor: pointer; 
 
 <h1>Edit Purchase Order</h1>
 
-<!-- 关联项目选择框 -->
+<!-- 关联项目可搜索输入框 -->
 <div class="form-group">
-  <label>Project (Optional)</label>
-  <select id="project_id">
-    <option value="">-- None (General PO) --</option>
-  </select>
+  <label>Project (Optional - Type to search)</label>
+  <input type="text" id="project_search" list="project_list_options" placeholder="-- Type project name or number to filter --" autocomplete="off">
+  <datalist id="project_list_options">
+    <option value="-- None (General PO) --"></option>
+  </datalist>
 </div>
 
 <div class="form-group">
@@ -103,20 +103,17 @@ button { padding: 8px 14px; font-size: 14px; margin-top: 10px; cursor: pointer; 
 <div id="errorBox"></div>
 
 <script>
-// 获取 URL 中的 ID 参数
 const poId = new URLSearchParams(location.search).get("id");
+let projectsMap = {}; // 文本到 ID 的映射
+let idToTextMap = {}; // ID 到文本的映射
 
 if (!poId) {
     alert("No PO ID provided");
     location.href = "/pos.html";
 }
 
-/**
- * 初始化页面数据
- */
 async function initPage() {
     try {
-        // 1. 获取项目列表和 PO 详情
         const [projRes, poRes] = await Promise.all([
             fetch("/api/project-list", { credentials: "include" }),
             fetch(`/api/po-view?id=${poId}`, { credentials: "include" })
@@ -133,26 +130,27 @@ async function initPage() {
         const result = await poRes.json();
         const po = result.po;
 
-        console.log("Loaded PO Data:", po); // 在 F12 控制台查看完整的 PO 对象，确认里面有没有 project_id
-
-        // 2. 填充项目下拉列表
-        const select = document.getElementById("project_id");
+        // 填充 datalist 选项和构建映射
+        const datalist = document.getElementById("project_list_options");
         projList.forEach(p => {
+            const text = `${p.project_no ? p.project_no + ' - ' : ''}${p.project_name} (${p.client_name || 'No Client'})`;
+            projectsMap[text] = p.id;
+            idToTextMap[String(p.id)] = text;
+
             const opt = document.createElement("option");
-            opt.value = p.id;
-            opt.textContent = `${p.project_no ? p.project_no + ' - ' : ''}${p.project_name} (${p.client_name || 'No Client'})`;
-            select.appendChild(opt);
+            opt.value = text;
+            datalist.appendChild(opt);
         });
 
-        // 3. 精准匹配并设置 project_id
+        // 设置当前 PO 关联的项目回显
         if (po.project_id !== null && po.project_id !== undefined && po.project_id !== "") {
-            select.value = String(po.project_id);
-            console.log("Assigned project_id to select:", po.project_id);
+            const currentProjText = idToTextMap[String(po.project_id)] || `Project ID: ${po.project_id}`;
+            document.getElementById("project_search").value = currentProjText;
         } else {
-            select.value = ""; // 如果原本为空，保持 None
+            document.getElementById("project_search").value = "-- None (General PO) --";
         }
 
-        // 4. 填充其他主表单字段
+        // 填充其他字段
         document.getElementById("supplier_name").value = po.supplier_name || "";
         document.getElementById("po_date").value = po.po_date || "";
         document.getElementById("issued_by").value = po.issued_by || "";
@@ -161,7 +159,6 @@ async function initPage() {
         document.getElementById("delivery_time").value = po.delivery_time || "";
         document.getElementById("notes").value = po.notes || "";
 
-        // 5. 填充项目行
         const tbody = document.getElementById("items");
         tbody.innerHTML = ""; 
         if (result.items && result.items.length > 0) {
@@ -177,9 +174,6 @@ async function initPage() {
     }
 }
 
-/**
- * 动态添加行功能
- */
 function addRow(item = {}) {
   const tbody = document.getElementById("items");
   const tr = document.createElement("tr");
@@ -197,9 +191,6 @@ function addRow(item = {}) {
   calc();
 }
 
-/**
- * 自动计算总额
- */
 function calc() {
   let total = 0;
   document.querySelectorAll("#items tr").forEach((tr, i) => {
@@ -213,9 +204,6 @@ function calc() {
   document.getElementById("total").textContent = total.toFixed(2);
 }
 
-/**
- * 提交更新
- */
 async function updatePO() {
   const errorBox = document.getElementById("errorBox");
   errorBox.style.display = "none";
@@ -234,11 +222,16 @@ async function updatePO() {
     return;
   }
 
-  const selectedProjId = document.getElementById("project_id").value;
+  // 根据用户输入的文字转换回对应的 project_id
+  const searchInputVal = document.getElementById("project_search").value.trim();
+  let finalProjectId = null;
+  if (searchInputVal && searchInputVal !== "-- None (General PO) --") {
+    finalProjectId = projectsMap[searchInputVal] || null;
+  }
 
   const payload = {
     id: poId,
-    project_id: selectedProjId ? Number(selectedProjId) : null,
+    project_id: finalProjectId ? Number(finalProjectId) : null,
     supplier_name: document.getElementById("supplier_name").value,
     po_date: document.getElementById("po_date").value,
     issued_by: document.getElementById("issued_by").value,
@@ -271,7 +264,6 @@ async function updatePO() {
   }
 }
 
-// 启动加载
 initPage();
 </script>
 

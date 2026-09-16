@@ -97,12 +97,14 @@ button {
   📁 Project: <strong id="projectLabel"></strong>
 </div>
 
-<!-- 如果未通过 URL 传 project_id，提供项目下拉选择框 -->
+<!-- 如果未通过 URL 传 project_id，提供可输入的项目搜索框 -->
 <div class="form-group" id="projectSelectGroup" style="display:none;">
-  <label>Select Project (Optional)</label>
-  <select id="project_id_select">
-    <option value="">-- None (General PO) --</option>
-  </select>
+  <label>Select Project (Optional - Type to search)</label>
+  <input type="text" id="project_search" list="project_list_options" placeholder="-- Type project name or number to filter --" autocomplete="off">
+  <datalist id="project_list_options">
+    <option value="-- None (General PO) --" data-id=""></option>
+  </datalist>
+  <input type="hidden" id="project_id_value">
 </div>
 
 <!-- ===== BASIC INFO ===== -->
@@ -173,6 +175,8 @@ button {
 <div id="errorBox"></div>
 
 <script>
+let projectsMap = {}; // 用于存储 项目文本 -> id 的映射
+
 function addRow(item = {}) {
   const tbody = document.getElementById("items");
   const tr = document.createElement("tr");
@@ -230,7 +234,13 @@ async function submitPO() {
     return;
   }
 
-  const finalProjectId = _projectId || document.getElementById("project_id_select")?.value;
+  // 通过输入的文本从 Map 中获取真实的 project_id
+  const searchInputVal = document.getElementById("project_search").value.trim();
+  let finalProjectId = _projectId || null;
+
+  if (!_projectId && searchInputVal && searchInputVal !== "-- None (General PO) --") {
+    finalProjectId = projectsMap[searchInputVal] || null;
+  }
 
   const payload = {
     supplier_name: document.getElementById("supplier_name").value,
@@ -290,33 +300,25 @@ if (_projectId) {
     })
     .catch(() => {});
 } else {
-  // 显示项目选择框
+  // 显示可搜索的项目输入框
   document.getElementById("projectSelectGroup").style.display = "block";
   
   fetch("/api/project-list", { credentials: "include" })
     .then(async r => {
-      if (!r.ok) {
-        const errText = await r.text();
-        console.error("Failed to load projects:", r.status, errText);
-        return [];
-      }
+      if (!r.ok) return [];
       return r.json();
     })
     .then(data => {
-      console.log("Projects loaded data:", data); // F12 控制台可看到返回的项目数据
-      const select = document.getElementById("project_id_select");
+      const datalist = document.getElementById("project_list_options");
       const projects = Array.isArray(data) ? data : (data.projects || []);
       
-      if (projects.length === 0) {
-        console.warn("No projects returned or array is empty!");
-      }
-
-      // 移除状态限制，把获取到的所有项目都加进去，方便排查
       projects.forEach(p => {
+        const text = `${p.project_no ? p.project_no + ' - ' : ''}${p.project_name} (${p.client_name || 'No Client'})`;
+        projectsMap[text] = p.id; // 建立文本到 ID 的映射
+
         const opt = document.createElement("option");
-        opt.value = p.id;
-        opt.textContent = `${p.project_no ? p.project_no + ' - ' : ''}${p.project_name} (${p.client_name || 'No Client'}) [Status: ${p.status || 'N/A'}]`;
-        select.appendChild(opt);
+        opt.value = text;
+        datalist.appendChild(opt);
       });
     })
     .catch(err => {
